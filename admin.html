@@ -3,9 +3,9 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>관리자 대시보드 & 보고서 - 관리감독자 평가</title>
+  <title>관리자 대시보드 & 엑셀 명단 업로드 - 관리감독자 평가</title>
   <link rel="stylesheet" href="style.css" />
-  <!-- SheetJS for Excel Download -->
+  <!-- SheetJS for Excel Upload & Download -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
@@ -15,7 +15,7 @@
     <div class="header-container">
       <div class="header-title">
         <h1>🔒 관리자 대시보드 & 종합 보고서</h1>
-        <p>관리감독자 업무수행 평가 현황, 인원 관리 및 3단계 결재선 보고서 출력</p>
+        <p>관리감독자 인원 엑셀 일괄 등록, 제출 현황 및 결재 보고서</p>
       </div>
       <div>
         <a href="index.html" class="btn btn-outline" style="font-size:0.8rem;">📋 현장소장 작성 화면</a>
@@ -32,11 +32,8 @@
       <div class="modal-body" style="padding: 1.5rem;">
         <div class="form-group">
           <label for="adminPass">비밀번호 입력</label>
-          <input type="password" id="adminPass" class="form-control" placeholder="관리자 비밀번호" />
+          <input type="password" id="adminPass" class="form-control" placeholder="관리자 비밀번호 (Addpassword)" />
         </div>
-        <p style="font-size: 0.75rem; color: var(--text-muted); margin-top: 0.5rem;">
-          ※ 구글 Apps Script의 <code>Addpassword</code> 속성에 설정된 비밀번호입니다.
-        </p>
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" id="btnLogin">확인 로그인</button>
@@ -47,38 +44,30 @@
   <!-- Main Container -->
   <main class="main-container" id="adminMainContent" style="display: none;">
     
-    <!-- 1. 통계 현황판 Cards -->
-    <div class="form-grid" style="margin-bottom: 1.5rem;">
-      <div class="card" style="margin-bottom: 0;">
-        <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">총 현장 수</div>
-        <div id="statTotalSites" style="font-size: 1.8rem; font-weight: 800; color: var(--primary-color); margin-top: 4px;">1 개소</div>
+    <!-- 1. 평가 대상자 엑셀 업로드 카테고리 (강조 배치) -->
+    <section class="card" style="border: 2px solid var(--accent-color); background: #f0f7ff;">
+      <div class="card-title" style="color: var(--accent-color); border-bottom-color: #bfdbfe;">
+        <span>📤 1. 평가 대상자 (관리감독자) 엑셀 명단 등록</span>
       </div>
-      <div class="card" style="margin-bottom: 0;">
-        <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">제출 완료 현장</div>
-        <div id="statSubmitted" style="font-size: 1.8rem; font-weight: 800; color: var(--success-color); margin-top: 4px;">1 개소</div>
-      </div>
-      <div class="card" style="margin-bottom: 0;">
-        <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">미제출 현장</div>
-        <div id="statUnsubmitted" style="font-size: 1.8rem; font-weight: 800; color: var(--danger-color); margin-top: 4px;">0 개소</div>
-      </div>
-      <div class="card" style="margin-bottom: 0;">
-        <div style="font-size: 0.85rem; color: var(--text-muted); font-weight: 700;">평균 평점 (20문항)</div>
-        <div id="statAvgScore" style="font-size: 1.8rem; font-weight: 800; color: var(--accent-color); margin-top: 4px;">2.95 점 / 3.0</div>
-      </div>
-    </div>
-
-    <!-- 2. 관리감독자 명단 관리 및 양식 다운로드 -->
-    <section class="card">
-      <div class="card-title" style="justify-content: space-between;">
-        <span>👥 관리감독자(인원) 명단 관리 & 양식 다운로드</span>
-        <div style="display: flex; gap: 0.5rem;">
-          <button class="btn btn-outline" id="btnDownloadTemplate">📥 등록 양식 다운로드 (.xlsx)</button>
-          <button class="btn btn-primary" id="btnUploadUsers">📤 엑셀/CSV 일괄 등록</button>
-        </div>
-      </div>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-        사번, 성명, 이메일 주소, 생년월일, 직종 정보가 등록되어야 automail 독려 메일 및 OTP 인증이 연동됩니다.
+      <p style="font-size: 0.9rem; color: #1e3a8a; margin-bottom: 1rem;">
+        아래 <strong>[등록 양식 다운로드]</strong>를 통해 엑셀을 작성하신 후 <strong>[엑셀 파일 일괄 업로드]</strong> 버튼을 누르면 DB 시트(Users)로 자동 등록됩니다.
       </p>
+
+      <div style="display: flex; gap: 1rem; flex-wrap: wrap;">
+        <button class="btn btn-outline" id="btnDownloadTemplate" style="font-size: 1rem; padding: 0.75rem 1.25rem;">
+          📥 명단 등록 양식 다운로드 (.xlsx)
+        </button>
+        <button class="btn btn-success" id="btnUploadUsers" style="font-size: 1rem; padding: 0.75rem 1.5rem;">
+          📁 엑셀 파일 선택 및 일괄 업로드 (.xlsx / .csv)
+        </button>
+      </div>
+    </section>
+
+    <!-- 2. 등록된 평가 대상자 명단 현황 -->
+    <section class="card">
+      <div class="card-title">
+        <span>👥 등록된 관리감독자(평가 대상자) 명단 (<span id="userCountSpan">4</span>명)</span>
+      </div>
 
       <div style="overflow-x: auto;">
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem;">
@@ -90,7 +79,7 @@
               <th style="padding: 8px;">이메일 주소</th>
               <th style="padding: 8px;">생년월일</th>
               <th style="padding: 8px;">직종</th>
-              <th style="padding: 8px;">상태</th>
+              <th style="padding: 8px;">등록 상태</th>
             </tr>
           </thead>
           <tbody id="userTableBody">
@@ -101,28 +90,36 @@
               <td style="padding: 8px; color: var(--accent-color);">nschoi@sebangtec.com</td>
               <td style="padding: 8px;">800101</td>
               <td style="padding: 8px;">안전관리자</td>
-              <td style="padding: 8px;"><span class="score-badge score-3">제출완료</span></td>
+              <td style="padding: 8px;"><span class="score-badge score-3">등록완료</span></td>
+            </tr>
+            <tr style="border-bottom: 1px solid #e2e8f0;">
+              <td style="padding: 8px; font-weight: 700;">테스트현장</td>
+              <td style="padding: 8px;">EMP002</td>
+              <td style="padding: 8px;">홍길동</td>
+              <td style="padding: 8px; color: var(--accent-color);">gildong@example.com</td>
+              <td style="padding: 8px;">850515</td>
+              <td style="padding: 8px;">현장소장</td>
+              <td style="padding: 8px;"><span class="score-badge score-3">등록완료</span></td>
             </tr>
           </tbody>
         </table>
       </div>
     </section>
 
-    <!-- 3. A4 보고서 출력 및 3단계 결재선 영역 -->
+    <!-- 3. A4 보고서 출력 및 3단계 결재선 -->
     <section class="card report-page">
       <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h3 style="font-weight: 700;">📄 관리감독자 평가 종합 보고서 (인쇄용)</h3>
-        <button class="btn btn-success" onclick="window.print();">🖨️ 보고서 A4 출력 / PDF 저장</button>
+        <button class="btn btn-primary" onclick="window.print();">🖨️ A4 보고서 출력 / PDF 저장</button>
       </div>
 
-      <!-- Report Content for Print -->
-      <div style="padding: 1rem; border: 1px solid #cbd5e1; background: #ffffff;">
+      <div style="padding: 1.5rem; border: 1px solid #cbd5e1; background: #ffffff;">
         <div style="text-align: center; margin-bottom: 1.5rem;">
           <h2 style="font-size: 1.5rem; font-weight: 800; text-decoration: underline;">관리감독자 업무수행 평가 종합보고서</h2>
           <p style="font-size: 0.9rem; color: #64748b; margin-top: 4px;">2026년 상반기 안전보건 이행 실적 및 항목별 평균 평가</p>
         </div>
 
-        <!-- 3단계 결재선 (작성 - 검토 - 승인) -->
+        <!-- 3단계 결재선 -->
         <div style="display: flex; justify-content: flex-end; margin-bottom: 1.5rem;">
           <table style="border-collapse: collapse; font-size: 0.8rem; text-align: center;">
             <tr>
@@ -141,12 +138,11 @@
           </table>
         </div>
 
-        <!-- Summary Table -->
         <table style="width: 100%; border-collapse: collapse; font-size: 0.85rem; margin-bottom: 1.5rem;">
           <thead>
             <tr style="background: #f1f5f9;">
               <th style="border: 1px solid #000; padding: 6px;">평가 항목</th>
-              <th style="border: 1px solid #000; padding: 6px;">평가 지표 (문항 수)</th>
+              <th style="border: 1px solid #000; padding: 6px;">평가 지표</th>
               <th style="border: 1px solid #000; padding: 6px;">평균 점수 (3점 만점)</th>
               <th style="border: 1px solid #000; padding: 6px;">평가 등급</th>
             </tr>
@@ -164,42 +160,14 @@
               <td style="border: 1px solid #000; padding: 6px; text-align: center;">2.9 점</td>
               <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight:700; color:#059669;">우수</td>
             </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 6px;">3. 보호구 및 방호장치 교육·지도</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">3 문항</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">3.0 점</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight:700; color:#059669;">우수</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 6px;">4. 산업재해 보고 및 응급조치</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">2 문항</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">3.0 점</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight:700; color:#059669;">우수</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 6px;">5. 정리정돈 및 통로확보</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">2 문항</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">2.8 점</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight:700; color:#059669;">우수</td>
-            </tr>
-            <tr>
-              <td style="border: 1px solid #000; padding: 6px;">6. 보건·안전 관리자 지도 조언 협조</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">3 문항</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center;">3.0 점</td>
-              <td style="border: 1px solid #000; padding: 6px; text-align: center; font-weight:700; color:#059669;">우수</td>
-            </tr>
             <tr style="background: #f8fafc; font-weight: 700;">
-              <td style="border: 1px solid #000; padding: 6px;">전체 항목 총계 및 평균</td>
+              <td style="border: 1px solid #000; padding: 6px;">전체 20개 항목 총계 및 평균</td>
               <td style="border: 1px solid #000; padding: 6px; text-align: center;">20 문항</td>
               <td style="border: 1px solid #000; padding: 6px; text-align: center;">2.95 점 / 3.0</td>
               <td style="border: 1px solid #000; padding: 6px; text-align: center; color:#059669;">우수 (S등급)</td>
             </tr>
           </tbody>
         </table>
-
-        <div style="font-size: 0.8rem; color: #475569; text-align: right; margin-top: 2rem;">
-          보고서 생성 일시: 2026. 07. 29.
-        </div>
       </div>
     </section>
 

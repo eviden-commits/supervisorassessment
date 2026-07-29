@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>관리감독자 업무수행 평가표</title>
+  <title>관리감독자 업무수행 평가표 (다수 일괄 평가 모드)</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -12,8 +12,8 @@
   <header class="app-header">
     <div class="header-container">
       <div class="header-title">
-        <h1>📋 관리감독자 업무수행 평가표</h1>
-        <p>산업안전보건법 관련 관리감독자 정기 점검 시스템</p>
+        <h1>📋 관리감독자 업무수행 평가표 (다인원 일괄 평가)</h1>
+        <p>현장 관리감독자 다수 일괄 평가 및 세부점수 개별 조정 시스템</p>
       </div>
       <div>
         <a href="admin.html" class="btn btn-outline" style="font-size:0.8rem;">🔒 관리자 전용</a>
@@ -24,29 +24,22 @@
   <!-- Main Content -->
   <main class="main-container">
     
-    <!-- 1. 기본 정보 선택 카테고리 -->
+    <!-- 1. 기본 정보 & 다수 평가 대상자 선택 -->
     <section class="card">
-      <div class="card-title">📌 1. 기본 평가 정보 설정</div>
-      <div class="form-grid">
+      <div class="card-title">📌 1. 평가 현장 및 다수 평가 대상자 선택</div>
+      
+      <div class="form-grid" style="margin-bottom: 1rem;">
         <div class="form-group">
-          <label for="siteSelect">현장명 선택</label>
+          <label for="siteSelect">평가 현장명 선택</label>
           <select id="siteSelect" class="form-control">
-            <option value="">-- 현장을 선택하세요 --</option>
             <option value="테스트현장" selected>테스트현장</option>
+            <option value="서울01현장">서울01현장</option>
           </select>
         </div>
 
         <div class="form-group">
-          <label for="supervisorSelect">관리감독자(성명)</label>
-          <select id="supervisorSelect" class="form-control">
-            <option value="">-- 성명을 선택하세요 --</option>
-            <option value="최난새" selected>최난새 (nschoi@sebangtec.com)</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="birthDate">생년월일 (YYMMDD)</label>
-          <input type="text" id="birthDate" class="form-control" placeholder="예: 800101" value="800101" readonly />
+          <label for="evaluatorName">평가 작성자 (현장소장 성명)</label>
+          <input type="text" id="evaluatorName" class="form-control" placeholder="소장 성명 입력" value="최난새" />
         </div>
 
         <div class="form-group">
@@ -63,21 +56,38 @@
           </div>
         </div>
       </div>
+
+      <!-- 다수 대상자 체크박스 선택 영역 -->
+      <div style="margin-top: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+          <label style="font-size: 0.9rem; font-weight: 700; color: var(--primary-color);">
+            👥 평가 대상 관리감독자 선택 (<span id="selectedWorkerCount">0</span>명 선택됨)
+          </label>
+          <div>
+            <button class="btn btn-outline" id="btnSelectAllWorkers" style="font-size:0.75rem; padding:3px 8px;">☑️ 전체 선택</button>
+            <button class="btn btn-outline" id="btnDeselectAllWorkers" style="font-size:0.75rem; padding:3px 8px;">⏹️ 전체 해제</button>
+          </div>
+        </div>
+
+        <div class="worker-grid" id="workerListContainer">
+          <!-- JS 동적 생성 -->
+        </div>
+      </div>
     </section>
 
-    <!-- 2. 점수 일괄 입력 및 문항 카드 영역 -->
+    <!-- 2. 기본 점수 일괄 입력 & 20개 문항 카드 -->
     <section class="card">
       <div class="card-title" style="justify-content: space-between;">
-        <span>📝 2. 평가 문항 체크 (1번 ~ 20번)</span>
+        <span>📝 2. 평가 문항 체크 (선택된 인원 공통 기본 점수)</span>
         <span id="progressBadge" class="score-badge" style="font-size:0.9rem; background:#e2e8f0; padding:4px 10px; border-radius:12px;">진행률: 0 / 20</span>
       </div>
 
       <!-- Quick Fill Buttons -->
       <div class="quick-score-bar">
-        <span class="quick-score-title">⚡ 점수 일괄 입력 선택:</span>
-        <button class="btn btn-outline" id="btnFillAll3">🟢 전체 3점 (잘함/적정) 적용</button>
-        <button class="btn btn-outline" id="btnFillAll2">🟡 전체 2점 (보통/필요시) 적용</button>
-        <button class="btn btn-outline" id="btnFillAll1">🔴 전체 1점 (미흡/안함) 적용</button>
+        <span class="quick-score-title">⚡ 선택 인원 일괄 점수 적용:</span>
+        <button class="btn btn-outline" id="btnFillAll3">🟢 전체 3점 (잘함/적정) 일괄 적용</button>
+        <button class="btn btn-outline" id="btnFillAll2">🟡 전체 2점 (보통/필요시) 일괄 적용</button>
+        <button class="btn btn-outline" id="btnFillAll1">🔴 전체 1점 (미흡/안함) 일괄 적용</button>
       </div>
 
       <!-- Questions List Container -->
@@ -86,16 +96,40 @@
       </div>
     </section>
 
-    <!-- 3. 서명 및 제출 영역 -->
+    <!-- 3. 특정 대상자 세부 점수 개별 조정 (옵션) -->
+    <section class="card">
+      <div class="card-title">
+        <span>⚙️ 3. 특정 대상자 세부점수 개별 조정 (필요 시)</span>
+      </div>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+        특정 관리감독자만 1점 또는 2점으로 감점이 필요한 경우, 아래에서 대상을 선택하여 개별 문항 점수를 수동 조정하세요.
+      </p>
+
+      <div class="form-group" style="max-width: 320px; margin-bottom: 1rem;">
+        <label for="overrideWorkerSelect">개별 조정할 관리감독자 선택</label>
+        <select id="overrideWorkerSelect" class="form-control">
+          <option value="">-- 기본 일괄 점수 사용 --</option>
+        </select>
+      </div>
+
+      <div id="overrideQuestionsPanel" style="display: none; background: #f8fafc; padding: 1rem; border: 1px dashed var(--accent-color); border-radius: 6px;">
+        <h4 id="overridePanelTitle" style="font-size: 0.95rem; font-weight: 700; color: var(--accent-color); margin-bottom: 0.75rem;">
+          OOO 관리감독자 개별 점수 조정 중
+        </h4>
+        <div id="overrideQuestionsContainer"></div>
+      </div>
+    </section>
+
+    <!-- 4. 서명 및 일괄 제출 -->
     <section class="card" style="text-align: center; padding: 2rem;">
       <div style="margin-bottom: 1rem;">
-        <h3 style="font-weight: 700; margin-bottom: 0.5rem;">평가표 작성 완료 및 제출</h3>
+        <h3 style="font-weight: 700; margin-bottom: 0.5rem;">일괄 평가표 작성 완료 및 서명 제출</h3>
         <p style="color: var(--text-muted); font-size: 0.9rem;">
-          모든 20개 문항 입력을 완료하신 후 서명을 첨부하여 제출해 주세요.
+          선택된 인원에 대해 서명 1회로 평가표가 동시에 일괄 제출됩니다.
         </p>
       </div>
       <button class="btn btn-primary" id="btnOpenSignatureModal" style="font-size: 1.1rem; padding: 0.8rem 2.5rem;">
-        🖋️ 서명 및 평가표 제출하기
+        🖋️ 현장소장 서명 및 다수 인원 일괄 제출하기
       </button>
     </section>
 
@@ -112,9 +146,7 @@
         <div style="margin-bottom: 1rem;">
           <input type="text" id="lawSearchInput" class="form-control" placeholder="작업명 검색 (예: 프레스, 크레인, 용접, 밀폐공간)..." />
         </div>
-        <div id="lawModalContent">
-          <!-- Law Details -->
-        </div>
+        <div id="lawModalContent"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('lawModal')">닫기</button>
@@ -131,14 +163,11 @@
       </div>
       <div class="modal-body" style="text-align: center; padding: 1.5rem;">
         <p id="unreadModalMsg" style="font-size: 1rem; font-weight: 600; color: var(--text-main); margin-bottom: 1rem;">
-          작성되지 않은 평가 문항이 있습니다.
-        </p>
-        <p style="font-size: 0.85rem; color: var(--text-muted);">
-          아래 버튼을 누르면 첫 번째 미체크 문항으로 이동합니다.
+          작성되지 않은 평가 문항이 있거나 대상자가 선택되지 않았습니다.
         </p>
       </div>
       <div class="modal-footer" style="justify-content: center;">
-        <button class="btn btn-primary" id="btnJumpToUnread">📌 미체크 문항으로 이동</button>
+        <button class="btn btn-primary" id="btnJumpToUnread">📌 확인하기</button>
         <button class="btn btn-secondary" onclick="closeModal('unreadModal')">닫기</button>
       </div>
     </div>
@@ -148,17 +177,17 @@
   <div class="modal-backdrop" id="signatureModal">
     <div class="modal-content" style="max-width: 520px;">
       <div class="modal-header">
-        <h3>✍️ 최종 작성자 서명 및 인증</h3>
+        <h3>✍️ 최종 작성자(소장) 서명 및 일괄 제출</h3>
         <button class="modal-close" onclick="closeModal('signatureModal')">&times;</button>
       </div>
       <div class="modal-body">
         <div style="margin-bottom: 1rem;">
           <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
-            서명방식을 선택하세요:
+            서명방식을 선택하세요 (마우스 / 터치 서명 가능):
           </label>
           <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-            <button class="btn btn-outline" id="btnTabDraw" style="flex:1;">마우스/터치 직접 서명</button>
-            <button class="btn btn-outline" id="btnTabUpload" style="flex:1;">서명 이미지 업로드</button>
+            <button class="btn btn-outline" id="btnTabDraw" style="flex:1;">🖋️ 마우스 / 터치 서명</button>
+            <button class="btn btn-outline" id="btnTabUpload" style="flex:1;">📁 파일 업로드</button>
           </div>
         </div>
 
@@ -167,7 +196,8 @@
           <div class="signature-container">
             <canvas id="signatureCanvas"></canvas>
           </div>
-          <div style="display: flex; justify-content: flex-end; margin-top: 0.4rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem;">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">마우스 또는 터치로 네모 박스 안에 서명하세요.</span>
             <button class="btn btn-outline" id="btnClearCanvas" style="font-size: 0.75rem;">🧹 서명 지우기</button>
           </div>
         </div>
@@ -175,16 +205,16 @@
         <!-- Image Upload Tab -->
         <div id="tabUploadContent" style="display: none; text-align: center; padding: 1rem; border: 2px dashed #cbd5e1; border-radius: 6px;">
           <input type="file" id="sigFileInput" accept="image/*" style="display: none;" />
-          <button class="btn btn-secondary" onclick="document.getElementById('sigFileInput').click();">📁 파일 선택 (PNG/JPG)</button>
+          <button class="btn btn-secondary" onclick="document.getElementById('sigFileInput').click();">📁 서명 이미지 선택 (PNG/JPG)</button>
           <div id="uploadPreview" style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
-            선택된 서명 이미지 파일 없음
+            선택된 서명 파일 없음
           </div>
         </div>
 
       </div>
       <div class="modal-footer">
         <button class="btn btn-success" id="btnFinalSubmit" style="width: 100%; font-size: 1rem; padding: 0.75rem;">
-          🚀 최종 제출하기
+          🚀 선택된 <span id="submitCountLabel">0</span>명 일괄 제출하기
         </button>
       </div>
     </div>

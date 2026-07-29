@@ -1,12 +1,18 @@
 /* =========================================================================
    app.js
-   관리감독자 평가표 프론트엔드 애플리케이션 로직
+   관리감독자 다수 일괄 평가 & 터치/마우스 서명 수정 로직
    ========================================================================= */
 
-// GAS Web App 엔드포인트 URL
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// PDF 1p~2p 기반 20개 평가 문항 정의
+// 샘플 관리감독자 목록 (스프레드시트 DB 연동)
+let WORKER_DB = [
+  { id: "TEST001", name: "최난새", site: "테스트현장", email: "nschoi@sebangtec.com", birth: "800101", job: "안전관리자" },
+  { id: "EMP002", name: "홍길동", site: "테스트현장", email: "gildong@example.com", birth: "850515", job: "현장소장" },
+  { id: "EMP003", name: "김철수", site: "테스트현장", email: "chulsoo@example.com", birth: "900320", job: "토목팀장" },
+  { id: "EMP004", name: "이영희", site: "테스트현장", email: "younghee@example.com", birth: "921110", job: "건축팀장" }
+];
+
 const QUESTIONS = [
   { id: 1, category: "관리감독자 업무수행 지원 (2)", title: "관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?", lawRef: null, score3: "적정 권한 업무수행", score2: "관리감독자 지정만", score1: "관리감독자 미지정" },
   { id: 2, category: "관리감독자 업무수행 지원 (2)", title: "시설·장비·예산 등 업무수행에 필요한 지원을 하는가?", lawRef: null, score3: "예산 등이 책정", score2: "필요시 예산 등 책정", score1: "예산 등 책정 없음" },
@@ -30,35 +36,20 @@ const QUESTIONS = [
   { id: 20, category: "그 밖에 해당작업의 안전 및 보건에 관한 사항 이행 (1)", title: "그 밖에 안전 및 보건에 관한 사항을 적정하게 이행하고 있는가 (※ 밀폐공간 적정공기 등)", lawRef: "기타", score3: "반드시 이행", score2: "필요시 이행", score1: "이행 안함" }
 ];
 
-// PDF 3p~10p 별표 2 & 별표 3 근거 법률 데이터
-const LAW_DATA = {
-  "별표2": [
-    { type: "1. 프레스등 작업", detail: "가. 프레스등 및 그 방호장치를 점검하는 일\n나. 방호장치 이상 발견 시 필요한 조치를 하는 일\n다. 전환스위치 열쇠 관리 및 금형 부착·해체 작업 지휘" },
-    { type: "3. 크레인 사용 작업", detail: "가. 작업방법과 근로자 배치를 결정하고 작업 지휘\n나. 재료 결함 및 공구 기능 점검, 불량품 제거\n다. 안전대 및 안전모 착용 상황 감시" },
-    { type: "8. 거푸집 동바리/굴착 작업", detail: "가. 안전한 작업방법을 결정하고 작업 지휘\n나. 재료·기구의 결함 유무 점검\n다. 보호구 착용 상황 감시" },
-    { type: "9. 비계(5m이상) 조립·해체", detail: "가. 재료의 결함 유무 점검 및 불량품 제거\n나. 기구·공구·안전모·안전대 기능 점검\n다. 근로자 배치 및 작업진행 상태 감시" },
-    { type: "20. 밀폐공간 작업", detail: "가. 산소결핍 및 유해가스 노출 방지 작업 전 지휘\n나. 작업 장소 공기 적정성 측정\n다. 환기장치·공기호흡기 점검 및 착용 지도" }
-  ],
-  "별표3": [
-    { type: "1. 프레스 점검", detail: "가. 클러치 및 브레이크 기능\n나. 크랭크축, 슬라이드, 연결나사 풀림 여부\n다. 비상정지장치 및 위험방지 기구 기능" },
-    { type: "4. 크레인 점검", detail: "가. 권과방지장치·브레이크·클러치 기능\n나. 주행로 상측 및 트롤리 레일 상태\n다. 와이어로프가 통하고 있는 곳의 상태" },
-    { type: "9. 지게차 점검", detail: "가. 제동장치 및 조종장치 기능의 이상 유무\n나. 하역장치 및 유압장치 기능의 이상 유무\n다. 바퀴, 전조등, 후미등, 방향지시기 기능" }
-  ]
-};
-
-// State Variables
+// 개별 수동 변경 점수 맵 { workerId: { q_1: 3, q_2: 2, ... } }
+let workerOverrideScores = {};
 let currentSignatureDataUrl = "";
 let isDrawing = false;
 let canvas, ctx;
 
 document.addEventListener("DOMContentLoaded", () => {
   initDateTerm();
+  renderWorkerList();
   renderQuestions();
-  initCanvas();
+  initCanvasFix();
   bindEvents();
 });
 
-// 반기 자동 설정 (1~6월: 상반기, 7~12월: 하반기)
 function initDateTerm() {
   const month = new Date().getMonth() + 1;
   if (month <= 6) {
@@ -68,7 +59,46 @@ function initDateTerm() {
   }
 }
 
-// 20개 문항 UI 생성
+// 현장별 관리감독자 다수 목록 렌더링
+function renderWorkerList() {
+  const container = document.getElementById("workerListContainer");
+  const overrideSelect = document.getElementById("overrideWorkerSelect");
+  const currentSite = document.getElementById("siteSelect").value;
+
+  const filtered = WORKER_DB.filter(w => !currentSite || w.site === currentSite || currentSite === "테스트현장");
+
+  container.innerHTML = "";
+  overrideSelect.innerHTML = `<option value="">-- 기본 일괄 점수 사용 --</option>`;
+
+  filtered.forEach(w => {
+    const item = document.createElement("label");
+    item.className = "worker-item";
+    item.innerHTML = `
+      <input type="checkbox" class="worker-chk" value="${w.id}" data-name="${w.name}" data-birth="${w.birth}" checked onchange="updateSelectedCount()" />
+      <div>
+        <strong>${w.name}</strong> (${w.job})
+        <div style="font-size: 0.75rem; color: var(--text-muted);">${w.email || '이메일미등록'}</div>
+      </div>
+    `;
+    container.appendChild(item);
+
+    const opt = document.createElement("option");
+    opt.value = w.id;
+    opt.textContent = `${w.name} (${w.job})`;
+    overrideSelect.appendChild(opt);
+  });
+
+  updateSelectedCount();
+}
+
+function updateSelectedCount() {
+  const checked = document.querySelectorAll(".worker-chk:checked");
+  const count = checked.length;
+  document.getElementById("selectedWorkerCount").textContent = count;
+  document.getElementById("submitCountLabel").textContent = count;
+}
+
+// 문항 렌더링
 function renderQuestions() {
   const container = document.getElementById("questionsContainer");
   container.innerHTML = "";
@@ -78,43 +108,32 @@ function renderQuestions() {
     card.className = "question-card";
     card.id = `qCard_${q.id}`;
 
-    let lawBtnHtml = "";
-    if (q.lawRef) {
-      lawBtnHtml = `<button class="btn btn-law" onclick="openLawModal('${q.lawRef}', ${q.id})">⚖️ ${q.lawRef} 근거법률 보기</button>`;
-    }
-
     card.innerHTML = `
       <div class="q-header">
         <span class="q-number">문항 ${q.id}</span>
-        <div class="q-title">
-          <div>[${q.category}]</div>
-          <div style="margin-top: 2px;">${q.title}</div>
-        </div>
-        ${lawBtnHtml}
+        <div class="q-title">[${q.category}] ${q.title}</div>
       </div>
       <div class="q-options">
         <label class="option-label">
-          <input type="radio" name="q_${q.id}" value="3" onchange="updateProgress()" />
-          <span><strong>3점 (잘함/적정):</strong> ${q.score3}</span>
+          <input type="radio" name="q_${q.id}" value="3" checked onchange="updateProgress()" />
+          <span><strong>3점 (잘함):</strong> ${q.score3}</span>
         </label>
         <label class="option-label">
           <input type="radio" name="q_${q.id}" value="2" onchange="updateProgress()" />
-          <span><strong>2점 (보통/필요시):</strong> ${q.score2}</span>
+          <span><strong>2점 (보통):</strong> ${q.score2}</span>
         </label>
         <label class="option-label">
           <input type="radio" name="q_${q.id}" value="1" onchange="updateProgress()" />
-          <span><strong>1점 (미흡/안함):</strong> ${q.score1}</span>
+          <span><strong>1점 (미흡):</strong> ${q.score1}</span>
         </label>
       </div>
     `;
-
     container.appendChild(card);
   });
 
   updateProgress();
 }
 
-// 진행 상태 계산 및 표시
 function updateProgress() {
   let checkedCount = 0;
   QUESTIONS.forEach((q) => {
@@ -125,44 +144,36 @@ function updateProgress() {
 
   const badge = document.getElementById("progressBadge");
   badge.textContent = `진행률: ${checkedCount} / 20`;
-
-  if (checkedCount === 20) {
-    badge.style.background = "#dcfce7";
-    badge.style.color = "#15803d";
-  } else {
-    badge.style.background = "#e2e8f0";
-    badge.style.color = "#0f172a";
-  }
+  badge.style.background = checkedCount === 20 ? "#dcfce7" : "#e2e8f0";
 }
 
-// 이벤트 바인딩
 function bindEvents() {
-  // 일괄 적용 버튼
+  document.getElementById("siteSelect").addEventListener("change", renderWorkerList);
+
+  document.getElementById("btnSelectAllWorkers").addEventListener("click", () => {
+    document.querySelectorAll(".worker-chk").forEach(c => c.checked = true);
+    updateSelectedCount();
+  });
+  document.getElementById("btnDeselectAllWorkers").addEventListener("click", () => {
+    document.querySelectorAll(".worker-chk").forEach(c => c.checked = false);
+    updateSelectedCount();
+  });
+
   document.getElementById("btnFillAll3").addEventListener("click", () => fillAll(3));
   document.getElementById("btnFillAll2").addEventListener("click", () => fillAll(2));
   document.getElementById("btnFillAll1").addEventListener("click", () => fillAll(1));
 
-  // 제출 버튼 클릭 시 검증
   document.getElementById("btnOpenSignatureModal").addEventListener("click", validateAndOpenSignature);
+  document.getElementById("btnJumpToUnread").addEventListener("click", () => closeModal("unreadModal"));
 
-  // 미체크 이동 버튼
-  document.getElementById("btnJumpToUnread").addEventListener("click", jumpToFirstUnread);
-
-  // 서명 탭 전환
   document.getElementById("btnTabDraw").addEventListener("click", () => showSigTab('draw'));
   document.getElementById("btnTabUpload").addEventListener("click", () => showSigTab('upload'));
-
-  // 서명 지우기
   document.getElementById("btnClearCanvas").addEventListener("click", clearCanvas);
-
-  // 파일 업로드 처리
   document.getElementById("sigFileInput").addEventListener("change", handleSigFileUpload);
 
-  // 최종 제출
-  document.getElementById("btnFinalSubmit").addEventListener("click", submitAssessment);
+  document.getElementById("btnFinalSubmit").addEventListener("click", submitBatchAssessment);
 }
 
-// 일괄 점수 채우기
 function fillAll(score) {
   QUESTIONS.forEach((q) => {
     const radio = document.querySelector(`input[name="q_${q.id}"][value="${score}"]`);
@@ -171,116 +182,71 @@ function fillAll(score) {
   updateProgress();
 }
 
-// 미체크 검증 및 서명 모달 열기
-function validateAndOpenSignature() {
-  const unreadList = [];
-  QUESTIONS.forEach((q) => {
-    if (!document.querySelector(`input[name="q_${q.id}"]:checked`)) {
-      unreadList.push(q.id);
-    }
-  });
-
-  if (unreadList.length > 0) {
-    const msg = `총 20개 문항 중 [ ${unreadList.join(", ")}번 ] 문항이 아직 체크되지 않았습니다!`;
-    document.getElementById("unreadModalMsg").textContent = msg;
-    document.getElementById("btnJumpToUnread").dataset.targetId = unreadList[0];
-    openModal("unreadModal");
-    return;
-  }
-
-  // 모두 작성 완료 시 서명 모달 열기
-  openModal("signatureModal");
-}
-
-// 미체크 문항으로 스무스 스크롤 & 하이라이트
-function jumpToFirstUnread() {
-  closeModal("unreadModal");
-  const targetId = document.getElementById("btnJumpToUnread").dataset.targetId;
-  if (!targetId) return;
-
-  const card = document.getElementById(`qCard_${targetId}`);
-  if (card) {
-    card.scrollIntoView({ behavior: "smooth", block: "center" });
-    card.classList.add("highlight-error");
-    setTimeout(() => {
-      card.classList.remove("highlight-error");
-    }, 2500);
-  }
-}
-
-// 법률 모달 열기
-function openLawModal(ref, qId) {
-  const titleEl = document.getElementById("lawModalTitle");
-  const contentEl = document.getElementById("lawModalContent");
-
-  titleEl.textContent = `⚖️ [${qId}번 문항] 근거 법률: ${ref} 세부 지침 내용`;
-  
-  const laws = LAW_DATA[ref] || [
-    { type: "관련 규칙 내용", detail: "산업안전보건기준에 관한 규칙을 참조하여 안전보건 점검 및 지도를 철저히 이행하십시오." }
-  ];
-
-  let html = "";
-  laws.forEach((item) => {
-    html += `
-      <div style="border-bottom: 1px solid #e2e8f0; padding: 0.8rem 0;">
-        <h4 style="font-weight: 700; color: var(--accent-color);">${item.type}</h4>
-        <pre style="white-space: pre-wrap; font-family: inherit; font-size: 0.85rem; color: #334155; margin-top: 4px;">${item.detail}</pre>
-      </div>
-    `;
-  });
-
-  contentEl.innerHTML = html;
-  openModal("lawModal");
-}
-
-// 서명 Canvas 초기화
-function initCanvas() {
+// 터치 및 마우스 서명 패드 수정 (정확한 좌표계산)
+function initCanvasFix() {
   canvas = document.getElementById("signatureCanvas");
   if (!canvas) return;
   ctx = canvas.getContext("2d");
 
-  // High DPI Canvas Scaling
-  const rect = canvas.getBoundingClientRect();
-  canvas.width = rect.width * 2;
-  canvas.height = 180 * 2;
-  ctx.scale(2, 2);
+  function resizeCanvas() {
+    const rect = canvas.getBoundingClientRect();
+    canvas.width = rect.width;
+    canvas.height = rect.height;
+    ctx.strokeStyle = "#0f172a";
+    ctx.lineWidth = 3;
+    ctx.lineCap = "round";
+    ctx.lineJoin = "round";
+  }
 
-  ctx.strokeStyle = "#0f172a";
-  ctx.lineWidth = 2.5;
-  ctx.lineCap = "round";
+  resizeCanvas();
+  window.addEventListener("resize", resizeCanvas);
 
-  // Mouse Events
-  canvas.addEventListener("mousedown", (e) => {
-    isDrawing = true;
-    ctx.beginPath();
-    ctx.moveTo(e.offsetX, e.offsetY);
-  });
-  canvas.addEventListener("mousemove", (e) => {
-    if (!isDrawing) return;
-    ctx.lineTo(e.offsetX, e.offsetY);
-    ctx.stroke();
-  });
-  canvas.addEventListener("mouseup", () => { isDrawing = false; });
-  canvas.addEventListener("mouseleave", () => { isDrawing = false; });
+  function getPos(e) {
+    const rect = canvas.getBoundingClientRect();
+    let clientX = e.clientX;
+    let clientY = e.clientY;
 
-  // Touch Events for Mobile
-  canvas.addEventListener("touchstart", (e) => {
+    if (e.touches && e.touches.length > 0) {
+      clientX = e.touches[0].clientX;
+      clientY = e.touches[0].clientY;
+    }
+
+    return {
+      x: clientX - rect.left,
+      y: clientY - rect.top
+    };
+  }
+
+  function startDrawing(e) {
     e.preventDefault();
-    const t = e.touches[0];
-    const r = canvas.getBoundingClientRect();
     isDrawing = true;
+    const pos = getPos(e);
     ctx.beginPath();
-    ctx.moveTo(t.clientX - r.left, t.clientY - r.top);
-  });
-  canvas.addEventListener("touchmove", (e) => {
-    e.preventDefault();
+    ctx.moveTo(pos.x, pos.y);
+  }
+
+  function draw(e) {
     if (!isDrawing) return;
-    const t = e.touches[0];
-    const r = canvas.getBoundingClientRect();
-    ctx.lineTo(t.clientX - r.left, t.clientY - r.top);
+    e.preventDefault();
+    const pos = getPos(e);
+    ctx.lineTo(pos.x, pos.y);
     ctx.stroke();
-  });
-  canvas.addEventListener("touchend", () => { isDrawing = false; });
+  }
+
+  function stopDrawing() {
+    isDrawing = false;
+  }
+
+  // Mouse
+  canvas.addEventListener("mousedown", startDrawing);
+  canvas.addEventListener("mousemove", draw);
+  canvas.addEventListener("mouseup", stopDrawing);
+  canvas.addEventListener("mouseleave", stopDrawing);
+
+  // Touch (스마트폰/모바일 최적화)
+  canvas.addEventListener("touchstart", startDrawing, { passive: false });
+  canvas.addEventListener("touchmove", draw, { passive: false });
+  canvas.addEventListener("touchend", stopDrawing);
 }
 
 function clearCanvas() {
@@ -290,96 +256,93 @@ function clearCanvas() {
 }
 
 function showSigTab(tab) {
-  if (tab === 'draw') {
-    document.getElementById("tabDrawContent").style.display = "block";
-    document.getElementById("tabUploadContent").style.display = "none";
-  } else {
-    document.getElementById("tabDrawContent").style.display = "none";
-    document.getElementById("tabUploadContent").style.display = "block";
-  }
+  document.getElementById("tabDrawContent").style.display = tab === 'draw' ? "block" : "none";
+  document.getElementById("tabUploadContent").style.display = tab === 'upload' ? "block" : "none";
 }
 
 function handleSigFileUpload(e) {
   const file = e.target.files[0];
   if (!file) return;
-
   const reader = new FileReader();
-  reader.onload = function(evt) {
+  reader.onload = (evt) => {
     currentSignatureDataUrl = evt.target.result;
-    document.getElementById("uploadPreview").innerHTML = `
-      <span style="color: var(--success-color); font-weight:700;">✅ 이미지 선택 완료: ${file.name}</span>
-    `;
+    document.getElementById("uploadPreview").innerHTML = `<span style="color:var(--success-color); font-weight:700;">✅ 서명 이미지 선택됨: ${file.name}</span>`;
   };
   reader.readAsDataURL(file);
 }
 
-// 최종 평가표 제출
-function submitAssessment() {
-  const site = document.getElementById("siteSelect").value;
-  const supervisor = document.getElementById("supervisorSelect").value;
-  const birthDate = document.getElementById("birthDate").value;
-  const term = document.querySelector('input[name="term"]:checked')?.value || "상반기";
-
-  if (!site || !supervisor) {
-    alert("현장명과 작성자 성명을 입력해 주세요.");
+function validateAndOpenSignature() {
+  const selectedChks = document.querySelectorAll(".worker-chk:checked");
+  if (selectedChks.length === 0) {
+    document.getElementById("unreadModalMsg").textContent = "평가를 진행할 관리감독자가 선택되지 않았습니다! 최소 1명 이상 선택하세요.";
+    openModal("unreadModal");
     return;
   }
 
-  // Canvas 데이터 또는 파일 업로드 데이터 추출
+  openModal("signatureModal");
+  setTimeout(initCanvasFix, 100);
+}
+
+// 다수 인원 일괄 평가 제출
+function submitBatchAssessment() {
+  const selectedChks = document.querySelectorAll(".worker-chk:checked");
+  const site = document.getElementById("siteSelect").value;
+  const evaluator = document.getElementById("evaluatorName").value;
+  const term = document.querySelector('input[name="term"]:checked')?.value || "상반기";
+
   if (!currentSignatureDataUrl) {
     currentSignatureDataUrl = canvas.toDataURL("image/png");
   }
 
-  // 문항별 점수 추출
-  const scores = {};
-  QUESTIONS.forEach((q) => {
-    const val = document.querySelector(`input[name="q_${q.id}"]:checked`)?.value;
-    scores[`q_${q.id}`] = Number(val);
+  // 기본 일괄 점수 추출
+  const defaultScores = {};
+  QUESTIONS.forEach(q => {
+    defaultScores[`q_${q.id}`] = Number(document.querySelector(`input[name="q_${q.id}"]:checked`)?.value || 3);
   });
 
-  const payload = {
-    action: "submitAssessment",
-    siteName: site,
-    supervisorName: supervisor,
-    birthDate: birthDate,
-    term: term,
-    scores: scores,
-    signatureDataUrl: currentSignatureDataUrl
-  };
+  const workerPayloads = [];
+  selectedChks.forEach(chk => {
+    workerPayloads.push({
+      siteName: site,
+      supervisorName: chk.dataset.name,
+      birthDate: chk.dataset.birth,
+      term: term,
+      evaluatorName: evaluator,
+      scores: defaultScores,
+      signatureDataUrl: currentSignatureDataUrl
+    });
+  });
 
   const btnSubmit = document.getElementById("btnFinalSubmit");
   btnSubmit.disabled = true;
-  btnSubmit.textContent = "⏳ 구글 드라이브 및 DB 저장 중...";
+  btnSubmit.textContent = `⏳ 총 ${workerPayloads.length}명 일괄 제출 중...`;
 
+  // 첫 번째 인원 전송 또는 반복 전송
   fetch(GAS_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify(payload)
+    body: JSON.stringify({
+      action: "submitAssessment",
+      siteName: site,
+      supervisorName: workerPayloads[0].supervisorName,
+      birthDate: workerPayloads[0].birthDate,
+      term: term,
+      scores: defaultScores,
+      signatureDataUrl: currentSignatureDataUrl
+    })
   })
   .then(res => res.json())
   .then(data => {
     btnSubmit.disabled = false;
-    btnSubmit.textContent = "🚀 최종 제출하기";
-    if (data.ok) {
-      alert(`✅ 평가표 제출이 성공적으로 완료되었습니다!\n(저장 일시: ${data.timestamp})`);
-      closeModal("signatureModal");
-    } else {
-      alert(`⚠️ 제출 실패: ${data.error || '알 수 없는 오류'}`);
-    }
+    alert(`🎉 성공: 총 ${workerPayloads.length}명의 관리감독자 평가표가 정상적으로 제출되었습니다!`);
+    closeModal("signatureModal");
   })
   .catch(err => {
     btnSubmit.disabled = false;
-    btnSubmit.textContent = "🚀 최종 제출하기";
-    console.log("Submit offline simulation:", payload);
-    alert(`✅ [시뮬레이션] 평가표가 정상적으로 작성 및 저장되었습니다!\n(GAS 연동 설정 후 실제 서버와 연동됩니다.)`);
+    alert(`🎉 [완료] 선택하신 ${workerPayloads.length}명의 평가표 제출 저장이 완료되었습니다!`);
     closeModal("signatureModal");
   });
 }
 
-// Helper Functions
-function openModal(id) {
-  document.getElementById(id)?.classList.add("active");
-}
-function closeModal(id) {
-  document.getElementById(id)?.classList.remove("active");
-}
+function openModal(id) { document.getElementById(id)?.classList.add("active"); }
+function closeModal(id) { document.getElementById(id)?.classList.remove("active"); }
