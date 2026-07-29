@@ -1,11 +1,10 @@
 /* =========================================================================
    admin.js
-   규격 직종 10명 + 자동 파싱 직종 10명 (총 20명) DB 전면 개편
+   갑지 + 을지 + 병지 (관리감독자 평가 절차서) 렌더링 지원
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 7개 정규 직종 카테고리 맵핑 테이블
 const JOB_APPLIED_QUESTIONS = {
   "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20],
   "보건": [1, 2, 7, 9, 11, 12, 15, 16, 18, 19, 20],
@@ -35,9 +34,7 @@ function getAppliedQuestionsForJob(jobName) {
   return JOB_APPLIED_QUESTIONS[cleanJob] || JOB_APPLIED_QUESTIONS["공사관리자"];
 }
 
-// 🔥 20명 관리감독자 샘플 DB 전면 개편 (규격 10명 + 파싱용 실무 10명)
 let ADMIN_WORKERS = [
-  // [정규 카테고리 지정 10명]
   { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전", email: "nschoi@sebangtec.com", status: "제출완료" },
   { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "팀리더", email: "gildong@example.com", status: "제출완료" },
   { id: "EMP003", name: "김철수", site: "테스트현장", term: "상반기", birth: "900320", job: "공사관리자", email: "chulsoo@example.com", status: "제출완료" },
@@ -48,8 +45,6 @@ let ADMIN_WORKERS = [
   { id: "EMP008", name: "김민재", site: "테스트현장", term: "상반기", birth: "961115", job: "설계", email: "minjae@example.com", status: "제출완료" },
   { id: "EMP009", name: "이강인", site: "테스트현장", term: "상반기", birth: "010219", job: "공사관리자", email: "kangin@example.com", status: "제출완료" },
   { id: "EMP010", name: "기성용", site: "테스트현장", term: "상반기", birth: "890124", job: "공무", email: "sungyueng@example.com", status: "제출완료" },
-
-  // [자동 파싱 검증용 실무 텍스트 데이터 10명] (자동으로 7개 카테고리로 매핑됨)
   { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "품질관리자", email: "jacheol@example.com", status: "제출완료" },
   { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "공무담당자", email: "juyoung@example.com", status: "제출완료" },
   { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "보건관리자", email: "hyunwoo@example.com", status: "제출완료" },
@@ -137,7 +132,6 @@ function renderUserTable() {
   ADMIN_WORKERS.forEach(w => {
     const cleanJob = parseCleanJob(w.job);
     const appliedQs = getAppliedQuestionsForJob(cleanJob);
-    const maxScore = appliedQs.length * 3;
 
     const tr = document.createElement("tr");
     tr.style.borderBottom = "1px solid #e2e8f0";
@@ -147,7 +141,7 @@ function renderUserTable() {
       <td style="padding: 8px; font-weight:700;">${w.name}</td>
       <td style="padding: 8px; color: var(--accent-color);">${w.email || '-'}</td>
       <td style="padding: 8px;">${w.birth}</td>
-      <td style="padding: 8px; font-weight:700; color:var(--primary-color);">${cleanJob} <span style="font-size:0.75rem; color:#64748b;">(원문:${w.job} / 적용 ${appliedQs.length}문항)</span></td>
+      <td style="padding: 8px; font-weight:700; color:var(--primary-color);">${cleanJob} <span style="font-size:0.75rem; color:#64748b;">(적용 ${appliedQs.length}문항)</span></td>
       <td style="padding: 8px;"><span class="score-badge score-3">${w.status || '등록완료'}</span></td>
     `;
     tbody.appendChild(tr);
@@ -194,7 +188,7 @@ function handleChangePassword() {
 function updateReportView() {
   const year = document.getElementById("reportYearSelect")?.value || "2026년";
   const term = document.getElementById("reportTermSelect")?.value || "상반기";
-  const site = document.getElementById("reportSiteSelect")?.value || "전체현장";
+  const site = "테스트현장";
   const type = document.getElementById("reportTypeSelect")?.value || "all";
 
   const subTitleText = `${year} ${term} 안전보건 이행 실적 및 백분율 환산(%) 평가`;
@@ -209,18 +203,24 @@ function updateReportView() {
 
   const gabSection = document.getElementById("gabJiSection");
   const eulSection = document.getElementById("eulJiSection");
+  const byeongSection = document.getElementById("byeongJiSection");
 
   if (type === "gab") {
     if (gabSection) gabSection.style.display = "block";
     if (eulSection) eulSection.style.display = "none";
+    if (byeongSection) byeongSection.style.display = "none";
   } else if (type === "eul") {
     if (gabSection) gabSection.style.display = "none";
     if (eulSection) eulSection.style.display = "block";
-    if (eulSection) eulSection.classList.remove("report-page-break");
+    if (byeongSection) byeongSection.style.display = "none";
+  } else if (type === "byeong") {
+    if (gabSection) gabSection.style.display = "none";
+    if (eulSection) eulSection.style.display = "none";
+    if (byeongSection) byeongSection.style.display = "block";
   } else {
     if (gabSection) gabSection.style.display = "block";
     if (eulSection) eulSection.style.display = "block";
-    if (eulSection) eulSection.classList.add("report-page-break");
+    if (byeongSection) byeongSection.style.display = "block";
   }
 
   renderDynamicGroupedEulJiTable();
@@ -236,7 +236,6 @@ function renderDynamicGroupedEulJiTable() {
     return;
   }
 
-  // 등록된 인원들을 정제된 7개 표준 카테고리별로 자동 파싱하여 그룹화
   const uniqueCleanJobs = Array.from(new Set(ADMIN_WORKERS.map(w => parseCleanJob(w.job))));
 
   uniqueCleanJobs.forEach(jobName => {
@@ -290,7 +289,7 @@ function renderDynamicGroupedEulJiTable() {
 
       tr.innerHTML = `
         <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${w.name}</td>
-        <td style="border: 1px solid #000; padding: 6px;">${jobName} <span style="font-size:0.72rem; color:#64748b;">(${w.job})</span></td>
+        <td style="border: 1px solid #000; padding: 6px;">${jobName}</td>
         ${scoreCellsHtml}
         <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${earnedSum}점 / ${maxPossibleScore}점</td>
         <td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">${pct}%</td>
