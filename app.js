@@ -68,6 +68,10 @@ function handleIndexLogin() {
     return;
   }
 
+  const btn = document.getElementById("btnIndexLogin");
+  btn.disabled = true;
+  btn.textContent = "⏳ 인증 중...";
+
   fetch(GAS_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -75,15 +79,20 @@ function handleIndexLogin() {
   })
   .then(res => res.json())
   .then(data => {
+    btn.disabled = false;
+    btn.textContent = "입장하기";
     if (data.ok) {
       document.getElementById("indexLoginGateModal").classList.remove("active");
       document.getElementById("indexMainContent").style.display = "block";
     } else {
-      alert("⚠️ 접속 비밀번호가 올바르지 않습니다.");
+      alert(`⚠️ 인증 실패: ${data.error || '접속 비밀번호가 올바르지 않습니다.'}`);
     }
   })
   .catch(err => {
-    // 개발 모드/오프라인 통과
+    btn.disabled = false;
+    btn.textContent = "입장하기";
+    console.error("Auth fetch error:", err);
+    // 오프라인 통과 처리
     document.getElementById("indexLoginGateModal").classList.remove("active");
     document.getElementById("indexMainContent").style.display = "block";
   });

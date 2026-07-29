@@ -1,11 +1,10 @@
 /* =========================================================================
    Auth.gs
-   대소문자 유연 지원 비밀번호 검증 (Addpassword / loginindex 호환)
+   상세 디버깅 에러 메시지 포함 비밀번호 검증
    ========================================================================= */
 
 function checkAdminPassword_(password) {
   var props = PropertiesService.getScriptProperties();
-  // 대소문자 모두 호환 검사
   var realPwd = props.getProperty('Addpassword') || props.getProperty('addpassword') || props.getProperty('ADDPASSWORD');
   var inputPwd = String(password || '').trim();
 
@@ -19,27 +18,23 @@ function checkAdminPassword_(password) {
   if (inputPwd === String(realPwd).trim()) {
     return { ok: true };
   } else {
-    return { ok: false, error: '관리자 비밀번호가 일치하지 않습니다.' };
+    return { ok: false, error: '관리자 비밀번호 불일치 (서버 저장값과 입력값이 다릅니다)' };
   }
 }
 
 function checkIndexPassword_(password) {
   var props = PropertiesService.getScriptProperties();
-  // 대소문자 및 변형 키 모두 지원 (loginindex, loginIndex, LOGININDEX)
   var realPwd = props.getProperty('loginindex') || props.getProperty('loginIndex') || props.getProperty('LOGININDEX');
   var inputPwd = String(password || '').trim();
 
   if (!realPwd) {
-    if (inputPwd) {
-      props.setProperty('loginindex', inputPwd);
-    }
-    return { ok: true, message: '접속 비밀번호가 최초 설정되었습니다.' };
+    return { ok: false, error: '구글 스크립트 속성에 loginindex 키가 등록되어 있지 않습니다. 프로젝트 설정에서 loginindex 속성을 추가해 주세요.' };
   }
 
   if (inputPwd === String(realPwd).trim()) {
     return { ok: true };
   } else {
-    return { ok: false, error: '접속 비밀번호가 일치하지 않습니다.' };
+    return { ok: false, error: '접속 비밀번호 불일치 (입력하신 비밀번호가 설정된 loginindex 값과 다릅니다)' };
   }
 }
 
@@ -49,6 +44,7 @@ function changePassword_(currentAdminPassword, targetKey, newPassword) {
     return { ok: false, error: '현재 관리자 비밀번호가 올바르지 않습니다.' };
   }
 
+  var props = PropertiesService.getScriptProperties();
   var key = String(targetKey || '').trim();
   var newPwd = String(newPassword || '').trim();
 
@@ -56,7 +52,6 @@ function changePassword_(currentAdminPassword, targetKey, newPassword) {
     return { ok: false, error: '새 비밀번호를 입력해 주세요.' };
   }
 
-  // 양쪽 모두 설정하여 안전성 확보
   if (key === 'loginindex' || key === 'loginIndex') {
     props.setProperty('loginindex', newPwd);
     props.setProperty('loginIndex', newPwd);
