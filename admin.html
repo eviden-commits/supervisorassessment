@@ -47,7 +47,6 @@
           <button id="btnOpenReminderModal" class="btn btn-warning" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
             📧 미제출 현장 독려 메일 일괄 발송
           </button>
-          <!-- 🔥 글씨 안보임 현상 해결: 선명한 어두운 글자색(#1e293b) 및 배경 선명화 -->
           <button id="btnOpenChangePassModal" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.5rem 0.9rem; color: #1e293b; background: #ffffff; border: 1px solid #cbd5e1; font-weight: 700;">
             🔑 비밀번호 변경
           </button>
@@ -256,7 +255,7 @@
           </table>
         </div>
 
-        <!-- 3. [병지] 평가 절차서 SOP -->
+        <!-- 3. [병지] 평가 절차서 SOP (20개 평가 문항 제목 및 내용 명시 개편) -->
         <div id="byeongJiSection" class="a4-page" style="page-break-before: always;">
           <div class="report-header">
             <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">[병지] 관리감독자 업무수행 평가 절차서 (SOP)</h2>
@@ -279,24 +278,59 @@
             <table class="report-table" style="font-size: 0.8rem; width: 100%; margin-bottom: 0.75rem;">
               <thead>
                 <tr style="background: #f1f5f9;">
-                  <th>직종 구분</th>
-                  <th>적용 문항 목록 (총 20문항 중)</th>
-                  <th>적용 문항수</th>
-                  <th>만점 기준</th>
+                  <th style="width: 100px;">직종 구분</th>
+                  <th>적용 문항 상세 목록 (총 20개 문항 중)</th>
+                  <th style="width: 90px;">적용 문항수</th>
+                  <th style="width: 80px;">만점 기준</th>
                 </tr>
               </thead>
               <tbody>
-                <tr><td>안전</td><td>Q1~Q15, Q17~Q20 (Q16 제외)</td><td>19문항</td><td>57점</td></tr>
-                <tr><td>보건</td><td>Q1, Q2, Q7, Q9, Q11, Q12, Q15, Q16, Q18~Q20</td><td>11문항</td><td>33점</td></tr>
-                <tr><td>품질</td><td>Q1, Q2, Q18~Q20</td><td>5문항</td><td>15점</td></tr>
-                <tr><td>공사관리자</td><td>Q1~Q20 (전 문항 적용)</td><td>20문항</td><td>60점</td></tr>
-                <tr><td>공무</td><td>Q1, Q2, Q20</td><td>3문항</td><td>9점</td></tr>
-                <tr><td>팀리더</td><td>Q1~Q20 (전 문항 적용)</td><td>20문항</td><td>60점</td></tr>
-                <tr><td>설계</td><td>Q1, Q2, Q18~Q20</td><td>5문항</td><td>15점</td></tr>
+                <tr><td>안전</td><td>Q1~Q15(지원,점검,교육,재해,통로), Q17~Q20(보건협조,위험성평가) [Q16 안전협조 제외]</td><td>19문항</td><td>57점</td></tr>
+                <tr><td>보건</td><td>Q1,Q2(지원), Q7(순회점검), Q9(보호구교육), Q11,Q12(재해/응급), Q15,Q16(지도협조), Q18~Q20(위험성평가)</td><td>11문항</td><td>33점</td></tr>
+                <tr><td>품질</td><td>Q1,Q2(업무지원), Q18~Q20(위험성평가 및 개선조치 이행)</td><td>5문항</td><td>15점</td></tr>
+                <tr><td>공사관리자</td><td>Q1~Q20 (20개 전 문항 적용)</td><td>20문항</td><td>60점</td></tr>
+                <tr><td>공무</td><td>Q1,Q2(업무지원), Q20(기타 안전보건이행)</td><td>3문항</td><td>9점</td></tr>
+                <tr><td>팀리더</td><td>Q1~Q20 (20개 전 문항 적용)</td><td>20문항</td><td>60점</td></tr>
+                <tr><td>설계</td><td>Q1,Q2(업무지원), Q18~Q20(위험성평가 및 개선조치 이행)</td><td>5문항</td><td>15점</td></tr>
               </tbody>
             </table>
 
-            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">4. 결재 및 전자 보관 절차</h4>
+            <!-- 🔥 신설: 20개 전체 세부 문항 제목 및 평가 내용 전문 표 -->
+            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">4. 20개 세부 평가 문항 및 영역별 내용 전문</h4>
+            <table class="report-table" style="font-size: 0.75rem; width: 100%; margin-bottom: 0.75rem;">
+              <thead>
+                <tr style="background: #f1f5f9;">
+                  <th style="width: 45px;">번호</th>
+                  <th style="width: 140px;">평가 영역</th>
+                  <th>평가 문항 제목 및 세부 평가 내용</th>
+                  <th style="width: 160px;">3점 / 2점 / 1점 평가 판정 기준</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>Q1</td><td>Part 1. 업무수행 지원</td><td>1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?(R&R 확인)</td><td>적정 권한 부여 / 지정만 함 / 미지정</td></tr>
+                <tr><td>Q2</td><td>Part 1. 업무수행 지원</td><td>2. 시설·장비·예산 등 업무수행에 필요한 지원을 하는가?(R&R 확인)</td><td>시설·예산 지원 / 필요시 책정 / 지원 없음</td></tr>
+                <tr><td>Q3</td><td>Part 2. 설비 안전점검</td><td>3. 기계·기구 또는 설비의 안전·보건점검을 실시하는가?</td><td>연단위 계획 실시 / 수시 실시 / 안함</td></tr>
+                <tr><td>Q4</td><td>Part 2. 설비 안전점검</td><td>4. 작업종류별로 관리감독자의 유해·위험 방지 업무를 적정 수행하는가?</td><td>유해방지 적정수행 / 수시 수행 / 안함</td></tr>
+                <tr><td>Q5</td><td>Part 2. 설비 안전점검</td><td>5. 작업종류별로 관리감독자의 작업 시작 전 점검사항을 적정 수행하는가?</td><td>시작전 점검 적정 / 수시 점검 / 안함</td></tr>
+                <tr><td>Q6</td><td>Part 2. 설비 안전점검</td><td>6. 점검결과 이상이 발견되면 즉시 수리하는 등 필요한 조치를 하는가?</td><td>즉시 작업중지 조치 / 추후 수리 / 조치 안함</td></tr>
+                <tr><td>Q7</td><td>Part 2. 설비 안전점검</td><td>7. 도급사업 시의 순회점검 및 안전·보건점검에 참여하는가?</td><td>주기적 참여 / 가끔 참여 / 참여 안함</td></tr>
+                <tr><td>Q8</td><td>Part 3. 보호구 및 교육</td><td>8. 작업복의 점검과 착용에 관한 교육·지도를 하는가?</td><td>작업전/정기교육 / 정기교육만 / 안함</td></tr>
+                <tr><td>Q9</td><td>Part 3. 보호구 및 교육</td><td>9. 보호구의 점검과 착용·사용에 관한 교육·지도를 하는가?</td><td>작업전/정기교육 / 정기교육만 / 안함</td></tr>
+                <tr><td>Q10</td><td>Part 3. 보호구 및 교육</td><td>10. 방호장치의 점검과 사용에 관한 교육·지도를 하는가?</td><td>작업전/정기교육 / 정기교육만 / 안함</td></tr>
+                <tr><td>Q11</td><td>Part 4. 재해보고/응급</td><td>11. 산업재해에 관한 발생 보고가 적정하게 이뤄지고 있는가?</td><td>즉시 보고 / 3일이내 보고 / 1주일소요</td></tr>
+                <tr><td>Q12</td><td>Part 4. 재해보고/응급</td><td>12. 산업재해에 따른 응급조치가 적정하게 이뤄지고 있는가 (※ MSDS 숙지 등)</td><td>정기/수시 교육 / 정기교육만 / 안함</td></tr>
+                <tr><td>Q13</td><td>Part 5. 정리정돈/통로</td><td>13. 작업장 정리·정돈에 대한 확인·감독을 하고 있는가?</td><td>매일 3회이상 / 매일 1회 / 안함</td></tr>
+                <tr><td>Q14</td><td>Part 5. 정리정돈/통로</td><td>14. 통로 확보에 대한 확인·감독을 하고 있는가?</td><td>매일 3회이상 / 매일 1회 / 안함</td></tr>
+                <tr><td>Q15</td><td>Part 6. 지도조언 협조</td><td>15. 산업보건의의 지도·조언에 대한 협조를 하고 있는가?(작업환경측정 결과 이행)</td><td>적극 협조 / 필요시 협조 / 협조 안함</td></tr>
+                <tr><td>Q16</td><td>Part 6. 지도조언 협조</td><td>16. 안전관리자(또는 전문기관)의 지도·조언에 대한 협조를 하고 있는가?</td><td>적극 협조 / 필요시 협조 / 협조 안함</td></tr>
+                <tr><td>Q17</td><td>Part 6. 지도조언 협조</td><td>17. 보건관리자(또는 전문기관)의 지도·조언에 대한 협조를 하고 있는가?</td><td>적극 협조 / 필요시 협조 / 협조 안함</td></tr>
+                <tr><td>Q18</td><td>Part 7. 위험성평가 이행</td><td>18. 위험성평가 유해·위험요인 파악에 대한 참여를 하고 있는가?</td><td>반드시 참여 / 필요시 참여 / 참여 안함</td></tr>
+                <tr><td>Q19</td><td>Part 7. 위험성평가 이행</td><td>19. 개선조치의 시행에 참여를 하고 있는가?</td><td>반드시 참여 / 필요시 참여 / 참여 안함</td></tr>
+                <tr><td>Q20</td><td>Part 7. 위험성평가 이행</td><td>20. 그 밖에 안전 및 보건에 관한 사항을 적정하게 이행하고 있는가</td><td>반드시 이행 / 필요시 이행 / 이행 안함</td></tr>
+              </tbody>
+            </table>
+
+            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">5. 결재 및 전자 보관 절차</h4>
             <p style="margin: 0;">
               평가 완료 후 현장소장 전자 서명을 거쳐 구글 드라이브 및 감사 시트에 3년간 안전보건 법적 증빙 서류로 보관한다.
             </p>
