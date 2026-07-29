@@ -1,11 +1,10 @@
 /* =========================================================================
    admin.js
-   관리자 대시보드 & 甲紙(종합보고서) / 乙紙(세부내역) A4 정밀 인쇄 및 감사 로그 센터
+   관리자 대시보드 & 갑지(종합보고서) / 을지(세부내역) A4 정밀 인쇄 및 감사 로그 센터
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 20명 기본 관리감독자 테스트 DB
 let ADMIN_WORKERS = [
   { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전관리자", email: "nschoi@sebangtec.com", status: "제출완료" },
   { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "현장소장", email: "gildong@example.com", status: "제출완료" },
@@ -155,14 +154,13 @@ function handleChangePassword() {
   });
 }
 
-// 🔥 핵심 신규 기능: 甲紙 / 乙紙 동적 렌더링 & 연도/반기 필터 자동 계산 (요구사항 1~5 해결)
+// 🔥 갑지 / 을지 동적 렌더링 & 순수 한글 표기
 function updateReportView() {
   const year = document.getElementById("reportYearSelect")?.value || "2026년";
   const term = document.getElementById("reportTermSelect")?.value || "상반기";
   const site = document.getElementById("reportSiteSelect")?.value || "전체현장";
   const type = document.getElementById("reportTypeSelect")?.value || "all";
 
-  // 1. 문구 자동 변경 (요구사항 3번)
   const subTitleText = `${year} ${term} 안전보건 이행 실적 및 항목별 평균 평가`;
   const gabSubTitle = document.getElementById("reportSubTitle");
   const eulSubTitle = document.getElementById("eulJiSubTitle");
@@ -173,7 +171,6 @@ function updateReportView() {
   document.getElementById("repSiteLabel").textContent = site;
   document.getElementById("repWorkerCountLabel").textContent = `${ADMIN_WORKERS.length}명`;
 
-  // 2. 출력 구분 제어 (all / gab / eul) (요구사항 5번)
   const gabSection = document.getElementById("gabJiSection");
   const eulSection = document.getElementById("eulJiSection");
 
@@ -190,7 +187,6 @@ function updateReportView() {
     if (eulSection) eulSection.classList.add("report-page-break");
   }
 
-  // 3. 乙紙 (인원별 세부 내역표) 렌더링
   renderEulJiTable();
 }
 
@@ -200,7 +196,6 @@ function renderEulJiTable() {
   tbody.innerHTML = "";
 
   ADMIN_WORKERS.forEach(w => {
-    // 1~20번 문항 3점/2점 랜덤 시뮬레이션
     const scores = [];
     for (let i = 1; i <= 20; i++) {
       scores.push(i % 7 === 0 ? 2 : 3);

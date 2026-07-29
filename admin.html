@@ -179,10 +179,10 @@
       </div>
     </section>
 
-    <!-- 🔥 4. A4 보고서 출력 제어 바 & 甲紙/乙紙 인쇄 영역 -->
+    <!-- 🔥 4. A4 보고서 출력 제어 바 & 갑지/을지 인쇄 영역 (한자 전면 제거 -> 순수 한글 적용) -->
     <section class="card" id="reportControlCard">
       <div class="card-title">
-        <span>📄 4. 관리감독자 평가 종합 보고서 인쇄 (甲紙 / 乙紙 선택 출력)</span>
+        <span>📄 4. 관리감독자 평가 종합 보고서 인쇄 (갑지 / 을지 선택 출력)</span>
       </div>
 
       <!-- 보고서 제어 조종 바 (화면 출력 컨트롤러) -->
@@ -217,8 +217,8 @@
             <label for="reportTypeSelect" style="font-weight: 700;">출력 구분 (갑지/을지)</label>
             <select id="reportTypeSelect" class="form-control" onchange="updateReportView()">
               <option value="all" selected>전체 출력 (갑지 + 을지)</option>
-              <option value="gab">甲紙 (종합보고서 & 결재선)</option>
-              <option value="eul">乙紙 (인원별 20문항 세부내역)</option>
+              <option value="gab">갑지 (종합보고서 & 결재선)</option>
+              <option value="eul">을지 (인원별 20문항 세부내역)</option>
             </select>
           </div>
         </div>
@@ -230,24 +230,24 @@
         </div>
       </div>
 
-      <!-- 🔥 오직 이 영역만 A4로 완벽하게 출력됨 (#printableReportArea) -->
+      <!-- 오직 이 영역만 A4로 완벽하게 출력됨 (#printableReportArea) -->
       <div id="printableReportArea">
         
         <!-- ===================================================================
-             甲紙 (종합 보고서 & 결재선 & 8개 평가 항목 전체 표)
+             갑지 (종합 보고서 & 결재선 & 8개 평가 항목 전체 표)
              =================================================================== -->
         <div id="gabJiSection" style="padding: 1.5rem; background: #ffffff; margin-bottom: 2rem;">
           
           <div style="text-align: center; margin-bottom: 1.5rem;">
             <h2 style="font-size: 1.6rem; font-weight: 800; text-decoration: underline; letter-spacing: -0.5px;">
-              관리감독자 업무수행 평가 종합보고서 (甲紙)
+              관리감독자 업무수행 평가 종합보고서 (갑지)
             </h2>
             <p id="reportSubTitle" style="font-size: 0.95rem; color: #334155; margin-top: 6px; font-weight: 700;">
               2026년 상반기 안전보건 이행 실적 및 항목별 평균 평가
             </p>
           </div>
 
-          <!-- 결재선 (요구사항 2번: 서명란 텍스트 삭제 및 깔끔한 공란 처리) -->
+          <!-- 결재선 -->
           <div style="display: flex; justify-content: flex-end; margin-bottom: 1.5rem;">
             <table style="border-collapse: collapse; font-size: 0.8rem; text-align: center;">
               <tr>
@@ -257,7 +257,6 @@
                 <th style="border: 1px solid #000; width: 95px; padding: 4px; font-weight: 700;">승 인</th>
               </tr>
               <tr>
-                <!-- 🔥 최난새(서명)(인) 텍스트 완전히 삭제하고 깔끔한 공란 처리 -->
                 <td style="border: 1px solid #000; height: 55px; vertical-align: middle;">&nbsp;</td>
                 <td style="border: 1px solid #000; height: 55px; vertical-align: middle;">&nbsp;</td>
                 <td style="border: 1px solid #000; height: 55px; vertical-align: middle;">&nbsp;</td>
@@ -272,7 +271,7 @@
             <div>■ 평가 작성 일자: <strong id="repDateLabel">2026년 07월 30일</strong></div>
           </div>
 
-          <!-- 🔥 요구사항 4번: PDF 원본 매칭 8개 항목 전체 분야 표 -->
+          <!-- PDF 원본 매칭 8개 항목 전체 분야 표 -->
           <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 1.5rem;">
             <thead>
               <tr style="background: #f1f5f9; text-align: center;">
@@ -348,13 +347,13 @@
         </div>
 
         <!-- ===================================================================
-             乙紙 (인원별 20문항 세부 평가 내역표 - 페이지 구분)
+             을지 (인원별 20문항 세부 평가 내역표 - 페이지 구분)
              =================================================================== -->
         <div id="eulJiSection" class="report-page-break" style="padding: 1.5rem; background: #ffffff;">
           
           <div style="text-align: center; margin-bottom: 1.5rem;">
             <h2 style="font-size: 1.6rem; font-weight: 800; text-decoration: underline; letter-spacing: -0.5px;">
-              관리감독자 인원별 세부 평가 내역서 (乙紙)
+              관리감독자 인원별 세부 평가 내역서 (을지)
             </h2>
             <p id="eulJiSubTitle" style="font-size: 0.95rem; color: #334155; margin-top: 6px; font-weight: 700;">
               2026년 상반기 전체 관리감독자 개별 점수 및 문항별 평가 결과
