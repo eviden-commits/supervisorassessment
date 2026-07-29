@@ -74,227 +74,6 @@ body {
   padding: 0 1rem;
 }
 
-/* Step Wizard Navigation Bar */
-.wizard-bar {
-  display: flex;
-  justify-content: space-between;
-  background: #ffffff;
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-md);
-  padding: 0.75rem 1.25rem;
-  margin-bottom: 1.5rem;
-  box-shadow: var(--shadow-sm);
-}
-
-.wizard-step {
-  display: flex;
-  align-items: center;
-  gap: 0.5rem;
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-.wizard-step.active {
-  color: var(--accent-color);
-}
-
-.wizard-step.completed {
-  color: var(--success-color);
-}
-
-.wizard-step-num {
-  width: 26px;
-  height: 26px;
-  border-radius: 50%;
-  background: #e2e8f0;
-  color: var(--text-muted);
-  display: flex;
-  align-items: center;
-  justify-content: center;
-  font-size: 0.8rem;
-  font-weight: 800;
-}
-
-.wizard-step.active .wizard-step-num {
-  background: var(--accent-color);
-  color: #ffffff;
-}
-
-.wizard-step.completed .wizard-step-num {
-  background: var(--success-color);
-  color: #ffffff;
-}
-
-/* Floating Single Question Card Style */
-.floating-q-card {
-  background: #ffffff;
-  border: 2px solid var(--accent-color);
-  border-radius: var(--radius-lg);
-  box-shadow: var(--shadow-lg);
-  padding: 1.75rem;
-  margin-bottom: 1.5rem;
-  animation: fadeIn 0.3s ease-in-out;
-}
-
-@keyframes fadeIn {
-  from { opacity: 0; transform: translateY(10px); }
-  to { opacity: 1; transform: translateY(0); }
-}
-
-.q-badge-row {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  margin-bottom: 1rem;
-}
-
-.q-badge-num {
-  background: var(--accent-color);
-  color: #ffffff;
-  font-weight: 800;
-  padding: 4px 12px;
-  border-radius: 20px;
-  font-size: 0.85rem;
-}
-
-.q-part-title {
-  font-size: 0.85rem;
-  font-weight: 700;
-  color: var(--text-muted);
-}
-
-.q-main-title {
-  font-size: 1.2rem;
-  font-weight: 800;
-  color: var(--primary-color);
-  margin-bottom: 1.25rem;
-  line-height: 1.5;
-}
-
-/* 🔥 문항별 점수 지침 명세 박스 */
-.q-guide-box {
-  background: #f8fafc;
-  border: 1px solid #cbd5e1;
-  border-radius: var(--radius-sm);
-  padding: 1rem;
-  margin-bottom: 1.25rem;
-}
-
-.q-guide-title {
-  font-size: 0.82rem;
-  font-weight: 800;
-  color: var(--primary-color);
-  margin-bottom: 0.6rem;
-  display: flex;
-  align-items: center;
-  gap: 0.4rem;
-}
-
-.q-guide-grid {
-  display: grid;
-  grid-template-columns: repeat(auto-fit, minmax(200px, 1fr));
-  gap: 0.6rem;
-}
-
-.q-guide-item {
-  font-size: 0.8rem;
-  padding: 0.5rem 0.75rem;
-  border-radius: var(--radius-sm);
-  font-weight: 600;
-}
-
-.q-guide-item.score-3 { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
-.q-guide-item.score-2 { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
-.q-guide-item.score-1 { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
-
-/* Quick Fill Buttons for Single Question */
-.q-quick-fill-bar {
-  display: flex;
-  gap: 0.5rem;
-  background: #f1f5f9;
-  padding: 0.85rem;
-  border-radius: var(--radius-sm);
-  margin-bottom: 1.25rem;
-  flex-wrap: wrap;
-  align-items: center;
-}
-
-.btn-score-fill {
-  flex: 1;
-  padding: 0.6rem 0.75rem;
-  font-size: 0.82rem;
-  font-weight: 700;
-  border-radius: var(--radius-sm);
-  border: 1px solid transparent;
-  cursor: pointer;
-  transition: all 0.2s;
-  text-align: center;
-}
-
-.btn-score-3 { background: #ecfdf5; color: var(--success-color); border-color: #a7f3d0; }
-.btn-score-3:hover { background: #dcfce7; }
-.btn-score-2 { background: #fffbeb; color: var(--warning-color); border-color: #fde68a; }
-.btn-score-2:hover { background: #fef3c7; }
-.btn-score-1 { background: #fef2f2; color: var(--danger-color); border-color: #fca5a5; }
-.btn-score-1:hover { background: #fee2e2; }
-
-/* Micro Matrix Table without Inner Scrollbar */
-.micro-worker-table-container {
-  border: 1px solid var(--border-color);
-  border-radius: var(--radius-sm);
-  margin-bottom: 1.25rem;
-  overflow: hidden;
-}
-
-.micro-worker-table {
-  width: 100%;
-  border-collapse: collapse;
-  font-size: 0.82rem;
-}
-
-.micro-worker-table th {
-  background: var(--primary-color);
-  color: #ffffff;
-  padding: 10px 8px;
-  text-align: center;
-  font-weight: 700;
-}
-
-.micro-worker-table td {
-  border-bottom: 1px solid var(--border-color);
-  padding: 8px 10px;
-  text-align: center;
-}
-
-.micro-worker-table tr:last-child td {
-  border-bottom: none;
-}
-
-.micro-score-select {
-  padding: 5px 8px;
-  font-size: 0.8rem;
-  font-weight: 700;
-  border-radius: 4px;
-  border: 1px solid var(--border-color);
-  outline: none;
-  cursor: pointer;
-  width: 100%;
-  max-width: 320px;
-}
-
-.micro-score-select.score-3 { color: var(--success-color); background: #ecfdf5; border-color: #a7f3d0; }
-.micro-score-select.score-2 { color: var(--warning-color); background: #fffbeb; border-color: #fde68a; }
-.micro-score-select.score-1 { color: var(--danger-color); background: #fef2f2; border-color: #fca5a5; }
-
-/* Navigation Action Buttons */
-.q-nav-bar {
-  display: flex;
-  justify-content: space-between;
-  align-items: center;
-  gap: 1rem;
-}
-
 /* Card Styling */
 .card {
   background: var(--card-bg);
@@ -368,8 +147,21 @@ body {
 .btn-secondary { background: #e2e8f0; color: var(--text-main); }
 .btn-secondary:hover { background: #cbd5e1; }
 .btn-success { background: var(--success-color); color: #ffffff; }
+.btn-danger { background: var(--danger-color); color: #ffffff; }
 .btn-outline { border: 1px solid var(--border-color); background: #ffffff; color: var(--text-main); }
 .btn-outline:hover { background: #f8fafc; }
+
+/* Score Badges */
+.score-badge {
+  display: inline-block;
+  padding: 2px 8px;
+  border-radius: 4px;
+  font-weight: 700;
+  font-size: 0.75rem;
+}
+.score-3 { background: #ecfdf5; color: #065f46; border: 1px solid #a7f3d0; }
+.score-2 { background: #fffbeb; color: #92400e; border: 1px solid #fde68a; }
+.score-1 { background: #fef2f2; color: #991b1b; border: 1px solid #fca5a5; }
 
 /* Modals */
 .modal-backdrop {
@@ -413,17 +205,58 @@ body {
 .modal-body { padding: 1.25rem; overflow-y: auto; flex: 1; }
 .modal-footer { padding: 1rem 1.25rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.5rem; background: #f8fafc; }
 
-/* Canvas Signature Pad */
-.signature-container {
-  border: 2px dashed #94a3b8;
-  border-radius: var(--radius-sm);
-  background: #ffffff;
-  touch-action: none;
-}
+/* 🔥 A4 정밀 인쇄 전용 CSS (요구사항 1번 해결) */
+@media print {
+  /* 1. 인쇄 대상 외 모든 HTML 요소 완벽 숨김 */
+  html, body {
+    background: #ffffff !important;
+    color: #000000 !important;
+    margin: 0 !important;
+    padding: 0 !important;
+    width: 100% !important;
+  }
 
-canvas#signatureCanvas {
-  width: 100%;
-  height: 200px;
-  display: block;
-  cursor: crosshair;
+  .app-header, 
+  .no-print, 
+  .btn, 
+  .modal-backdrop, 
+  .wizard-bar,
+  .main-container > section:not(#printableReportArea) {
+    display: none !important;
+  }
+
+  .main-container {
+    max-width: 100% !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  /* 2. 오직 보고서 영역만 A4 규격으로 정밀 출력 */
+  #printableReportArea {
+    display: block !important;
+    border: none !important;
+    box-shadow: none !important;
+    padding: 0 !important;
+    margin: 0 !important;
+    width: 100% !important;
+    background: #ffffff !important;
+  }
+
+  /* 갑지 및 을지 페이지 분할 설정 */
+  .report-page-break {
+    page-break-before: always;
+    break-before: page;
+  }
+
+  /* 인쇄용 표 테두리 선명화 */
+  table {
+    border-collapse: collapse !important;
+    width: 100% !important;
+  }
+
+  table th, table td {
+    border: 1px solid #000000 !important;
+    color: #000000 !important;
+  }
 }
