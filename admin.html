@@ -1,391 +1,405 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>관리자 전용 대시보드 - 관리감독자 평가 시스템</title>
-  <link rel="stylesheet" href="style.css" />
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리자 최고 권한 시스템 - 관리감독자 평가 관리</title>
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
-<body style="background: #f1f5f9;">
+<body class="admin-body">
 
-  <!-- Admin Header -->
-  <header class="app-header" style="background: #0f172a;">
-    <div class="header-container">
-      <div class="header-title">
-        <h1>🔒 관리자 통합 통계 & 감사 로그 대시보드</h1>
-        <p>현장별 이행률, 비밀번호 관리, 감사 로그, 종합 보고서 출력</p>
+  <!-- ==========================================
+       [보안 게이트 모달] 관리자 인증 (Apps Script 속성 검증)
+       ========================================== -->
+  <div id="loginGateModal" class="modal-backdrop active">
+    <div class="modal-card shadow-lg" style="max-width: 420px; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🔐</div>
+      <h2 style="margin-bottom: 0.5rem; color: var(--primary-color);">관리자 비밀번호 인증</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        구글 Apps Script 스크립트 속성에 저장된<br>최고 관리자 비밀번호를 입력해 주세요.
+      </p>
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <input type="password" id="adminPass" class="form-control text-center" placeholder="비밀번호 입력" style="font-size: 1.1rem; letter-spacing: 2px;">
       </div>
-      <div style="display: flex; gap: 0.5rem;">
-        <button class="btn btn-outline" id="btnOpenChangePassModal" style="font-size:0.8rem; background:rgba(255,255,255,0.15); color:#ffffff; border-color:rgba(255,255,255,0.3);">
-          🔑 비밀번호 변경
-        </button>
-        <a href="index.html" class="btn btn-outline" style="font-size:0.8rem; background:#2563eb; color:#ffffff; border-color:#2563eb;">
-          🏠 평가 홈으로
-        </a>
-      </div>
+      <button id="btnLogin" class="btn btn-primary btn-block btn-lg">확인 로그인</button>
     </div>
-  </header>
+  </div>
 
-  <!-- 1. 🔑 관리자 로그인 인증 게이트 모달 -->
-  <div class="modal-backdrop active" id="loginGateModal">
-    <div class="modal-content" style="max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
-      <div class="modal-header">
-        <h3>🔒 관리자 전용 인증</h3>
-      </div>
-      <div class="modal-body" style="padding: 1.75rem 1.5rem;">
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.25rem;">
-          관리자 페이지 접근을 위해 관리자 비밀번호를 입력해 주세요.
-        </p>
-        <div class="form-group">
-          <label for="adminPass" style="font-weight: 700;">관리자 비밀번호</label>
-          <input type="password" id="adminPass" class="form-control" placeholder="관리자 비밀번호 입력" autofocus />
+  <!-- ==========================================
+       [메인 관리자 컨텐츠] (인증 완료 시 노출)
+       ========================================== -->
+  <div id="adminMainContent" style="display: none;">
+    <!-- 관리자 전용 상단 헤더 (인쇄시 자동 숨김) -->
+    <header class="admin-header no-print">
+      <div class="header-container" style="display: flex; justify-content: space-between; align-items: center; padding: 1rem 2rem;">
+        <div class="brand">
+          <span style="font-size: 1.5rem;">🏛️</span>
+          <div>
+            <h1 style="font-size: 1.25rem; margin: 0;">관리감독자 평가 통합 관리자 시스템</h1>
+            <p style="font-size: 0.75rem; color: #94a3b8; margin: 0;">최고 관리자 권한 · 이행 실적 및 백분율 환산 모니터링</p>
+          </div>
+        </div>
+        <div style="display: flex; gap: 0.75rem; align-items: center;">
+          <button id="btnOpenReminderModal" class="btn btn-warning" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+            📧 미제출 현장 독려 메일 일괄 발송
+          </button>
+          <button id="btnOpenChangePassModal" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.5rem 1rem; color: #fff; border-color: #475569;">
+            🔑 비밀번호 변경
+          </button>
+          <button onclick="location.href='index.html'" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+            🏠 평가 입력 홈으로
+          </button>
         </div>
       </div>
-      <div class="modal-footer" style="background: #f8fafc; padding: 1rem 1.5rem;">
-        <button class="btn btn-primary" id="btnLogin" style="width: 100%; font-size: 1rem; padding: 0.75rem;">
-          확인 로그인
+    </header>
+
+    <div class="container" style="padding: 1.5rem; max-width: 1400px; margin: 0 auto;">
+
+      <!-- 현장별 등록 관리감독자 현황 (인쇄시 숨김) -->
+      <section class="card shadow-md no-print" style="margin-bottom: 1.5rem; background: #fff; border-radius: 12px; padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.75rem;">
+            <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary-color);">🏢 현장별 등록 관리감독자 현황</h3>
+            <span id="userCountSpan" class="badge" style="background: var(--accent-color); color: #fff;">0명</span>
+          </div>
+
+          <!-- 현장 필수 선택 드롭다운 -->
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <label style="font-size: 0.85rem; font-weight: 700; color: #334155;">현장 선택:</label>
+            <select id="adminSiteSelect" class="form-control" style="width: 220px; font-size: 0.85rem;">
+              <option value="">-- 현장을 선택해 주세요 --</option>
+              <option value="테스트현장" selected>테스트현장</option>
+              <option value="울산 PJT">울산 PJT</option>
+              <option value="여수 PJT">여수 PJT</option>
+              <option value="평택 PJT">평택 PJT</option>
+              <option value="인천 PJT">인천 PJT</option>
+            </select>
+            <button id="btnToggleAllAccordions" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.75rem;">
+              ↔️ 전체 접기 / 펼치기
+            </button>
+          </div>
+        </div>
+
+        <!-- 현장 미선택 시 안내 메시지 / 선택 시 아코디언 컨테이너 -->
+        <div id="siteWorkerAccordionContainer">
+          <!-- JS에서 동적 렌더링 -->
+        </div>
+      </section>
+
+      <!-- 시스템 감사 로그 섹션 (인쇄시 숨김) -->
+      <section class="card shadow-md no-print" style="margin-bottom: 1.5rem; background: #fff; border-radius: 12px; padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
+          <div style="display: flex; align-items: center; gap: 0.5rem;">
+            <h3 style="margin: 0; font-size: 1.1rem; color: var(--primary-color);">📜 시스템 보안 및 평가 감사 로그 (Audit Trail)</h3>
+            <span id="logCountBadge" class="badge" style="background: #64748b; color: #fff;">총 2건</span>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <input type="text" id="logSearchInput" class="form-control" placeholder="검색어 입력..." style="width: 180px; font-size: 0.8rem;">
+            <select id="logTypeFilter" class="form-control" style="width: 130px; font-size: 0.8rem;">
+              <option value="">전체 구분</option>
+              <option value="평가제출">평가제출</option>
+              <option value="명단업로드">명단업로드</option>
+              <option value="로그인">로그인</option>
+            </select>
+            <button id="btnRefreshLogs" class="btn btn-outline" style="font-size: 0.8rem; padding: 0.4rem 0.75rem;">🔄 새로고침</button>
+            <button id="btnExportLogsExcel" class="btn btn-secondary" style="font-size: 0.8rem; padding: 0.4rem 0.75rem;">📥 엑셀 다운로드</button>
+          </div>
+        </div>
+
+        <div style="max-height: 250px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+          <table class="report-table" style="font-size: 0.8rem; width: 100%;">
+            <thead>
+              <tr style="background: #f8fafc; position: sticky; top: 0;">
+                <th style="width: 150px;">일시</th>
+                <th style="width: 100px;">작업구분</th>
+                <th style="width: 150px;">현장명/반기</th>
+                <th style="width: 160px;">담당자 이메일/이름</th>
+                <th>상세 내역</th>
+                <th style="width: 80px;">상태</th>
+              </tr>
+            </thead>
+            <tbody id="logTableBody">
+              <!-- JS 동적 생성 -->
+            </tbody>
+          </table>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           보고서 출력 조율 컨트롤러 (웹용 / 인쇄시 전면 자동 숨김)
+           ========================================== -->
+      <section class="card shadow-md no-print" style="margin-bottom: 1.5rem; background: #f8fafc; border: 2px solid var(--accent-color); border-radius: 12px; padding: 1.25rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
+          <div>
+            <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--primary-color);">🖨️ A4 평가 보고서 출력 설정 (갑지 · 을지 · 병지 절차서)</h3>
+            <p style="font-size: 0.8rem; color: #64748b; margin: 0;">아래 화면에서 서식을 확인하시고 [A4 출력 / PDF 저장] 버튼을 클릭하면 불필요한 컨트롤러 없이 깔끔한 보고서만 인쇄됩니다.</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem; align-items: center;">
+            <select id="reportYearSelect" class="form-control" style="width: 110px; font-size: 0.85rem;" onchange="updateReportView()">
+              <option value="2026년" selected>2026년</option>
+              <option value="2025년">2025년</option>
+            </select>
+            <select id="reportTermSelect" class="form-control" style="width: 100px; font-size: 0.85rem;" onchange="updateReportView()">
+              <option value="상반기" selected>상반기</option>
+              <option value="하반기">하반기</option>
+            </select>
+            <select id="reportTypeSelect" class="form-control" style="width: 220px; font-size: 0.85rem;" onchange="updateReportView()">
+              <option value="all" selected>전체 출력 (갑지 + 을지 + 병지)</option>
+              <option value="gab">갑지만 보기 (종합 보고서)</option>
+              <option value="eul">을지만 보기 (직종별 세부 내역)</option>
+              <option value="byeong">병지만 보기 (평가 절차서 SOP)</option>
+            </select>
+            <button class="btn btn-primary" onclick="printReport()" style="font-weight: 700; font-size: 0.9rem; padding: 0.5rem 1.25rem;">
+              🖨️ A4 출력 / PDF 저장
+            </button>
+          </div>
+        </div>
+      </section>
+
+      <!-- ==========================================
+           [A4 출력 보고서 전용 영역] (모든 조절 바/버튼이 제거된 순수 보고서)
+           ========================================== -->
+      <div id="printableReportArea">
+        
+        <!-- 1. [갑지] 관리감독자 평가 종합 보고서 -->
+        <div id="gabJiSection" class="a4-page">
+          <div class="report-header">
+            <h2 style="font-size: 1.6rem; margin-bottom: 0.25rem;">[갑지] 관리감독자 업무수행 평가 종합 보고서</h2>
+            <p id="reportSubTitle" style="font-size: 0.9rem; color: #475569; margin: 0;">2026년 상반기 안전보건 이행 실적 및 백분율 환산(%) 평가</p>
+          </div>
+
+          <!-- 현장 정보 및 우측 상단 소장 결재란 (310px 고정) -->
+          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.25rem;">
+            <table class="report-info-table" style="width: 55%; font-size: 0.85rem;">
+              <tr>
+                <th>소속 현장명</th>
+                <td id="repSiteLabel">테스트현장</td>
+                <th>평가 대상 인원</th>
+                <td id="repWorkerCountLabel">20명</td>
+              </tr>
+              <tr>
+                <th>평가 구분</th>
+                <td>연 2회 정기평가</td>
+                <th>평가 담당자</th>
+                <td>안전보건관리책임자</td>
+              </tr>
+            </table>
+
+            <div class="approval-box-container">
+              <table class="approval-table">
+                <tr>
+                  <th rowspan="2" class="approval-header-title">결<br>재</th>
+                  <th style="width: 130px;">평 가 자</th>
+                  <th style="width: 130px;">현장소장 (최종)</th>
+                </tr>
+                <tr>
+                  <td class="sign-cell">
+                    <div style="font-size: 0.8rem; color: #64748b;">(서명/인)</div>
+                  </td>
+                  <td class="sign-cell">
+                    <img id="signImage" src="" alt="서명 이미지" style="display:none; max-height: 50px; margin: 0 auto;">
+                    <div id="signPlaceholder" style="font-size: 0.8rem; color: #64748b;">최난새 (인)</div>
+                  </td>
+                </tr>
+              </table>
+            </div>
+          </div>
+
+          <h4 style="margin: 1rem 0 0.5rem 0; font-size: 0.95rem;">1. 8개 평가 영역별 종합 환산 성적</h4>
+          <table class="report-table" style="font-size: 0.85rem; margin-bottom: 1.5rem;">
+            <thead>
+              <tr style="background: #f1f5f9;">
+                <th>평가 영역</th>
+                <th>평가 문항 수</th>
+                <th>평균 획득 점수</th>
+                <th>백분율 환산 점수(%)</th>
+                <th>평가 등급</th>
+              </tr>
+            </thead>
+            <tbody id="gabJiTableBody">
+              <tr><td>[Part 1] 관리감독자 업무수행 지원</td><td>2문항</td><td>2.85점 / 3.0점</td><td style="font-weight:700; color:#2563eb;">95.0%</td><td style="font-weight:700; color:#059669;">우수</td></tr>
+              <tr><td>[Part 2] 기계·기구/설비 안전보건점검</td><td>5문항</td><td>2.70점 / 3.0점</td><td style="font-weight:700; color:#2563eb;">90.0%</td><td style="font-weight:700; color:#059669;">우수</td></tr>
+              <tr><td>[Part 3] 근로자 보호구 및 방호장치 교육</td><td>3문항</td><td>2.90점 / 3.0점</td><td style="font-weight:700; color:#2563eb;">96.7%</td><td style="font-weight:700; color:#059669;">우수</td></tr>
+              <tr><td>[Part 4] 산업재해 보고 및 응급조치</td><td>2문항</td><td>3.00점 / 3.0점</td><td style="font-weight:700; color:#2563eb;">100.0%</td><td style="font-weight:700; color:#059669;">우수</td></tr>
+              <tr><td>[Part 5] 작업장 정리정돈 및 통로확보</td><td>2문항</td><td>2.80점 / 3.0점</td><td style="font-weight:700; color:#2563eb;">93.3%</td><td style="font-weight:700; color:#059669;">우수</td></tr>
+              <tr><td>[Part 6] 안전/보건관리자 지도조언 협조</td><td>3문항</td><td>2.85점 / 3.0점</td><td style="font-weight:700; color:#2563eb;">95.0%</td><td style="font-weight:700; color:#059669;">우수</td></tr>
+              <tr><td>[Part 7] 위험성평가 및 기타 이행</td><td>3문항</td><td>2.75점 / 3.0점</td><td style="font-weight:700; color:#2563eb;">91.7%</td><td style="font-weight:700; color:#059669;">우수</td></tr>
+            </tbody>
+          </table>
+
+          <h4 style="margin: 1rem 0 0.5rem 0; font-size: 0.95rem;">2. 총평 및 향후 개선 대책</h4>
+          <div style="border: 1px solid #000; padding: 1rem; font-size: 0.85rem; line-height: 1.6; min-height: 100px;">
+            상기 현장의 2026년 상반기 관리감독자 업무수행 평가 결과, 7개 정규 직종별 N/A 적용 문항을 엄격히 반영하여 종합 환산 점수 94.1%(우수)를 기록함. 향후 보건 및 설비 직종의 작업 전 점검 이행을 집중 지도하여 중대재해 예방에 만전을 기하고자 함.
+          </div>
+        </div>
+
+        <!-- 2. [을지] 관리감독자 직종별 세부 평가 내역서 -->
+        <div id="eulJiSection" class="a4-page" style="page-break-before: always;">
+          <div class="report-header">
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">[을지] 관리감독자 직종별 세부 평가 내역서</h2>
+            <p id="eulJiSubTitle" style="font-size: 0.85rem; color: #475569; margin: 0;">7개 규격 직종별 N/A 제외 개별 환산 점수 및 세부 평가 결과</p>
+          </div>
+
+          <table class="report-table" style="font-size: 0.72rem; width: 100%; border-collapse: collapse; text-align: center;">
+            <thead>
+              <tr style="background: #f1f5f9; font-weight: 700;">
+                <th style="width: 55px; border: 1px solid #000;">성명</th>
+                <th style="width: 65px; border: 1px solid #000;">직종</th>
+                <th style="border: 1px solid #000;">Q1</th><th style="border: 1px solid #000;">Q2</th>
+                <th style="border: 1px solid #000;">Q3</th><th style="border: 1px solid #000;">Q4</th>
+                <th style="border: 1px solid #000;">Q5</th><th style="border: 1px solid #000;">Q6</th>
+                <th style="border: 1px solid #000;">Q7</th><th style="border: 1px solid #000;">Q8</th>
+                <th style="border: 1px solid #000;">Q9</th><th style="border: 1px solid #000;">Q10</th>
+                <th style="border: 1px solid #000;">Q11</th><th style="border: 1px solid #000;">Q12</th>
+                <th style="border: 1px solid #000;">Q13</th><th style="border: 1px solid #000;">Q14</th>
+                <th style="border: 1px solid #000;">Q15</th><th style="border: 1px solid #000;">Q16</th>
+                <th style="border: 1px solid #000;">Q17</th><th style="border: 1px solid #000;">Q18</th>
+                <th style="border: 1px solid #000;">Q19</th><th style="border: 1px solid #000;">Q20</th>
+                <th style="width: 70px; border: 1px solid #000;">획득/만점</th>
+                <th style="width: 60px; border: 1px solid #000;">환산(%)</th>
+                <th style="width: 50px; border: 1px solid #000;">등급</th>
+              </tr>
+            </thead>
+            <tbody id="eulJiTableBody">
+              <!-- JS에서 7개 카테고리별 Group by + 20명 세부 점수 동적 생성 -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. [병지] 관리감독자 업무수행 평가 절차서 (SOP) -->
+        <div id="byeongJiSection" class="a4-page" style="page-break-before: always;">
+          <div class="report-header">
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">[병지] 관리감독자 업무수행 평가 절차서 (SOP)</h2>
+            <p style="font-size: 0.85rem; color: #475569; margin: 0;">산업안전보건법 제16조 및 중대재해처벌법 시행령 제4조에 따른 표준 운영 절차서</p>
+          </div>
+
+          <div style="font-size: 0.85rem; line-height: 1.6; color: #1e293b;">
+            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">1. 목적 및 법적 근거</h4>
+            <p style="margin: 0 0 0.5rem 0;">
+              본 절차서는 사업장 내 관리감독자의 안전·보건 업무수행 능력을 정기적으로 평가하여, 재해 예방 의무를 충실히 이행하도록 지원하고 이행 실적을 객관적 지표(백분율 환산 점수 %)로 관리함을 목적으로 한다.
+            </p>
+
+            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">2. 평가 주기 및 환산 공식</h4>
+            <ul style="margin: 0 0 0.5rem 1.2rem; padding: 0;">
+              <li><strong>평가 주기</strong>: 연 2회 (상반기: 6월 말 기준 / 하반기: 12월 말 기준)</li>
+              <li><strong>환산 공식</strong>: <code>환산점수(%) = (직종별 획득 점수 합계 / 적용 문항수 × 3점) × 100</code></li>
+            </ul>
+
+            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">3. 7개 정규 직종별 N/A 제외 문항 적용 기준표</h4>
+            <table class="report-table" style="font-size: 0.8rem; width: 100%; margin-bottom: 0.75rem;">
+              <thead>
+                <tr style="background: #f1f5f9;">
+                  <th>직종 구분</th>
+                  <th>적용 문항 목록 (총 20문항 중)</th>
+                  <th>적용 문항수</th>
+                  <th>만점 기준</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>안전</td><td>Q1~Q15, Q17~Q20 (Q16 제외)</td><td>19문항</td><td>57점</td></tr>
+                <tr><td>보건</td><td>Q1, Q2, Q7, Q9, Q11, Q12, Q15, Q16, Q18~Q20</td><td>11문항</td><td>33점</td></tr>
+                <tr><td>품질</td><td>Q1, Q2, Q18~Q20</td><td>5문항</td><td>15점</td></tr>
+                <tr><td>공사관리자</td><td>Q1~Q20 (전 문항 적용)</td><td>20문항</td><td>60점</td></tr>
+                <tr><td>공무</td><td>Q1, Q2, Q20</td><td>3문항</td><td>9점</td></tr>
+                <tr><td>팀리더</td><td>Q1~Q20 (전 문항 적용)</td><td>20문항</td><td>60점</td></tr>
+                <tr><td>설계</td><td>Q1, Q2, Q18~Q20</td><td>5문항</td><td>15점</td></tr>
+              </tbody>
+            </table>
+
+            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">4. 결재 및 전자 보관 절차</h4>
+            <p style="margin: 0;">
+              평가 완료 후 현장소장 전자 서명을 거쳐 구글 드라이브 및 감사 시트에 3년간 안전보건 법적 증빙 서류로 보관한다.
+            </p>
+          </div>
+        </div>
+
+      </div>
+
+    </div>
+  </div>
+
+  <!-- ==========================================
+       [모달] 📧 미제출 현장 독려 메일 일괄 발송 모달
+       ========================================== -->
+  <div id="reminderMailModal" class="modal-backdrop">
+    <div class="modal-card shadow-lg" style="max-width: 680px; width: 90%;">
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem;">
+        <h3 style="margin: 0; color: var(--primary-color); font-size: 1.15rem;">📧 2026년 관리감독자 평가 미제출 현장 독려 메일 발송</h3>
+        <button onclick="closeModal('reminderMailModal')" style="background: none; border: none; font-size: 1.25rem; cursor: pointer;">✕</button>
+      </div>
+
+      <!-- 상반기 / 하반기 탭 -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid #cbd5e1;">
+        <button id="tabTermFirst" class="btn active-tab" onclick="switchReminderTab('상반기')" style="padding: 0.5rem 1.25rem; font-weight: 700; border-radius: 8px 8px 0 0; border: none; background: var(--primary-color); color: #fff; cursor: pointer;">
+          📅 2026년 상반기 미제출 현장
+        </button>
+        <button id="tabTermSecond" class="btn inactive-tab" onclick="switchReminderTab('하반기')" style="padding: 0.5rem 1.25rem; font-weight: 700; border-radius: 8px 8px 0 0; border: none; background: #e2e8f0; color: #475569; cursor: pointer;">
+          📅 2026년 하반기 미제출 현장
+        </button>
+      </div>
+
+      <!-- 현장 검색 & 리스트 -->
+      <div style="margin-bottom: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <span style="font-size: 0.85rem; font-weight: 700; color: #334155;" id="reminderTargetCountText">
+            미제출/미등록 현장 선택 (총 3개 현장 대상)
+          </span>
+          <div>
+            <button class="btn btn-outline" onclick="toggleAllReminderCheckboxes(true)" style="font-size: 0.75rem; padding: 2px 8px;">전체 선택</button>
+            <button class="btn btn-outline" onclick="toggleAllReminderCheckboxes(false)" style="font-size: 0.75rem; padding: 2px 8px;">전체 해제</button>
+          </div>
+        </div>
+
+        <div id="unsubmittedSiteListContainer" style="max-height: 220px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.5rem; background: #f8fafc;">
+          <!-- JS에서 동적 체크박스 렌더링 -->
+        </div>
+      </div>
+
+      <!-- 안내 메세지 미리보기 -->
+      <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.75rem; border-radius: 8px; margin-bottom: 1.25rem;">
+        <div style="font-size: 0.8rem; font-weight: 700; color: #1e40af; margin-bottom: 0.25rem;">✉️ 발송 안내 메일 내용 미리보기:</div>
+        <p id="reminderMailPreviewText" style="font-size: 0.8rem; color: #1e3a8a; margin: 0; line-height: 1.4;">
+          "[세방] 2026년 상반기 관리감독자 안전보건 업무수행 평가 미진행 안내 - 아래 URL 접속 후 즉시 평가를 진행해 주세요: https://eviden-commits.github.io/supervisorassessment/index.html"
+        </p>
+      </div>
+
+      <div style="display: flex; justify-content: flex-end; gap: 0.5rem;">
+        <button class="btn btn-secondary" onclick="closeModal('reminderMailModal')">취소</button>
+        <button id="btnSendSelectedReminderMails" class="btn btn-warning" style="font-weight: 700;">
+          🚀 선택 현장 독려 메일 일괄 발송하기
         </button>
       </div>
     </div>
   </div>
 
-  <!-- Admin Main Content -->
-  <main class="main-container" id="adminMainContent" style="display: none; max-width: 1000px;">
-
-    <!-- 1. 통계 및 인원 현황 -->
-    <section class="card" style="margin-bottom: 1.25rem;">
-      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center;">
-        <span>📊 현장별 등록 관리감독자 현황</span>
-        <button class="btn btn-primary" id="btnSendReminderMails" style="font-size: 0.78rem;">📧 미제출자 독려 메일 일괄 발송</button>
-      </div>
-      <div style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 0.75rem;">
-        현재 DB 시트에 등록되어 평가 대상이 된 관리감독자 명단 (<span id="userCountSpan" style="font-weight: 800; color: var(--accent-color);">0</span>명):
-      </div>
-      <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
-        <table class="compact-table" style="width: 100%; text-align: left; font-size: 0.82rem;">
-          <thead>
-            <tr>
-              <th style="padding: 8px;">현장명</th>
-              <th style="padding: 8px;">사번</th>
-              <th style="padding: 8px;">성명</th>
-              <th style="padding: 8px;">이메일</th>
-              <th style="padding: 8px;">생년월일</th>
-              <th style="padding: 8px;">직종</th>
-              <th style="padding: 8px;">제출상태</th>
-            </tr>
-          </thead>
-          <tbody id="userTableBody"></tbody>
-        </table>
-      </div>
-    </section>
-
-    <!-- 2. A4 보고서 (갑지 + 을지 + 병지 절차서) 출력 센터 -->
-    <section class="card" id="reportControlCard" style="margin-bottom: 1.25rem;">
-      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-        <span>🖨️ 종합 보고서 (갑지 + 을지 + 병지 절차서) A4 인쇄 센터</span>
-        <div style="display: flex; gap: 0.5rem;">
-          <button class="btn btn-primary" onclick="printReport()">🖨️ A4 보고서 인쇄 / PDF 저장</button>
-        </div>
-      </div>
-
-      <div class="form-grid" style="margin-bottom: 1rem;">
-        <div class="form-group">
-          <label>평가 연도</label>
-          <select id="reportYearSelect" class="form-control" onchange="updateReportView()">
-            <option value="2026년" selected>2026년</option>
-            <option value="2025년">2025년</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>평가 반기</label>
-          <select id="reportTermSelect" class="form-control" onchange="updateReportView()">
-            <option value="상반기" selected>상반기</option>
-            <option value="하반기">하반기</option>
-          </select>
-        </div>
-        <div class="form-group">
-          <label>출력 서식 양식 선택</label>
-          <select id="reportTypeSelect" class="form-control" onchange="updateReportView()">
-            <option value="all" selected>전체 출력 (갑지 + 을지 + 병지 절차서)</option>
-            <option value="gab">갑지 (종합 보고서) 만</option>
-            <option value="eul">을지 (직종별 세부점수표) 만</option>
-            <option value="byeong">병지 (관리감독자 평가 절차서) 만</option>
-          </select>
-        </div>
-      </div>
-
-      <!-- Printable Report Preview -->
-      <div id="printableReportArea" style="background: #ffffff; border: 1px solid var(--border-color); border-radius: var(--radius-sm); padding: 1.5rem; margin-top: 1rem;">
-        
-        <!-- 갑지 -->
-        <div id="gabJiSection" style="margin-bottom: 2rem;">
-          <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
-            <div style="text-align: left;">
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 0.3rem;">
-                관리감독자 평가 종합 보고서 (갑지)
-              </h2>
-              <p style="font-size: 0.85rem; color: #475569;" id="reportSubTitle">
-                2026년 상반기 안전보건 이행 실적 및 백분율 환산(%) 평가
-              </p>
-            </div>
-            <!-- 결재란 (우측 상단 310px 고정) -->
-            <table class="approval-table" style="width: 310px; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
-              <tr>
-                <th rowspan="2" style="width: 25px; border: 1px solid #000; background: #f1f5f9; vertical-align: middle;">결<br>재</th>
-                <th style="border: 1px solid #000; background: #f8fafc; padding: 4px;">작 성 (담당)</th>
-                <th style="border: 1px solid #000; background: #f8fafc; padding: 4px;">검 토 (팀장)</th>
-                <th style="border: 1px solid #000; background: #f8fafc; padding: 4px;">승 인 (소장)</th>
-              </tr>
-              <tr style="height: 55px;">
-                <td style="border: 1px solid #000; vertical-align: middle;"><span style="font-size: 0.75rem; color: #64748b;">(서명)</span></td>
-                <td style="border: 1px solid #000; vertical-align: middle;"><span style="font-size: 0.75rem; color: #64748b;">(인)</span></td>
-                <td style="border: 1px solid #000; vertical-align: middle;"><span style="font-size: 0.75rem; color: #64748b;">(인)</span></td>
-              </tr>
-            </table>
-          </div>
-
-          <div style="border: 1px solid #000; padding: 8px; margin-bottom: 1rem; text-align: left; font-size: 0.85rem; background: #f8fafc;">
-            <strong>현장명:</strong> <span id="repSiteLabel">전체현장</span> &nbsp;|&nbsp; 
-            <strong>평가대상 인원:</strong> <span id="repWorkerCountLabel">20명</span>
-          </div>
-
-          <table class="main-report-table" style="width: 100%; border-collapse: collapse; font-size: 0.82rem; text-align: center;">
-            <thead>
-              <tr style="background: #f1f5f9;">
-                <th style="border: 1px solid #000; padding: 6px;">평가 분야 (8가지 항목)</th>
-                <th style="border: 1px solid #000; padding: 6px;">문항수</th>
-                <th style="border: 1px solid #000; padding: 6px;">획득 평균점수</th>
-                <th style="border: 1px solid #000; padding: 6px;">백분율 환산 (%)</th>
-                <th style="border: 1px solid #000; padding: 6px;">평가 등급</th>
-              </tr>
-            </thead>
-            <tbody>
-              <tr><td style="border: 1px solid #000; padding: 6px; text-align: left; font-weight:700;">[Part 1] 관리감독자 업무수행 지원</td><td style="border: 1px solid #000; padding: 6px;">2문항</td><td style="border: 1px solid #000; padding: 6px;">2.9점 / 3.0점</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">96.7%</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#059669;">우수</td></tr>
-              <tr><td style="border: 1px solid #000; padding: 6px; text-align: left; font-weight:700;">[Part 2] 기계·기구/설비 안전보건점검</td><td style="border: 1px solid #000; padding: 6px;">5문항</td><td style="border: 1px solid #000; padding: 6px;">2.8점 / 3.0점</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">93.3%</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#059669;">우수</td></tr>
-              <tr><td style="border: 1px solid #000; padding: 6px; text-align: left; font-weight:700;">[Part 3] 근로자 보호구 및 방호장치 교육</td><td style="border: 1px solid #000; padding: 6px;">3문항</td><td style="border: 1px solid #000; padding: 6px;">3.0점 / 3.0점</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">100.0%</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#059669;">우수</td></tr>
-              <tr><td style="border: 1px solid #000; padding: 6px; text-align: left; font-weight:700;">[Part 4] 산업재해 보고 및 응급조치</td><td style="border: 1px solid #000; padding: 6px;">2문항</td><td style="border: 1px solid #000; padding: 6px;">2.9점 / 3.0점</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">96.7%</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#059669;">우수</td></tr>
-              <tr><td style="border: 1px solid #000; padding: 6px; text-align: left; font-weight:700;">[Part 5] 작업장 정리정돈 및 통로확보</td><td style="border: 1px solid #000; padding: 6px;">2문항</td><td style="border: 1px solid #000; padding: 6px;">2.85점 / 3.0점</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">95.0%</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#059669;">우수</td></tr>
-              <tr><td style="border: 1px solid #000; padding: 6px; text-align: left; font-weight:700;">[Part 6] 안전/보건관리자 지도조언 협조</td><td style="border: 1px solid #000; padding: 6px;">3문항</td><td style="border: 1px solid #000; padding: 6px;">2.95점 / 3.0점</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">98.3%</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#059669;">우수</td></tr>
-              <tr><td style="border: 1px solid #000; padding: 6px; text-align: left; font-weight:700;">[Part 7] 위험성평가 및 기타 이행</td><td style="border: 1px solid #000; padding: 6px;">3문항</td><td style="border: 1px solid #000; padding: 6px;">2.9점 / 3.0점</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">96.7%</td><td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#059669;">우수</td></tr>
-            </tbody>
-          </table>
-        </div>
-
-        <!-- 을지 -->
-        <div id="eulJiSection" class="report-page-break">
-          <h3 style="font-size: 1.2rem; font-weight: 800; color: #0f172a; margin-bottom: 0.3rem; text-align: left;">
-            관리감독자 직종별 세부 평가 내역서 (을지)
-          </h3>
-          <p style="font-size: 0.82rem; color: #475569; margin-bottom: 1rem; text-align: left;" id="eulJiSubTitle">
-            직종별 N/A 제외 개별 환산 점수 및 세부 평가 결과
-          </p>
-
-          <div style="overflow-x: auto;">
-            <table class="main-report-table" style="width: 100%; border-collapse: collapse; font-size: 0.7rem; text-align: center;">
-              <thead>
-                <tr style="background: #f1f5f9;">
-                  <th style="border: 1px solid #000; padding: 4px;" rowspan="2">성명</th>
-                  <th style="border: 1px solid #000; padding: 4px;" rowspan="2">직종</th>
-                  <th style="border: 1px solid #000; padding: 4px;" colspan="20">문항별 점수 (1~20)</th>
-                  <th style="border: 1px solid #000; padding: 4px;" rowspan="2">획득/만점</th>
-                  <th style="border: 1px solid #000; padding: 4px;" rowspan="2">환산%</th>
-                  <th style="border: 1px solid #000; padding: 4px;" rowspan="2">등급</th>
-                </tr>
-                <tr style="background: #f8fafc;">
-                  <th style="border: 1px solid #000; padding: 2px;">1</th>
-                  <th style="border: 1px solid #000; padding: 2px;">2</th>
-                  <th style="border: 1px solid #000; padding: 2px;">3</th>
-                  <th style="border: 1px solid #000; padding: 2px;">4</th>
-                  <th style="border: 1px solid #000; padding: 2px;">5</th>
-                  <th style="border: 1px solid #000; padding: 2px;">6</th>
-                  <th style="border: 1px solid #000; padding: 2px;">7</th>
-                  <th style="border: 1px solid #000; padding: 2px;">8</th>
-                  <th style="border: 1px solid #000; padding: 2px;">9</th>
-                  <th style="border: 1px solid #000; padding: 2px;">10</th>
-                  <th style="border: 1px solid #000; padding: 2px;">11</th>
-                  <th style="border: 1px solid #000; padding: 2px;">12</th>
-                  <th style="border: 1px solid #000; padding: 2px;">13</th>
-                  <th style="border: 1px solid #000; padding: 2px;">14</th>
-                  <th style="border: 1px solid #000; padding: 2px;">15</th>
-                  <th style="border: 1px solid #000; padding: 2px;">16</th>
-                  <th style="border: 1px solid #000; padding: 2px;">17</th>
-                  <th style="border: 1px solid #000; padding: 2px;">18</th>
-                  <th style="border: 1px solid #000; padding: 2px;">19</th>
-                  <th style="border: 1px solid #000; padding: 2px;">20</th>
-                </tr>
-              </thead>
-              <tbody id="eulJiTableBody"></tbody>
-            </table>
-          </div>
-        </div>
-
-        <!-- 병지 (관리감독자 평가 절차서) -->
-        <div id="byeongJiSection" class="report-page-break" style="text-align: left; padding-top: 1.5rem;">
-          <div style="border-bottom: 2px solid #000; padding-bottom: 0.75rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end;">
-            <div>
-              <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 0.2rem;">
-                관리감독자 업무수행 평가 절차서 (병지)
-              </h2>
-              <p style="font-size: 0.85rem; color: #475569;">
-                산업안전보건법 제16조 및 중대재해처벌법 시행령 제4조 근거 규정
-              </p>
-            </div>
-            <span style="font-size: 0.8rem; font-weight: 700; color: #2563eb; border: 1px solid #93c5fd; padding: 3px 8px; border-radius: 4px; background: #eff6ff;">
-              표준 운영 절차서 (SOP)
-            </span>
-          </div>
-
-          <div style="font-size: 0.84rem; color: #1e293b; line-height: 1.7;">
-            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 1rem 0 0.4rem 0;">1. 평가 목적 및 법적 근거</h4>
-            <p style="margin-left: 0.5rem; color: #334155;">
-              본 절차서는 산업안전보건법 제16조(관리감독자) 및 중대재해처벌법 시행령 제4조 제3호에 따라, 사업장 내 관리감독자의 안전·보건 업무수행 적정성을 반기별로 평가하고 필요한 조치를 이행하기 위한 표준 절차를 규정합니다.
-            </p>
-
-            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 1rem 0 0.4rem 0;">2. 평가 기간 및 대상</h4>
-            <ul style="margin-left: 1.5rem; color: #334155;">
-              <li><strong>평가 주기:</strong> 연 2회 정기 평가 실시 (상반기: 1월~6월 / 하반기: 7월~12월)</li>
-              <li><strong>평가 대상:</strong> 현장소장이 관리감독자로 지정하여 R&R(권한 및 책무)을 부여한 전 관리감독자</li>
-            </ul>
-
-            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 1rem 0 0.4rem 0;">3. 7개 정규 직종 분류 및 N/A 적용 기준</h4>
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; margin: 0.5rem 0 1rem 0; text-align: center;">
-              <thead>
-                <tr style="background: #f1f5f9;">
-                  <th style="border: 1px solid #000; padding: 5px;">직종 구분</th>
-                  <th style="border: 1px solid #000; padding: 5px;">적용 문항 수</th>
-                  <th style="border: 1px solid #000; padding: 5px;">만점 기준</th>
-                  <th style="border: 1px solid #000; padding: 5px;">N/A (해당 없음) 제외 항목</th>
-                </tr>
-              </thead>
-              <tbody>
-                <tr>
-                  <td style="border: 1px solid #000; padding: 5px; font-weight: 700;">안전</td>
-                  <td style="border: 1px solid #000; padding: 5px;">19문항</td>
-                  <td style="border: 1px solid #000; padding: 5px;">57점 만점</td>
-                  <td style="border: 1px solid #000; padding: 5px; text-align: left;">16번(안전관리자 지도조언 - 자기참조 제외)</td>
-                </tr>
-                <tr>
-                  <td style="border: 1px solid #000; padding: 5px; font-weight: 700;">보건</td>
-                  <td style="border: 1px solid #000; padding: 5px;">11문항</td>
-                  <td style="border: 1px solid #000; padding: 5px;">33점 만점</td>
-                  <td style="border: 1px solid #000; padding: 5px; text-align: left;">3~6번, 8번, 10번, 13~14번, 17번(자기참조) 9개 항목 제외</td>
-                </tr>
-                <tr>
-                  <td style="border: 1px solid #000; padding: 5px; font-weight: 700;">품질 / 설계</td>
-                  <td style="border: 1px solid #000; padding: 5px;">5문항</td>
-                  <td style="border: 1px solid #000; padding: 5px;">15점 만점</td>
-                  <td style="border: 1px solid #000; padding: 5px; text-align: left;">1, 2, 18, 19, 20번만 적용 (나머지 15개 항목 N/A 제외)</td>
-                </tr>
-                <tr>
-                  <td style="border: 1px solid #000; padding: 5px; font-weight: 700;">공무</td>
-                  <td style="border: 1px solid #000; padding: 5px;">3문항</td>
-                  <td style="border: 1px solid #000; padding: 5px;">9점 만점</td>
-                  <td style="border: 1px solid #000; padding: 5px; text-align: left;">1, 2, 20번만 적용 (나머지 17개 항목 N/A 제외)</td>
-                </tr>
-                <tr>
-                  <td style="border: 1px solid #000; padding: 5px; font-weight: 700;">팀리더 / 공사관리자</td>
-                  <td style="border: 1px solid #000; padding: 5px;">20문항</td>
-                  <td style="border: 1px solid #000; padding: 5px;">60점 만점</td>
-                  <td style="border: 1px solid #000; padding: 5px; text-align: left;">20개 전체 문항 100% 적용</td>
-                </tr>
-              </tbody>
-            </table>
-
-            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 1rem 0 0.4rem 0;">4. 평가 산출 및 백분율 환산 기준</h4>
-            <ul style="margin-left: 1.5rem; color: #334155;">
-              <li><strong>문항 배점:</strong> 적정 (3점) | 보통 (2점) | 미흡 (1점) 3단계 원클릭 평가</li>
-              <li><strong>환산 공식:</strong> <code>환산점수(%) = (획득 점수 ÷ 적용문항 만점) × 100</code></li>
-              <li><strong>등급 매핑:</strong> 🟢 <strong>우수 (90% 이상)</strong> | 🟡 <strong>보통 (70~89.9%)</strong> | 🔴 <strong>미흡 (70% 미만)</strong></li>
-            </ul>
-
-            <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 1rem 0 0.4rem 0;">5. 결재 및 데이터 이관 보관 절차</h4>
-            <ol style="margin-left: 1.5rem; color: #334155;">
-              <li><strong>작성/검토:</strong> 현장 안전보건 담당자가 E-mail OTP 인증 후 평가 대상자 명단을 검증 및 등록합니다.</li>
-              <li><strong>승인(서명):</strong> 현장소장이 20문항 점수를 세팅한 후 1회 전자 서명을 이행하여 승인합니다.</li>
-              <li><strong>자동 이관:</strong> 전자 서명 이행 즉시 Google Cloud Drive 및 DB 시트에 자동으로 영구 보관됩니다.</li>
-            </ol>
-          </div>
-        </div>
-
-      </div>
-    </section>
-
-    <!-- 3. 실시간 감사 로그 센터 -->
-    <section class="card">
-      <div class="card-title" style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.5rem;">
-        <span>📋 시스템 작업 감사 로그 (Audit Logs)</span>
-        <div style="display: flex; gap: 0.5rem;">
-          <button class="btn btn-outline" id="btnRefreshLogs" style="font-size: 0.78rem;">🔄 로그 새로고침</button>
-          <button class="btn btn-outline" id="btnExportLogsExcel" style="font-size: 0.78rem;">📥 감사로그 엑셀 다운로드</button>
-        </div>
-      </div>
-
-      <div style="display: flex; gap: 0.5rem; margin-bottom: 0.85rem; flex-wrap: wrap;">
-        <input type="text" id="logSearchInput" class="form-control" placeholder="시간, 작성자, 액션, 상세 검색..." style="flex: 1; max-width: 300px; font-size: 0.82rem;" />
-        <select id="logTypeFilter" class="form-control" style="width: 150px; font-size: 0.82rem;">
-          <option value="">전체 액션</option>
-          <option value="평가제출">평가제출</option>
-          <option value="명단업로드">명단업로드</option>
-          <option value="비밀번호변경">비밀번호변경</option>
-          <option value="OTP인증">OTP인증</option>
+  <!-- [모달] 비밀번호 변경 모달 -->
+  <div id="changePassModal" class="modal-backdrop">
+    <div class="modal-card shadow-lg" style="max-width: 450px;">
+      <h3 style="margin-top:0; color:var(--primary-color);">🔑 비밀번호 변경</h3>
+      <p style="font-size:0.85rem; color:var(--text-muted);">Apps Script 스크립트 속성에 저장된 접속 비밀번호를 즉시 변경합니다.</p>
+      <div class="form-group">
+        <label>변경 대상 구과</label>
+        <select id="changeTargetSelect" class="form-control">
+          <option value="AdminPassword">최고 관리자 비밀번호 (AdminPassword)</option>
+          <option value="IndexPassword">평가 작성자 비밀번호 (IndexPassword)</option>
         </select>
-        <span id="logCountBadge" style="align-self: center; font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">총 0건</span>
       </div>
-
-      <div style="overflow-x: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
-        <table class="compact-table" style="width: 100%; text-align: left; font-size: 0.8rem;">
-          <thead>
-            <tr>
-              <th style="padding: 8px;">일시</th>
-              <th style="padding: 8px;">작업구분</th>
-              <th style="padding: 8px;">현장/반기</th>
-              <th style="padding: 8px;">작성자/담당자</th>
-              <th style="padding: 8px;">상세 내역</th>
-              <th style="padding: 8px; text-align: center;">상태</th>
-            </tr>
-          </thead>
-          <tbody id="logTableBody"></tbody>
-        </table>
+      <div class="form-group">
+        <label>현재 비밀번호</label>
+        <input type="password" id="curAdminPassInput" class="form-control" placeholder="현재 비밀번호 입력">
       </div>
-    </section>
-
-  </main>
-
-  <!-- 비밀번호 변경 모달 -->
-  <div class="modal-backdrop" id="changePassModal">
-    <div class="modal-content" style="max-width: 450px;">
-      <div class="modal-header">
-        <h3>🔑 시스템 비밀번호 변경</h3>
-        <button class="modal-close" onclick="closeModal('changePassModal')">&times;</button>
+      <div class="form-group">
+        <label>새 비밀번호</label>
+        <input type="password" id="newPassInput" class="form-control" placeholder="새 비밀번호 입력">
       </div>
-      <div class="modal-body">
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label>변경할 비밀번호 항목 선택</label>
-          <select id="changeTargetSelect" class="form-control">
-            <option value="AdminPassword">관리자 페이지 접근 비밀번호</option>
-            <option value="IndexPassword">메인 평가 화면 접속 비밀번호</option>
-          </select>
-        </div>
-
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="curAdminPassInput">현재 관리자 비밀번호</label>
-          <input type="password" id="curAdminPassInput" class="form-control" placeholder="현재 비밀번호 입력" />
-        </div>
-
-        <div class="form-group" style="margin-bottom: 1rem;">
-          <label for="newPassInput">새 비밀번호</label>
-          <input type="password" id="newPassInput" class="form-control" placeholder="새 비밀번호 입력" />
-        </div>
-
-        <div class="form-group">
-          <label for="newPassConfirmInput">새 비밀번호 재확인</label>
-          <input type="password" id="newPassConfirmInput" class="form-control" placeholder="새 비밀번호 재확인" />
-        </div>
+      <div class="form-group">
+        <label>새 비밀번호 재확인</label>
+        <input type="password" id="newPassConfirmInput" class="form-control" placeholder="새 비밀번호 다시 입력">
       </div>
-      <div class="modal-footer">
+      <div style="display:flex; justify-content:flex-end; gap:0.5rem; margin-top:1rem;">
         <button class="btn btn-secondary" onclick="closeModal('changePassModal')">취소</button>
-        <button class="btn btn-primary" id="btnSubmitChangePass">비밀번호 변경 적용</button>
+        <button id="btnSubmitChangePass" class="btn btn-primary">수정 적용</button>
       </div>
     </div>
   </div>

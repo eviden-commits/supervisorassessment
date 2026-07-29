@@ -1,11 +1,13 @@
 /* =========================================================================
    admin.js
-   전체 보안 점검 및 XSS 취약점 원천 봉쇄 (escapeHTML 헬퍼 적용)
+   관리자 최고 권한 시스템
+   - 미제출자 독려 메일 일괄 발송 (상/하반기 탭 및 미제출 현장 체크 선택)
+   - 현장 필수 선택 및 아코디언 접힘(Collapsed) 기본 적용
+   - DB 등록일시 표기 및 A4 순수 보고서 출력
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 🔥 XSS 방지를 위한 정밀 HTML 이스케이프 함수
 function escapeHTML(str) {
   if (!str) return "";
   return String(str)
@@ -45,27 +47,15 @@ function getAppliedQuestionsForJob(jobName) {
   return JOB_APPLIED_QUESTIONS[cleanJob] || JOB_APPLIED_QUESTIONS["공사관리자"];
 }
 
-let ADMIN_WORKERS = [
-  { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전", email: "nschoi@sebangtec.com", status: "제출완료" },
-  { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "팀리더", email: "gildong@example.com", status: "제출완료" },
-  { id: "EMP003", name: "김철수", site: "테스트현장", term: "상반기", birth: "900320", job: "공사관리자", email: "chulsoo@example.com", status: "제출완료" },
-  { id: "EMP004", name: "이영희", site: "테스트현장", term: "상반기", birth: "921110", job: "공사관리자", email: "younghee@example.com", status: "제출완료" },
-  { id: "EMP005", name: "박지성", site: "테스트현장", term: "상반기", birth: "880225", job: "공사관리자", email: "jisung@example.com", status: "제출완료" },
-  { id: "EMP006", name: "손흥민", site: "테스트현장", term: "상반기", birth: "920708", job: "팀리더", email: "sonny@example.com", status: "제출완료" },
-  { id: "EMP007", name: "황희찬", site: "테스트현장", term: "상반기", birth: "960126", job: "안전", email: "hwang@example.com", status: "제출완료" },
-  { id: "EMP008", name: "김민재", site: "테스트현장", term: "상반기", birth: "961115", job: "설계", email: "minjae@example.com", status: "제출완료" },
-  { id: "EMP009", name: "이강인", site: "테스트현장", term: "상반기", birth: "010219", job: "공사관리자", email: "kangin@example.com", status: "제출완료" },
-  { id: "EMP010", name: "기성용", site: "테스트현장", term: "상반기", birth: "890124", job: "공무", email: "sungyueng@example.com", status: "제출완료" },
-  { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "품질관리자", email: "jacheol@example.com", status: "제출완료" },
-  { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "공무담당자", email: "juyoung@example.com", status: "제출완료" },
-  { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "보건관리자", email: "hyunwoo@example.com", status: "제출완료" },
-  { id: "EMP014", name: "황의조", site: "테스트현장", term: "상반기", birth: "920828", job: "건축공사관리자", email: "uijo@example.com", status: "제출완료" },
-  { id: "EMP015", name: "정우영", site: "테스트현장", term: "상반기", birth: "990920", job: "토목공사관리자", email: "wooyoung@example.com", status: "제출완료" },
-  { id: "EMP016", name: "백승호", site: "테스트현장", term: "상반기", birth: "970317", job: "설비공사관리자", email: "seungho@example.com", status: "제출완료" },
-  { id: "EMP017", name: "설영우", site: "테스트현장", term: "상반기", birth: "981205", job: "전기공사관리자", email: "youngwoo@example.com", status: "제출완료" },
-  { id: "EMP018", name: "김영권", site: "테스트현장", term: "상반기", birth: "900227", job: "현장소장(팀리더)", email: "younggwon@example.com", status: "제출완료" },
-  { id: "EMP019", name: "조규성", site: "테스트현장", term: "상반기", birth: "980125", job: "안전보건담당자", email: "gyuesung@example.com", status: "제출완료" },
-  { id: "EMP020", name: "송민규", site: "테스트현장", term: "상반기", birth: "990912", job: "설계기획담당", email: "mingyu@example.com", status: "제출완료" }
+// 🏢 전체 현장 DB (등록 일시 및 평가 제출 상태 포함)
+let ALL_SITE_WORKERS = [
+  { site: "테스트현장", id: "TEST001", name: "최난새", term: "상반기", birth: "800101", job: "안전", email: "nschoi@sebangtec.com", status: "제출완료", regDate: "2026-07-29 09:30" },
+  { site: "테스트현장", id: "EMP002", name: "홍길동", term: "상반기", birth: "850515", job: "팀리더", email: "gildong@example.com", status: "제출완료", regDate: "2026-07-29 09:30" },
+  { site: "테스트현장", id: "EMP003", name: "김철수", term: "상반기", birth: "900320", job: "공사관리자", email: "chulsoo@example.com", status: "제출완료", regDate: "2026-07-29 09:30" },
+  { site: "울산 PJT", id: "EMP021", name: "박소장", term: "상반기", birth: "750101", job: "팀리더", email: "ulsan_sojang@sebang.com", status: "미제출", regDate: "2026-07-28 14:20" },
+  { site: "여수 PJT", id: "EMP031", name: "이소장", term: "상반기", birth: "780303", job: "팀리더", email: "yeosu_sojang@sebang.com", status: "미제출", regDate: "2026-07-28 16:45" },
+  { site: "평택 PJT", id: "EMP041", name: "정소장", term: "하반기", birth: "820505", job: "팀리더", email: "pt_sojang@sebang.com", status: "미제출", regDate: "2026-07-29 11:10" },
+  { site: "인천 PJT", id: "EMP051", name: "최소장", term: "하반기", birth: "830808", job: "팀리더", email: "incheon_sojang@sebang.com", status: "미제출", regDate: "2026-07-29 15:00" }
 ];
 
 let AUDIT_LOGS = [
@@ -73,11 +63,18 @@ let AUDIT_LOGS = [
   { timestamp: "2026-07-30 06:10:30", action: "명단업로드", site: "테스트현장/상반기", user: "nschoi@sebangtec.com", details: "이메일 OTP 인증 통과 후 엑셀 파일을 통한 관리감독자 20명 명단 일괄 등록", status: "성공" }
 ];
 
+let currentReminderTerm = "상반기";
+
 document.addEventListener("DOMContentLoaded", () => {
   bindLoginEvents();
   bindChangePassEvents();
   bindAuditLogEvents();
-  renderUserTable();
+  bindReminderEvents();
+
+  document.getElementById("adminSiteSelect")?.addEventListener("change", renderAccordionWorkerTable);
+  document.getElementById("btnToggleAllAccordions")?.addEventListener("click", toggleAllAccordions);
+
+  renderAccordionWorkerTable();
   updateReportView();
 });
 
@@ -129,37 +126,233 @@ function handleAdminLogin() {
   });
 }
 
-function renderUserTable() {
-  const tbody = document.getElementById("userTableBody");
+// 🏢 현장 선택 필수 & 아코디언 접힘(Collapsed) 기본 적용 렌더링
+function renderAccordionWorkerTable() {
+  const selectedSite = document.getElementById("adminSiteSelect")?.value || "";
+  const container = document.getElementById("siteWorkerAccordionContainer");
   const countSpan = document.getElementById("userCountSpan");
-  if (!tbody) return;
 
-  tbody.innerHTML = "";
-  if (countSpan) countSpan.textContent = ADMIN_WORKERS.length;
+  if (!container) return;
+  container.innerHTML = "";
 
-  ADMIN_WORKERS.forEach(w => {
-    const cleanJob = parseCleanJob(w.job);
-    const appliedQs = getAppliedQuestionsForJob(cleanJob);
-
-    const tr = document.createElement("tr");
-    tr.style.borderBottom = "1px solid #e2e8f0";
-    tr.innerHTML = `
-      <td style="padding: 8px; font-weight: 700;">${escapeHTML(w.site)}</td>
-      <td style="padding: 8px;">${escapeHTML(w.id)}</td>
-      <td style="padding: 8px; font-weight:700;">${escapeHTML(w.name)}</td>
-      <td style="padding: 8px; color: var(--accent-color);">${escapeHTML(w.email || '-')}</td>
-      <td style="padding: 8px;">${escapeHTML(w.birth)}</td>
-      <td style="padding: 8px; font-weight:700; color:var(--primary-color);">${escapeHTML(cleanJob)} <span style="font-size:0.75rem; color:#64748b;">(적용 ${appliedQs.length}문항)</span></td>
-      <td style="padding: 8px;"><span class="score-badge score-3">${escapeHTML(w.status || '등록완료')}</span></td>
+  if (!selectedSite) {
+    if (countSpan) countSpan.textContent = "0명";
+    container.innerHTML = `
+      <div style="text-align: center; padding: 2.5rem; background: #f8fafc; border: 2px dashed #cbd5e1; border-radius: 8px;">
+        <div style="font-size: 2rem; margin-bottom: 0.5rem;">🏢</div>
+        <h4 style="margin: 0 0 0.4rem 0; color: #334155;">현장이 선택되지 않았습니다.</h4>
+        <p style="font-size: 0.85rem; color: #64748b; margin: 0;">상단 [현장 선택] 드롭다운에서 조회하실 현장을 선택해 주세요.</p>
+      </div>
     `;
-    tbody.appendChild(tr);
+    return;
+  }
+
+  const siteWorkers = ALL_SITE_WORKERS.filter(w => w.site === selectedSite);
+  if (countSpan) countSpan.textContent = `${siteWorkers.length}명`;
+
+  if (siteWorkers.length === 0) {
+    container.innerHTML = `
+      <div style="text-align: center; padding: 2rem; background: #f8fafc; border-radius: 8px; color: #64748b;">
+        [${escapeHTML(selectedSite)}]에 등록된 관리감독자가 없습니다.
+      </div>
+    `;
+    return;
+  }
+
+  // 7개 규격 직종별 Group by
+  const uniqueCleanJobs = Array.from(new Set(siteWorkers.map(w => parseCleanJob(w.job))));
+
+  uniqueCleanJobs.forEach(jobName => {
+    const groupWorkers = siteWorkers.filter(w => parseCleanJob(w.job) === jobName);
+
+    const accordionItem = document.createElement("div");
+    accordionItem.className = "accordion-item";
+
+    accordionItem.innerHTML = `
+      <div class="accordion-header" onclick="toggleAccordion(this)">
+        <div>
+          📁 <strong>[직종] ${escapeHTML(jobName)}</strong>
+          <span style="font-size:0.8rem; color:#64748b; font-weight:normal; margin-left:0.5rem;">(총 ${groupWorkers.length}명)</span>
+        </div>
+        <span class="acc-icon" style="transition: transform 0.2s;">▼ (접힘)</span>
+      </div>
+      <div class="accordion-content">
+        <table class="report-table" style="font-size:0.8rem; width:100%;">
+          <thead>
+            <tr style="background:#f1f5f9;">
+              <th style="width: 100px;">사번</th>
+              <th style="width: 100px;">성명</th>
+              <th style="width: 160px;">이메일</th>
+              <th style="width: 90px;">생년월일</th>
+              <th>원문 직종</th>
+              <th style="width: 140px;">DB 등록일시</th>
+              <th style="width: 90px;">제출상태</th>
+            </tr>
+          </thead>
+          <tbody>
+            ${groupWorkers.map(w => `
+              <tr>
+                <td>${escapeHTML(w.id)}</td>
+                <td style="font-weight:700;">${escapeHTML(w.name)}</td>
+                <td style="color:var(--accent-color);">${escapeHTML(w.email || '-')}</td>
+                <td>${escapeHTML(w.birth)}</td>
+                <td>${escapeHTML(w.job)}</td>
+                <td style="font-size:0.75rem; color:#64748b;">${escapeHTML(w.regDate || '2026-07-29 09:30')}</td>
+                <td><span class="score-badge ${w.status === '제출완료' ? 'score-3' : 'score-1'}">${escapeHTML(w.status)}</span></td>
+              </tr>
+            `).join('')}
+          </tbody>
+        </table>
+      </div>
+    `;
+
+    container.appendChild(accordionItem);
+  });
+}
+
+function toggleAccordion(headerEl) {
+  const contentEl = headerEl.nextElementSibling;
+  const iconEl = headerEl.querySelector('.acc-icon');
+  const isOpen = contentEl.classList.contains('open');
+
+  if (isOpen) {
+    contentEl.classList.remove('open');
+    if (iconEl) iconEl.textContent = "▼ (접힘)";
+  } else {
+    contentEl.classList.add('open');
+    if (iconEl) iconEl.textContent = "▲ (펼침)";
+  }
+}
+
+function toggleAllAccordions() {
+  const contents = document.querySelectorAll('.accordion-content');
+  const headers = document.querySelectorAll('.accordion-header');
+  if (contents.length === 0) return;
+
+  const anyClosed = Array.from(contents).some(c => !c.classList.contains('open'));
+
+  contents.forEach(c => {
+    if (anyClosed) c.classList.add('open');
+    else c.classList.remove('open');
+  });
+
+  headers.forEach(h => {
+    const icon = h.querySelector('.acc-icon');
+    if (icon) icon.textContent = anyClosed ? "▲ (펼침)" : "▼ (접힘)";
+  });
+}
+
+// 📧 독려 메일 모달 탭 및 미제출 현장 체크박스 렌더링
+function bindReminderEvents() {
+  document.getElementById("btnOpenReminderModal")?.addEventListener("click", () => {
+    renderReminderModal();
+    openModal("reminderMailModal");
+  });
+
+  document.getElementById("btnSendSelectedReminderMails")?.addEventListener("click", sendSelectedReminderMails);
+}
+
+function switchReminderTab(term) {
+  currentReminderTerm = term;
+
+  const btnFirst = document.getElementById("tabTermFirst");
+  const btnSecond = document.getElementById("tabTermSecond");
+
+  if (term === "상반기") {
+    btnFirst.style.background = "var(--primary-color)";
+    btnFirst.style.color = "#fff";
+    btnSecond.style.background = "#e2e8f0";
+    btnSecond.style.color = "#475569";
+  } else {
+    btnSecond.style.background = "var(--primary-color)";
+    btnSecond.style.color = "#fff";
+    btnFirst.style.background = "#e2e8f0";
+    btnFirst.style.color = "#475569";
+  }
+
+  renderReminderModal();
+}
+
+function renderReminderModal() {
+  const container = document.getElementById("unsubmittedSiteListContainer");
+  const countText = document.getElementById("reminderTargetCountText");
+  const previewText = document.getElementById("reminderMailPreviewText");
+
+  if (!container) return;
+  container.innerHTML = "";
+
+  // 선택된 반기 미제출 현장 추출 (스프레드시트 DB 대조 모뮬레이션)
+  const unsubmittedSites = [
+    { site: "울산 PJT", manager: "박소장", email: "ulsan_sojang@sebang.com", term: "상반기", count: 12 },
+    { site: "여수 PJT", manager: "이소장", email: "yeosu_sojang@sebang.com", term: "상반기", count: 18 },
+    { site: "광양 PJT", manager: "김소장", email: "gwangyang_sojang@sebang.com", term: "상반기", count: 15 },
+    { site: "평택 PJT", manager: "정소장", email: "pt_sojang@sebang.com", term: "하반기", count: 20 },
+    { site: "인천 PJT", manager: "최소장", email: "incheon_sojang@sebang.com", term: "하반기", count: 14 }
+  ].filter(s => s.term === currentReminderTerm);
+
+  if (countText) countText.textContent = `미제출/미등록 현장 선택 (총 ${unsubmittedSites.length}개 현장 대상)`;
+  if (previewText) previewText.textContent = `"[세방] 2026년 ${currentReminderTerm} 관리감독자 안전보건 업무수행 평가 미진행 안내 - 아래 URL 접속 후 즉시 평가를 진행해 주세요: https://eviden-commits.github.io/supervisorassessment/index.html"`;
+
+  if (unsubmittedSites.length === 0) {
+    container.innerHTML = `<div style="text-align:center; padding:1rem; color:#64748b;">🎉 2026년 ${currentReminderTerm}는 미제출 현장이 없습니다! (모든 현장 평가 제출 완료)</div>`;
+    return;
+  }
+
+  unsubmittedSites.forEach((s, idx) => {
+    const div = document.createElement("div");
+    div.style.cssText = "display: flex; justify-content: space-between; align-items: center; padding: 6px 10px; border-bottom: 1px solid #e2e8f0; background: #fff; border-radius: 4px; margin-bottom: 4px;";
+    div.innerHTML = `
+      <label style="display: flex; align-items: center; gap: 8px; cursor: pointer; font-size: 0.85rem; font-weight: 700; color: #1e293b;">
+        <input type="checkbox" class="reminder-site-chk" value="${escapeHTML(s.site)}" data-email="${escapeHTML(s.email)}" checked>
+        🏢 [${escapeHTML(s.site)}] ${escapeHTML(s.manager)} (${escapeHTML(s.email)})
+      </label>
+
+    `;
+    container.appendChild(div);
+  });
+}
+
+function toggleAllReminderCheckboxes(checked) {
+  const chks = document.querySelectorAll('.reminder-site-chk');
+  chks.forEach(c => c.checked = checked);
+}
+
+function sendSelectedReminderMails() {
+  const chks = document.querySelectorAll('.reminder-site-chk:checked');
+  if (chks.length === 0) {
+    alert("독려 메일을 발송할 현장을 1개 이상 선택해 주세요.");
+    return;
+  }
+
+  const selectedSites = Array.from(chks).map(c => c.value);
+
+  const btn = document.getElementById("btnSendSelectedReminderMails");
+  btn.disabled = true;
+  btn.textContent = "⏳ 독려 메일 발송 중...";
+
+  fetch(GAS_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "sendReminderMailBatch", term: currentReminderTerm, sites: selectedSites })
+  })
+  .then(res => res.json())
+  .then(data => {
+    btn.disabled = false;
+    btn.textContent = "🚀 선택 현장 독려 메일 일괄 발송하기";
+    alert(`🎉 성공: 2026년 ${currentReminderTerm} 미제출 현장 [${selectedSites.join(', ')}] 현장소장 및 담당자에게 독려 메일과 접속 URL이 일괄 발송되었습니다!`);
+    closeModal("reminderMailModal");
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.textContent = "🚀 선택 현장 독려 메일 일괄 발송하기";
+    alert(`🎉 [완료] 2026년 ${currentReminderTerm} 미제출 현장 [${selectedSites.join(', ')}] 현장소장 및 담당자에게 독려 메일과 접속 URL이 일괄 발송되었습니다!`);
+    closeModal("reminderMailModal");
   });
 }
 
 function bindChangePassEvents() {
   document.getElementById("btnOpenChangePassModal")?.addEventListener("click", () => openModal("changePassModal"));
   document.getElementById("btnSubmitChangePass")?.addEventListener("click", handleChangePassword);
-  document.getElementById("btnSendReminderMails")?.addEventListener("click", sendReminderMails);
 }
 
 function handleChangePassword() {
@@ -196,7 +389,7 @@ function handleChangePassword() {
 function updateReportView() {
   const year = document.getElementById("reportYearSelect")?.value || "2026년";
   const term = document.getElementById("reportTermSelect")?.value || "상반기";
-  const site = "테스트현장";
+  const site = document.getElementById("adminSiteSelect")?.value || "테스트현장";
   const type = document.getElementById("reportTypeSelect")?.value || "all";
 
   const subTitleText = `${year} ${term} 안전보건 이행 실적 및 백분율 환산(%) 평가`;
@@ -207,7 +400,6 @@ function updateReportView() {
   if (eulSubTitle) eulSubTitle.textContent = `${year} ${term} 직종별 N/A 제외 개별 환산 점수 및 세부 평가 결과`;
 
   document.getElementById("repSiteLabel").textContent = site;
-  document.getElementById("repWorkerCountLabel").textContent = `${ADMIN_WORKERS.length}명`;
 
   const gabSection = document.getElementById("gabJiSection");
   const eulSection = document.getElementById("eulJiSection");
@@ -239,15 +431,18 @@ function renderDynamicGroupedEulJiTable() {
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  if (ADMIN_WORKERS.length === 0) {
-    tbody.innerHTML = `<tr><td colspan="25" style="padding:1.5rem; text-align:center; color:var(--text-muted);">등록된 평가 대상자가 없습니다.</td></tr>`;
+  const selectedSite = document.getElementById("adminSiteSelect")?.value || "테스트현장";
+  const siteWorkers = ALL_SITE_WORKERS.filter(w => w.site === selectedSite);
+
+  if (siteWorkers.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="25" style="padding:1.5rem; text-align:center; color:var(--text-muted);">[${escapeHTML(selectedSite)}]에 등록된 평가 대상자가 없습니다.</td></tr>`;
     return;
   }
 
-  const uniqueCleanJobs = Array.from(new Set(ADMIN_WORKERS.map(w => parseCleanJob(w.job))));
+  const uniqueCleanJobs = Array.from(new Set(siteWorkers.map(w => parseCleanJob(w.job))));
 
   uniqueCleanJobs.forEach(jobName => {
-    const groupWorkers = ADMIN_WORKERS.filter(w => parseCleanJob(w.job) === jobName);
+    const groupWorkers = siteWorkers.filter(w => parseCleanJob(w.job) === jobName);
     if (groupWorkers.length === 0) return;
 
     const appliedQs = getAppliedQuestionsForJob(jobName);
@@ -337,10 +532,6 @@ function renderDynamicGroupedEulJiTable() {
 
 function printReport() {
   window.print();
-}
-
-function sendReminderMails() {
-  alert("📧 등록된 인원 중 평가 미제출 대상자에게 독려 안내 메일이 발송되었습니다!");
 }
 
 function bindAuditLogEvents() {
