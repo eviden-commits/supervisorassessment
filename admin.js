@@ -1,12 +1,9 @@
 /* =========================================================================
    admin.js
-   관리자 비밀번호 엄격한 보안 검증 및 무한 락 완벽 해결
+   Apps Script 스크립트 속성(AdminPassword) 저장값 100% 전담 백엔드 검증 (하드코딩 제거)
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
-
-// 관리자 허용 표준 비밀번호 목록
-const VALID_ADMIN_PASSWORDS = ["1234", "eviden", "sebang", "admin"];
 
 const JOB_APPLIED_QUESTIONS = {
   "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20],
@@ -85,7 +82,7 @@ function bindLoginEvents() {
   });
 }
 
-// 🔥 관리자 엄격 비밀번호 보안 검증 (비밀번호 불일치시 무조건 진입 차단!)
+// 🔥 앱스크립트 스크립트 속성(AdminPassword) 저장값과 100% 백엔드 실시간 대조 (하드코딩 제거)
 function handleAdminLogin() {
   const pass = document.getElementById("adminPass").value.trim();
   if (!pass) {
@@ -97,8 +94,6 @@ function handleAdminLogin() {
   btn.disabled = true;
   btn.textContent = "⏳ 인증 중...";
 
-  const isLocalValid = VALID_ADMIN_PASSWORDS.includes(pass);
-
   fetch(GAS_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -108,26 +103,19 @@ function handleAdminLogin() {
   .then(data => {
     btn.disabled = false;
     btn.textContent = "확인 로그인";
-    if (data.ok || isLocalValid) {
+    if (data.ok) {
       document.getElementById("loginGateModal").classList.remove("active");
       document.getElementById("adminMainContent").style.display = "block";
       fetchAuditLogs();
       updateReportView();
     } else {
-      alert("⚠️ 관리자 인증 실패: 비밀번호가 올바르지 않습니다.\n(기본 비밀번호: 1234 또는 evidencet)");
+      alert(`⚠️ 관리자 인증 실패: ${data.error || '비밀번호가 올바르지 않습니다.'}`);
     }
   })
   .catch(err => {
     btn.disabled = false;
     btn.textContent = "확인 로그인";
-    if (isLocalValid) {
-      document.getElementById("loginGateModal").classList.remove("active");
-      document.getElementById("adminMainContent").style.display = "block";
-      renderAuditLogs(AUDIT_LOGS);
-      updateReportView();
-    } else {
-      alert("⚠️ 관리자 인증 실패: 비밀번호가 올바르지 않습니다.\n(기본 비밀번호: 1234 또는 evidencet)");
-    }
+    alert("⚠️ 네트워크 응답 장애가 발생했습니다. 앱스크립트 서버 연결 상태를 확인하고 다시 시도해 주세요.");
   });
 }
 

@@ -1,12 +1,9 @@
 /* =========================================================================
    app.js
-   엄격한 비밀번호 보안 검증 및 통신 멈춤 완벽 방지
+   Apps Script 스크립트 속성에 저장된 비밀번호 100% 전담 백엔드 검증 (하드코딩 제거)
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
-
-// 접속 허용 표준 비밀번호 목록 (엄격한 1차 로컬 검증)
-const VALID_INDEX_PASSWORDS = ["1234", "eviden", "sebang", "admin"];
 
 const JOB_APPLIED_QUESTIONS = {
   "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20],
@@ -110,7 +107,7 @@ function bindIndexAuthEvents() {
   });
 }
 
-// 🔥 정밀 보안 검증: 비밀번호가 맞지 않으면 절대 입장 안됨! (무한 대기 버튼 복구 완비)
+// 🔥 앱스크립트 스크립트 속성(IndexPassword) 저장값과 100% 백엔드 실시간 대조 (하드코딩 제거)
 function handleIndexLogin() {
   const pass = document.getElementById("indexPassInput").value.trim();
   if (!pass) {
@@ -122,9 +119,6 @@ function handleIndexLogin() {
   btn.disabled = true;
   btn.textContent = "⏳ 비밀번호 검증 중...";
 
-  // 1차 클라이언트 로컬 정밀 검증
-  const isLocalValid = VALID_INDEX_PASSWORDS.includes(pass);
-
   fetch(GAS_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -134,21 +128,16 @@ function handleIndexLogin() {
   .then(data => {
     btn.disabled = false;
     btn.textContent = "입장하기";
-    if (data.ok || isLocalValid) {
+    if (data.ok) {
       showStepIntro();
     } else {
-      alert("⚠️ 접속 실패: 비밀번호가 올바르지 않습니다.\n(기본 비밀번호: 1234 또는 evidencet)");
+      alert(`⚠️ 접속 실패: ${data.error || '비밀번호가 올바르지 않습니다.'}`);
     }
   })
   .catch(err => {
     btn.disabled = false;
     btn.textContent = "입장하기";
-    // 서버 통신 장애 시 로컬 정밀 비밀번호로만 엄격히 대조
-    if (isLocalValid) {
-      showStepIntro();
-    } else {
-      alert("⚠️ 접속 실패: 비밀번호가 올바르지 않습니다.\n(기본 비밀번호: 1234 또는 evidencet)");
-    }
+    alert("⚠️ 네트워크 응답 장애가 발생했습니다. 앱스크립트 서버 연결 상태를 확인하고 다시 시도해 주세요.");
   });
 }
 
