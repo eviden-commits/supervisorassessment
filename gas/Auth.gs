@@ -1,11 +1,8 @@
 /* =========================================================================
    Auth.gs
-   관리자 비밀번호 (Addpassword) 및 메인 작성 비밀번호 (loginindex) 검증
+   비밀번호 검증, 변경 및 이메일 OTP 인증 모듈
    ========================================================================= */
 
-/**
- * ScriptProperties의 'Addpassword' (관리자 비밀번호) 검증
- */
 function checkAdminPassword_(password) {
   var props = PropertiesService.getScriptProperties();
   var realPwd = props.getProperty('Addpassword');
@@ -21,14 +18,10 @@ function checkAdminPassword_(password) {
   }
 }
 
-/**
- * ScriptProperties의 'loginindex' (메인 작성 접속 비밀번호) 검증
- */
 function checkIndexPassword_(password) {
   var props = PropertiesService.getScriptProperties();
   var realPwd = props.getProperty('loginindex');
 
-  // loginindex 미설정 시 개발 편의를 위해 통과
   if (!realPwd) {
     return { ok: true, isDefault: true, message: 'loginindex 속성이 미설정되어 접속을 허용합니다.' };
   }
@@ -41,8 +34,32 @@ function checkIndexPassword_(password) {
 }
 
 /**
- * 6자리 이메일 OTP 번호 생성 및 발송
+ * 어드민 화면에서 비밀번호 변경 (Addpassword / loginindex)
  */
+function changePassword_(currentAdminPassword, targetKey, newPassword) {
+  var auth = checkAdminPassword_(currentAdminPassword);
+  if (!auth.ok) {
+    return { ok: false, error: '현재 관리자 비밀번호가 올바르지 않습니다.' };
+  }
+
+  var key = String(targetKey || '').trim();
+  var newPwd = String(newPassword || '').trim();
+
+  if (key !== 'Addpassword' && key !== 'loginindex') {
+    return { ok: false, error: '유효하지 않은 비밀번호 변경 항목입니다.' };
+  }
+
+  if (!newPwd) {
+    return { ok: false, error: '새 비밀번호를 입력해 주세요.' };
+  }
+
+  // PropertiesService 스크립트 속성 즉시 변경
+  PropertiesService.getScriptProperties().setProperty(key, newPwd);
+
+  var targetName = key === 'Addpassword' ? '관리자 비밀번호(Addpassword)' : '작성 페이지 접속 비밀번호(loginindex)';
+  return { ok: true, message: targetName + '가 성공적으로 변경되었습니다.' };
+}
+
 function sendEmailOTP_(email) {
   var emailStr = String(email || '').trim();
   if (!emailStr || emailStr.indexOf('@') === -1) {

@@ -17,8 +17,9 @@
         <h1>🔒 관리자 대시보드 & 종합 보고서</h1>
         <p>관리감독자 인원 엑셀 일괄 등록, 제출 현황 및 결재 보고서</p>
       </div>
-      <div>
-        <a href="index.html" class="btn btn-outline" style="font-size:0.8rem;">📋 현장소장 작성 화면</a>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-outline" id="btnOpenChangePassModal" style="font-size:0.8rem; background:#ffffff; color:#0f172a;">🔑 비밀번호 변경</button>
+        <a href="index.html" class="btn btn-outline" style="font-size:0.8rem; background:rgba(255,255,255,0.1); color:#ffffff; border-color:rgba(255,255,255,0.3);">📋 평가 작성 화면</a>
       </div>
     </div>
   </header>
@@ -37,6 +38,44 @@
       </div>
       <div class="modal-footer">
         <button class="btn btn-primary" id="btnLogin">확인 로그인</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 비밀번호 변경 Modal -->
+  <div class="modal-backdrop" id="changePassModal">
+    <div class="modal-content" style="max-width: 450px;">
+      <div class="modal-header">
+        <h3>🔑 접속/관리자 비밀번호 변경</h3>
+        <button class="modal-close" onclick="closeModal('changePassModal')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem;">
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="changeTargetSelect">변경할 비밀번호 항목</label>
+          <select id="changeTargetSelect" class="form-control">
+            <option value="loginindex">1. 평가 작성 접속 비밀번호 (loginindex)</option>
+            <option value="Addpassword">2. 관리자 페이지 비밀번호 (Addpassword)</option>
+          </select>
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="curAdminPassInput">현재 관리자 비밀번호 확인</label>
+          <input type="password" id="curAdminPassInput" class="form-control" placeholder="현재 관리자 비밀번호" />
+        </div>
+
+        <div class="form-group" style="margin-bottom: 1rem;">
+          <label for="newPassInput">새 비밀번호</label>
+          <input type="password" id="newPassInput" class="form-control" placeholder="새 비밀번호 입력" />
+        </div>
+
+        <div class="form-group">
+          <label for="newPassConfirmInput">새 비밀번호 재확인</label>
+          <input type="password" id="newPassConfirmInput" class="form-control" placeholder="새 비밀번호 다시 입력" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnSubmitChangePass">비밀번호 변경 적용</button>
+        <button class="btn btn-secondary" onclick="closeModal('changePassModal')">취소</button>
       </div>
     </div>
   </div>

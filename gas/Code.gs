@@ -34,6 +34,8 @@ function doPost(e) {
       result = checkAdminPassword_(data.password);
     } else if (action === 'checkIndexPassword') {
       result = checkIndexPassword_(data.password);
+    } else if (action === 'changePassword') {
+      result = changePassword_(data.currentAdminPassword, data.targetKey, data.newPassword);
     } else if (action === 'sendOTP') {
       result = sendEmailOTP_(data.email);
     } else if (action === 'verifyOTP') {
