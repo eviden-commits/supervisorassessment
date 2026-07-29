@@ -75,7 +75,6 @@
     <section class="card" id="stepIntroCard">
       <div class="card-title">📌 1단계: 평가 안내 및 현장·반기 등록 인원 검증</div>
       
-      <!-- 🔥 풍성하고 상세한 직종별 문항수 & 백분율 환산 평가 가이드 -->
       <div style="background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.5rem;">
         <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
           <h4 style="font-size: 0.98rem; font-weight: 800; color: #1e40af;">💡 관리감독자 평가 시스템 이용 가이드 & 평가 방식 안내</h4>
@@ -114,7 +113,6 @@
         </ul>
       </div>
 
-      <!-- 3개 폼 요소 칼같은 수평 정렬 그리드 -->
       <div class="form-grid" style="margin-bottom: 1.5rem;">
         <div class="form-group">
           <label for="siteSelect">평가 현장명 선택</label>
@@ -246,7 +244,7 @@
   <div class="sticky-bottom-action-bar" id="stickyBottomNavBar" style="display: none;">
     <div class="sticky-action-inner">
       <div class="sticky-progress-text" id="stickyProgressText">
-        직종별 N/A 자동 감지 · 원클릭 점수 반영
+        7개 규격 직종 자동 파싱 & N/A 제외 반영
       </div>
       <div style="display: flex; gap: 0.5rem;">
         <button class="btn btn-secondary" id="btnPrevQuestion" style="visibility: hidden; font-size: 0.85rem;">◀ 이전 문항</button>
@@ -254,6 +252,43 @@
           다음 문항 이동 ▶
         </button>
       </div>
+    </div>
+  </div>
+
+  <!-- 🔥 1. 모던 로딩 스피너 및 실시간 저장 프로그레스 바 전면 오버레이 모달 -->
+  <div class="modal-backdrop" id="loadingOverlayModal" style="z-index: 3000 !important;">
+    <div class="modal-content" style="max-width: 420px; text-align: center; padding: 2.25rem 1.5rem;">
+      <div class="loading-spinner"></div>
+      <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-bottom: 0.4rem;">
+        ⏳ 구글 드라이브 & DB 저장 처리 중...
+      </h3>
+      <p style="font-size: 0.85rem; color: var(--text-muted);" id="loadingStatusText">
+        선택된 관리감독자의 평가표 생성 및 제출 작업을 진행하고 있습니다.
+      </p>
+
+      <div class="progress-track-bg">
+        <div class="progress-track-fill" id="saveProgressBar"></div>
+      </div>
+
+      <div style="font-size: 0.9rem; font-weight: 800; color: var(--accent-color);" id="saveProgressPercent">
+        0%
+      </div>
+    </div>
+  </div>
+
+  <!-- 🔥 2. 저장 완수 안내 커스텀 성공 모달 (찌그러진 alert 대체) -->
+  <div class="modal-backdrop" id="saveSuccessModal" style="z-index: 3100 !important;">
+    <div class="modal-content" style="max-width: 440px; text-align: center; padding: 2rem 1.5rem;">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
+      <h3 style="font-size: 1.25rem; font-weight: 800; color: #059669; margin-bottom: 0.75rem;">
+        평가표 제출 및 저장 완수!
+      </h3>
+      <p style="font-size: 0.9rem; color: #334155; line-height: 1.6; margin-bottom: 1.5rem;" id="saveSuccessMsgText">
+        선택하신 현장의 관리감독자 평가표가 구글 드라이브 및 DB 시트에 안전하게 제출/저장되었습니다.
+      </p>
+      <button class="btn btn-success" id="btnConfirmSaveSuccess" style="width: 100%; font-size: 1rem; padding: 0.75rem;">
+        확인 및 완료 ➔
+      </button>
     </div>
   </div>
 

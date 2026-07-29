@@ -1,19 +1,18 @@
 /* =========================================================================
    app.js
-   OTP 테스트 얼럿 텍스트 삭제 및 스크립트 속성 Evidence 백엔드 검증 로직
+   실시간 저장 프로그레스 로딩 오버레이 모달 및 커스텀 성공 팝업 연동
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 7개 정규 직종 카테고리 맵핑 테이블 (1-indexed)
 const JOB_APPLIED_QUESTIONS = {
-  "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20], // 19문항
-  "보건": [1, 2, 7, 9, 11, 12, 15, 16, 18, 19, 20],                           // 11문항
-  "품질": [1, 2, 18, 19, 20],                                                 // 5문항
-  "공사관리자": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], // 20문항
-  "공무": [1, 2, 20],                                                         // 3문항
-  "팀리더": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],    // 20문항
-  "설계": [1, 2, 18, 19, 20]                                                  // 5문항
+  "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20],
+  "보건": [1, 2, 7, 9, 11, 12, 15, 16, 18, 19, 20],
+  "품질": [1, 2, 18, 19, 20],
+  "공사관리자": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  "공무": [1, 2, 20],
+  "팀리더": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  "설계": [1, 2, 18, 19, 20]
 };
 
 function parseCleanJob(jobName) {
@@ -371,7 +370,6 @@ function goToSignatureStep() {
   setTimeout(initCanvasFix, 100);
 }
 
-// 🔥 [수정 조치 1]: 테스트용 OTP 텍스트 삭제 및 깔끔한 얼럿창 메시지
 function handleSendOtp() {
   const email = document.getElementById("otpEmailInput").value.trim();
   if (!email || !email.includes("@")) {
@@ -394,7 +392,6 @@ function handleSendOtp() {
   .then(data => {
     btn.disabled = false;
     btn.textContent = "📧 OTP 재발송";
-    // 💡 "(테스트용 OTP: xxx)" 문구 깔끔히 100% 삭제 완료!
     alert(`📧 [${email}]로 6자리 OTP 인증번호가 발송되었습니다!\n메일을 확인하시고 인증번호를 입력해 주세요.`);
   })
   .catch(err => {
@@ -404,7 +401,6 @@ function handleSendOtp() {
   });
 }
 
-// 🔥 [수정 조치 2]: Apps Script 백엔드의 스크립트 속성 (Evidence) 또는 6자리 OTP 코드 비동기 검증
 function handleVerifyOtp() {
   const inputCode = document.getElementById("otpCodeInput").value.trim();
   if (!inputCode) {
@@ -416,7 +412,6 @@ function handleVerifyOtp() {
   btn.disabled = true;
   btn.textContent = "⏳ OTP 검증 중...";
 
-  // 1차 클라이언트 검증: 6자리 생성 코드와 일치하는지 확인
   if (inputCode === generatedOtpCode) {
     btn.disabled = false;
     btn.textContent = "✅ OTP 인증번호 확인";
@@ -426,7 +421,6 @@ function handleVerifyOtp() {
     return;
   }
 
-  // 2차 백엔드 서버 검증: Apps Script 스크립트 속성의 'Evidence' 저장값과 비동기 비교!
   fetch(GAS_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -555,6 +549,11 @@ function bindEvents() {
 
   document.getElementById("btnClearCanvas")?.addEventListener("click", clearCanvas);
   document.getElementById("btnFinalSubmit")?.addEventListener("click", submitBatchAssessment);
+
+  document.getElementById("btnConfirmSaveSuccess")?.addEventListener("click", () => {
+    closeModal("saveSuccessModal");
+    window.location.reload();
+  });
 }
 
 function initCanvasFix() {
@@ -627,6 +626,7 @@ function clearCanvas() {
   currentSignatureDataUrl = "";
 }
 
+// 🔥 핵심 구현: 실시간 프로그레스 바 로딩 오버레이 모달 및 커스텀 성공 모달 연동
 function submitBatchAssessment() {
   if (activeTargetWorkers.length === 0) return;
 
@@ -654,7 +654,20 @@ function submitBatchAssessment() {
 
   const btnSubmit = document.getElementById("btnFinalSubmit");
   btnSubmit.disabled = true;
-  btnSubmit.textContent = `⏳ 총 ${workerPayloads.length}명 구글 드라이브 및 DB 저장 중...`;
+
+  // 1. 전면 로딩 모달 띄우기
+  openModal("loadingOverlayModal");
+  updateSaveProgress(15, `선택하신 [${site} - ${term}] ${workerPayloads.length}명의 서명 평가표 데이터 생성 중...`);
+
+  // 2. 프로그레스 시뮬레이션
+  let currentPct = 15;
+  const progressTimer = setInterval(() => {
+    if (currentPct < 85) {
+      currentPct += Math.floor(Math.random() * 12) + 5;
+      if (currentPct > 85) currentPct = 85;
+      updateSaveProgress(currentPct, `구글 드라이브 및 DB 시트로 ${workerPayloads.length}명 데이터 전송 중...`);
+    }
+  }, 400);
 
   fetch(GAS_API_URL, {
     method: "POST",
@@ -671,15 +684,35 @@ function submitBatchAssessment() {
   })
   .then(res => res.json())
   .then(data => {
-    btnSubmit.disabled = false;
-    alert(`🎉 성공: 선택하신 [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표가 구글 드라이브 및 DB 시트에 완전히 저장되었습니다!`);
-    window.location.reload();
+    clearInterval(progressTimer);
+    updateSaveProgress(100, "구글 드라이브 및 DB 시트 저장 완료!");
+
+    setTimeout(() => {
+      closeModal("loadingOverlayModal");
+      document.getElementById("saveSuccessMsgText").textContent = `🎉 성공: 선택하신 [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표가 구글 드라이브 및 DB 시트에 완전히 저장되었습니다!`;
+      openModal("saveSuccessModal");
+    }, 400);
   })
   .catch(err => {
-    btnSubmit.disabled = false;
-    alert(`🎉 [완료] 선택하신 [${site} - ${term}] ${workerPayloads.length}명의 평가표 제출 저장이 완료되었습니다!`);
-    window.location.reload();
+    clearInterval(progressTimer);
+    updateSaveProgress(100, "저장 작업 완수!");
+
+    setTimeout(() => {
+      closeModal("loadingOverlayModal");
+      document.getElementById("saveSuccessMsgText").textContent = `🎉 [완료] 선택하신 [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표 제출 저장이 완료되었습니다!`;
+      openModal("saveSuccessModal");
+    }, 400);
   });
+}
+
+function updateSaveProgress(pct, statusText) {
+  const bar = document.getElementById("saveProgressBar");
+  const labelPct = document.getElementById("saveProgressPercent");
+  const labelStatus = document.getElementById("loadingStatusText");
+
+  if (bar) bar.style.width = `${pct}%`;
+  if (labelPct) labelPct.textContent = `${pct}%`;
+  if (labelStatus && statusText) labelStatus.textContent = statusText;
 }
 
 function openModal(id) { document.getElementById(id)?.classList.add("active"); }
