@@ -40,14 +40,18 @@
             <p style="font-size: 0.75rem; color: #94a3b8; margin: 0;">최고 관리자 권한 · 이행 실적 및 백분율 환산 모니터링</p>
           </div>
         </div>
-        <div style="display: flex; gap: 0.75rem; align-items: center;">
-          <button id="btnOpenReminderModal" class="btn btn-warning" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+        <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+          <!-- 🔥 독립 전용 버튼: [병지] 평가 절차서 1클릭 인쇄/다운로드 -->
+          <button id="btnDirectPrintByeongJiHeader" class="btn btn-success" style="font-size: 0.85rem; padding: 0.5rem 0.9rem; font-weight: 700;">
+            📄 [병지] 평가 절차서 (SOP) 출력
+          </button>
+          <button id="btnOpenReminderModal" class="btn btn-warning" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
             📧 미제출 현장 독려 메일 일괄 발송
           </button>
-          <button id="btnOpenChangePassModal" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.5rem 1rem; color: #fff; border-color: #475569;">
+          <button id="btnOpenChangePassModal" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.5rem 0.9rem; color: #fff; border-color: #475569;">
             🔑 비밀번호 변경
           </button>
-          <button onclick="location.href='index.html'" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 1rem;">
+          <button onclick="location.href='index.html'" class="btn btn-secondary" style="font-size: 0.85rem; padding: 0.5rem 0.9rem;">
             🏠 평가 입력 홈으로
           </button>
         </div>
@@ -135,7 +139,11 @@
             <h3 style="margin: 0 0 0.25rem 0; font-size: 1.1rem; color: var(--primary-color);">🖨️ A4 평가 보고서 출력 설정 (갑지 · 을지 · 병지 절차서)</h3>
             <p style="font-size: 0.8rem; color: #64748b; margin: 0;">아래 화면에서 서식을 확인하시고 [A4 출력 / PDF 저장] 버튼을 클릭하면 불필요한 컨트롤러 없이 깔끔한 보고서만 인쇄됩니다.</p>
           </div>
-          <div style="display: flex; gap: 0.5rem; align-items: center;">
+          <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
+            <!-- 🔥 [병지 단독 출력] 독립 버튼 추가 -->
+            <button id="btnDirectPrintByeongJiBody" class="btn btn-success" style="font-size: 0.85rem; padding: 0.5rem 1rem; font-weight: 700;">
+              📄 [병지] 평가 절차서만 출력
+            </button>
             <select id="reportYearSelect" class="form-control" style="width: 110px; font-size: 0.85rem;" onchange="updateReportView()">
               <option value="2026년" selected>2026년</option>
               <option value="2025년">2025년</option>
@@ -319,9 +327,7 @@
     </div>
   </div>
 
-  <!-- ==========================================
-       [모달] 📧 미제출 현장 독려 메일 일괄 발송 모달
-       ========================================== -->
+  <!-- [모달] 📧 미제출 현장 독려 메일 일괄 발송 모달 -->
   <div id="reminderMailModal" class="modal-backdrop">
     <div class="modal-card shadow-lg" style="max-width: 680px; width: 90%;">
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.75rem;">

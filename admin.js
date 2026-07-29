@@ -1,9 +1,9 @@
 /* =========================================================================
    admin.js
    관리자 최고 권한 시스템
+   - 병지(관리감독자 평가 절차서 SOP) 단독 1클릭 인쇄/다운로드 독립 버튼 바인딩
    - 미제출자 독려 메일 일괄 발송 (상/하반기 탭 및 미제출 현장 체크 선택)
    - 현장 필수 선택 및 아코디언 접힘(Collapsed) 기본 적용
-   - DB 등록일시 표기 및 A4 순수 보고서 출력
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -47,7 +47,6 @@ function getAppliedQuestionsForJob(jobName) {
   return JOB_APPLIED_QUESTIONS[cleanJob] || JOB_APPLIED_QUESTIONS["공사관리자"];
 }
 
-// 🏢 전체 현장 DB (등록 일시 및 평가 제출 상태 포함)
 let ALL_SITE_WORKERS = [
   { site: "테스트현장", id: "TEST001", name: "최난새", term: "상반기", birth: "800101", job: "안전", email: "nschoi@sebangtec.com", status: "제출완료", regDate: "2026-07-29 09:30" },
   { site: "테스트현장", id: "EMP002", name: "홍길동", term: "상반기", birth: "850515", job: "팀리더", email: "gildong@example.com", status: "제출완료", regDate: "2026-07-29 09:30" },
@@ -70,6 +69,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindChangePassEvents();
   bindAuditLogEvents();
   bindReminderEvents();
+  bindDirectByeongJiEvents();
 
   document.getElementById("adminSiteSelect")?.addEventListener("change", renderAccordionWorkerTable);
   document.getElementById("btnToggleAllAccordions")?.addEventListener("click", toggleAllAccordions);
@@ -77,6 +77,29 @@ document.addEventListener("DOMContentLoaded", () => {
   renderAccordionWorkerTable();
   updateReportView();
 });
+
+// 🔥 [병지] 평가 절차서 1클릭 독립 출력 버튼 바인딩
+function bindDirectByeongJiEvents() {
+  const btnHeader = document.getElementById("btnDirectPrintByeongJiHeader");
+  const btnBody = document.getElementById("btnDirectPrintByeongJiBody");
+
+  const handler = () => {
+    const sel = document.getElementById("reportTypeSelect");
+    if (sel) sel.value = "byeong";
+    updateReportView();
+
+    const byeongSec = document.getElementById("byeongJiSection");
+    if (byeongSec) {
+      byeongSec.scrollIntoView({ behavior: "smooth" });
+    }
+    setTimeout(() => {
+      window.print();
+    }, 250);
+  };
+
+  btnHeader?.addEventListener("click", handler);
+  btnBody?.addEventListener("click", handler);
+}
 
 function bindLoginEvents() {
   const btn = document.getElementById("btnLogin");
@@ -126,7 +149,6 @@ function handleAdminLogin() {
   });
 }
 
-// 🏢 현장 선택 필수 & 아코디언 접힘(Collapsed) 기본 적용 렌더링
 function renderAccordionWorkerTable() {
   const selectedSite = document.getElementById("adminSiteSelect")?.value || "";
   const container = document.getElementById("siteWorkerAccordionContainer");
@@ -159,7 +181,6 @@ function renderAccordionWorkerTable() {
     return;
   }
 
-  // 7개 규격 직종별 Group by
   const uniqueCleanJobs = Array.from(new Set(siteWorkers.map(w => parseCleanJob(w.job))));
 
   uniqueCleanJobs.forEach(jobName => {
@@ -242,7 +263,6 @@ function toggleAllAccordions() {
   });
 }
 
-// 📧 독려 메일 모달 탭 및 미제출 현장 체크박스 렌더링
 function bindReminderEvents() {
   document.getElementById("btnOpenReminderModal")?.addEventListener("click", () => {
     renderReminderModal();
@@ -281,7 +301,6 @@ function renderReminderModal() {
   if (!container) return;
   container.innerHTML = "";
 
-  // 선택된 반기 미제출 현장 추출 (스프레드시트 DB 대조 모뮬레이션)
   const unsubmittedSites = [
     { site: "울산 PJT", manager: "박소장", email: "ulsan_sojang@sebang.com", term: "상반기", count: 12 },
     { site: "여수 PJT", manager: "이소장", email: "yeosu_sojang@sebang.com", term: "상반기", count: 18 },
@@ -306,7 +325,6 @@ function renderReminderModal() {
         <input type="checkbox" class="reminder-site-chk" value="${escapeHTML(s.site)}" data-email="${escapeHTML(s.email)}" checked>
         🏢 [${escapeHTML(s.site)}] ${escapeHTML(s.manager)} (${escapeHTML(s.email)})
       </label>
-
     `;
     container.appendChild(div);
   });
