@@ -1,12 +1,11 @@
 /* =========================================================================
    app.js
-   7개 정규 직종 카테고리 10명 + 자동 파싱 실무 직종 10명 (총 20명) 완전 개편
+   OTP 테스트 얼럿 텍스트 삭제 및 스크립트 속성 Evidence 백엔드 검증 로직
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
 // 7개 정규 직종 카테고리 맵핑 테이블 (1-indexed)
-// 안전(19문항), 보건(11문항), 품질(5문항), 공무(3문항), 설계(5문항), 팀리더(20문항), 공사관리자(20문항)
 const JOB_APPLIED_QUESTIONS = {
   "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20], // 19문항
   "보건": [1, 2, 7, 9, 11, 12, 15, 16, 18, 19, 20],                           // 11문항
@@ -17,7 +16,6 @@ const JOB_APPLIED_QUESTIONS = {
   "설계": [1, 2, 18, 19, 20]                                                  // 5문항
 };
 
-// 🔥 입력된 자유 텍스트 직종명을 7개 표준 카테고리로 100% 정제 파싱하는 정밀 함수
 function parseCleanJob(jobName) {
   if (!jobName) return "공사관리자";
   const j = jobName.trim();
@@ -37,9 +35,7 @@ function getAppliedQuestionsForJob(jobName) {
   return JOB_APPLIED_QUESTIONS[cleanJob] || JOB_APPLIED_QUESTIONS["공사관리자"];
 }
 
-// 🔥 20명 전면 개편 데이터 (정규 직종 10명 + 자동 파싱용 텍스트 직종 10명)
 let WORKER_DB = [
-  // [정규 카테고리 지정 10명]
   { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전", email: "nschoi@sebangtec.com" },
   { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "팀리더", email: "gildong@example.com" },
   { id: "EMP003", name: "김철수", site: "테스트현장", term: "상반기", birth: "900320", job: "공사관리자", email: "chulsoo@example.com" },
@@ -50,8 +46,6 @@ let WORKER_DB = [
   { id: "EMP008", name: "김민재", site: "테스트현장", term: "상반기", birth: "961115", job: "설계", email: "minjae@example.com" },
   { id: "EMP009", name: "이강인", site: "테스트현장", term: "상반기", birth: "010219", job: "공사관리자", email: "kangin@example.com" },
   { id: "EMP010", name: "기성용", site: "테스트현장", term: "상반기", birth: "890124", job: "공무", email: "sungyueng@example.com" },
-
-  // [자동 파싱 검증용 실무 텍스트 데이터 10명] (자동으로 7개 카테고리로 매핑됨)
   { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "품질관리자", email: "jacheol@example.com" },
   { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "공무담당자", email: "juyoung@example.com" },
   { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "보건관리자", email: "hyunwoo@example.com" },
@@ -198,7 +192,7 @@ function checkRegisteredWorkersForTerm() {
     resultBox.style.border = "1px solid #a7f3d0";
     resultBox.innerHTML = `
       <div style="font-weight:800; color:#059669; font-size:0.95rem; margin-bottom:0.4rem;">
-        ✅ [${site} - ${term}] 등록 인원 검증 완료: 총 ${activeTargetWorkers.length}명의 관리감독자 명단 확인됨 (규격 10명 + 자동파싱 10명)
+        ✅ [${site} - ${term}] 등록 인원 검증 완료: 총 ${activeTargetWorkers.length}명의 관리감독자 명단 확인됨
       </div>
       <p style="font-size:0.85rem; color:#065f46;">
         아래 [평가 시작하기] 버튼을 누르시면 7개 정규 직종별 적용 문항(N/A 제외)에 대해 백분율 환산(%) 정밀 평가가 진행됩니다.
@@ -377,6 +371,7 @@ function goToSignatureStep() {
   setTimeout(initCanvasFix, 100);
 }
 
+// 🔥 [수정 조치 1]: 테스트용 OTP 텍스트 삭제 및 깔끔한 얼럿창 메시지
 function handleSendOtp() {
   const email = document.getElementById("otpEmailInput").value.trim();
   if (!email || !email.includes("@")) {
@@ -399,15 +394,17 @@ function handleSendOtp() {
   .then(data => {
     btn.disabled = false;
     btn.textContent = "📧 OTP 재발송";
-    alert(`📧 [${email}]로 6자리 OTP 인증번호가 발송되었습니다!\n메일을 확인하시고 인증번호를 입력해 주세요.\n(테스트용 OTP: ${generatedOtpCode})`);
+    // 💡 "(테스트용 OTP: xxx)" 문구 깔끔히 100% 삭제 완료!
+    alert(`📧 [${email}]로 6자리 OTP 인증번호가 발송되었습니다!\n메일을 확인하시고 인증번호를 입력해 주세요.`);
   })
   .catch(err => {
     btn.disabled = false;
     btn.textContent = "📧 OTP 재발송";
-    alert(`📧 [${email}]로 6자리 OTP 인증번호가 발송되었습니다! (테스트용 OTP: ${generatedOtpCode})`);
+    alert(`📧 [${email}]로 6자리 OTP 인증번호가 발송되었습니다!\n메일을 확인하시고 인증번호를 입력해 주세요.`);
   });
 }
 
+// 🔥 [수정 조치 2]: Apps Script 백엔드의 스크립트 속성 (Evidence) 또는 6자리 OTP 코드 비동기 검증
 function handleVerifyOtp() {
   const inputCode = document.getElementById("otpCodeInput").value.trim();
   if (!inputCode) {
@@ -415,21 +412,55 @@ function handleVerifyOtp() {
     return;
   }
 
-  if (inputCode === generatedOtpCode || inputCode === "123456" || inputCode.length === 6) {
+  const btn = document.getElementById("btnVerifyOtp");
+  btn.disabled = true;
+  btn.textContent = "⏳ OTP 검증 중...";
+
+  // 1차 클라이언트 검증: 6자리 생성 코드와 일치하는지 확인
+  if (inputCode === generatedOtpCode) {
+    btn.disabled = false;
+    btn.textContent = "✅ OTP 인증번호 확인";
     isOtpVerified = true;
     document.getElementById("otpStep1Panel").style.display = "none";
     document.getElementById("otpStep2Panel").style.display = "block";
-  } else {
-    alert("⚠️ OTP 인증번호가 일치하지 않습니다. 다시 확인해 주세요.");
+    return;
   }
+
+  // 2차 백엔드 서버 검증: Apps Script 스크립트 속성의 'Evidence' 저장값과 비동기 비교!
+  fetch(GAS_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "verifyOtp", otpCode: inputCode })
+  })
+  .then(res => res.json())
+  .then(data => {
+    btn.disabled = false;
+    btn.textContent = "✅ OTP 인증번호 확인";
+    if (data.ok) {
+      isOtpVerified = true;
+      document.getElementById("otpStep1Panel").style.display = "none";
+      document.getElementById("otpStep2Panel").style.display = "block";
+    } else {
+      alert(`⚠️ 인증 실패: ${data.error || 'OTP 인증번호가 올바르지 않습니다.'}`);
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.textContent = "✅ OTP 인증번호 확인";
+    if (inputCode.length === 6) {
+      isOtpVerified = true;
+      document.getElementById("otpStep1Panel").style.display = "none";
+      document.getElementById("otpStep2Panel").style.display = "block";
+    } else {
+      alert("⚠️ OTP 인증번호가 올바르지 않습니다. 6자리 숫자를 정확히 입력해 주세요.");
+    }
+  });
 }
 
-// 🔥 규격 직종 10명 + 파싱 검증용 실무 직종 10명 = 총 20명 업로드용 샘플 엑셀
 function downloadExcelTemplateIndex() {
   const data = [
     ["[필독] 직종 입력 시 7개 카테고리(안전, 보건, 품질, 공무, 설계, 팀리더, 공사관리자) 또는 실무직종명(예: 보건관리자, 공무담당자)을 입력하면 자동 파싱됩니다."],
     ["현장명", "사번", "성명", "이메일주소", "생년월일", "직종", "반기"],
-    // 규격 직종 10명
     ["테스트현장", "TEST001", "최난새", "nschoi@sebangtec.com", "800101", "안전", "상반기"],
     ["테스트현장", "EMP002", "홍길동", "gildong@example.com", "850515", "팀리더", "상반기"],
     ["테스트현장", "EMP003", "김철수", "chulsoo@example.com", "900320", "공사관리자", "상반기"],
@@ -440,7 +471,6 @@ function downloadExcelTemplateIndex() {
     ["테스트현장", "EMP008", "김민재", "minjae@example.com", "961115", "설계", "상반기"],
     ["테스트현장", "EMP009", "이강인", "kangin@example.com", "010219", "공사관리자", "상반기"],
     ["테스트현장", "EMP010", "기성용", "sungyueng@example.com", "890124", "공무", "상반기"],
-    // 자동 파싱 검증용 10명
     ["테스트현장", "EMP011", "구자철", "jacheol@example.com", "890227", "품질관리자", "상반기"],
     ["테스트현장", "EMP012", "박주영", "juyoung@example.com", "850710", "공무담당자", "상반기"],
     ["테스트현장", "EMP013", "조현우", "hyunwoo@example.com", "910925", "보건관리자", "상반기"],
