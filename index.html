@@ -1,569 +1,457 @@
 <!DOCTYPE html>
 <html lang="ko">
 <head>
-  <meta charset="UTF-8" />
-  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>관리감독자 업무수행 평가표 (스마트 평가 시스템)</title>
-  <link rel="stylesheet" href="style.css" />
-  <!-- SheetJS for Excel Upload & Download -->
+  <meta charset="UTF-8">
+  <meta name="viewport" content="width=device-width, initial-scale=1.0">
+  <title>관리감독자 업무수행 평가시스템</title>
+  <link rel="stylesheet" href="style.css">
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
-  <!-- App Header -->
-  <header class="app-header">
-    <div class="header-container">
-      <div class="header-title">
-        <h1>📋 관리감독자 업무수행 평가표</h1>
-        <p>현장/반기 인원 자동 검증 및 순차 평가 시스템</p>
+  <!-- ==========================================
+       [1단계 게이트 모달] 접속 비밀번호 검증 (Apps Script 속성 대조)
+       ========================================== -->
+  <div id="indexLoginGateModal" class="modal-backdrop active">
+    <div class="modal-card shadow-lg" style="max-width: 420px; text-align: center;">
+      <div style="font-size: 2.5rem; margin-bottom: 0.5rem;">🏗️</div>
+      <h2 style="margin-bottom: 0.5rem; color: var(--primary-color);">관리감독자 평가시스템</h2>
+      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        평가 작성을 위해 지정된 접속 비밀번호를 입력해 주세요.
+      </p>
+      <div class="form-group" style="margin-bottom: 1.25rem;">
+        <input type="password" id="indexPassInput" class="form-control text-center" placeholder="접속 비밀번호 입력" style="font-size: 1.1rem; letter-spacing: 2px;">
       </div>
-      <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-        <button class="btn btn-outline" id="btnOpenOtpUploadModal" style="font-size:0.8rem; background:#2563eb; color:#ffffff; border-color:#2563eb;">
-          📁 명단 엑셀 등록 (OTP 인증)
-        </button>
-        <a id="linkGoogleSheet" href="https://docs.google.com/spreadsheets/d/1KXg0hugpRePLrNzaTicURJBytvrn_KvpO0WxsTmweQdhbguYKCqFQZDY/edit" target="_blank" class="btn btn-outline" style="font-size:0.8rem; background:#107c41; color:#ffffff; border-color:#107c41;">
-          📊 DB 스프레드시트 바로가기
-        </a>
-        <a href="admin.html" class="btn btn-outline" style="font-size:0.8rem; background:rgba(255,255,255,0.1); color:#ffffff; border-color:rgba(255,255,255,0.3);">🔒 관리자 전용</a>
-      </div>
-    </div>
-  </header>
-
-  <!-- 1. 🔑 접속 비밀번호 인증 게이트 (Step 1) -->
-  <div class="modal-backdrop active" id="indexLoginGateModal">
-    <div class="modal-content" style="max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
-      <div class="modal-header">
-        <h3>🔑 평가 시스템 접속 인증</h3>
-      </div>
-      <div class="modal-body" style="padding: 1.75rem 1.5rem;">
-        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.25rem;">
-          평가 시스템 접속을 위해 비밀번호를 입력해 주세요.
-        </p>
-        <div class="form-group">
-          <label for="indexPassInput" style="font-weight: 700;">접속 비밀번호</label>
-          <input type="password" id="indexPassInput" class="form-control" placeholder="접속 비밀번호 입력" autofocus />
-        </div>
-      </div>
-      <div class="modal-footer" style="background: #f8fafc; padding: 1rem 1.5rem;">
-        <button class="btn btn-primary" id="btnIndexLogin" style="width: 100%; font-size: 1rem; padding: 0.75rem;">
-          입장하기
-        </button>
-      </div>
+      <button id="btnIndexLogin" class="btn btn-primary btn-block btn-lg">입장하기</button>
     </div>
   </div>
 
-  <!-- Main Container -->
-  <main class="main-container" id="indexMainContent" style="display: none;">
-    
-    <!-- 스텝 진행바 -->
-    <div class="wizard-bar">
-      <div class="wizard-step active" id="wizStep1">
-        <div class="wizard-step-num">1</div>
-        <span>안내 및 인원 검증</span>
-      </div>
-      <div class="wizard-step" id="wizStep2">
-        <div class="wizard-step-num">2</div>
-        <span>문항별 평가 (1~20)</span>
-      </div>
-      <div class="wizard-step" id="wizStep3">
-        <div class="wizard-step-num">3</div>
-        <span>최종 서명 및 저장</span>
-      </div>
-    </div>
+  <!-- ==========================================
+       [메인 평가 작성 화면]
+       ========================================== -->
+  <div id="indexMainContent" style="display: none;">
 
-    <!-- 2. 📋 STEP 1: 시스템 안내 & 현장/반기 선택 & DB 인원 자동 검증 -->
-    <section class="card" id="stepIntroCard">
-      <div class="card-title">📌 1단계: 평가 안내 및 현장·반기 등록 인원 검증</div>
-      
-      <div style="background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.5rem;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 0.85rem; flex-wrap: wrap; gap: 0.5rem;">
-          <h4 style="font-size: 0.98rem; font-weight: 800; color: #1e40af;">💡 관리감독자 평가 시스템 이용 가이드 & 평가 방식 안내</h4>
-          
-          <div style="display: flex; flex-direction: column; gap: 0.4rem; align-items: flex-end;">
-            <button class="btn btn-primary" id="btnOpenOtpUploadModalInner" style="font-size: 0.8rem; padding: 5px 12px; background: #2563eb;">
-              📁 이메일 OTP 인증으로 명단 엑셀 등록
-            </button>
-            <button class="btn btn-outline" id="btnDirectDownloadTemplate" style="font-size: 0.78rem; padding: 4px 10px; background: #ffffff; color: #1e40af; border-color: #93c5fd;">
-              📥 업로드용 엑셀양식 다운로드
-            </button>
-          </div>
-        </div>
-
-        <ul style="font-size: 0.85rem; color: #1e3a8a; padding-left: 1.2rem; line-height: 1.65;">
-          <li><strong>기본 시작 조건:</strong> 평가를 시작하려면 <strong>현장명 및 평가 반기(상반기/하반기)</strong>를 먼저 선택하세요. 선택한 현장/반기에 DB 시트(Users)로 등록된 인원이 없으면 다음 단계 진행이 제한됩니다.</li>
-          <li><strong>평가 대상자 기준:</strong> 관리감독자는 현장소장이 지정한 <strong>관리감독자 지정서가 있는 인원</strong> 대상입니다. 명단 등록이 필요한 경우 상단 <strong>[📁 명단 엑셀 등록 (OTP 인증)]</strong>을 통해 이메일 인증 후 업로드하세요.</li>
-          <li style="margin-top: 0.4rem; font-weight: 700; color: #1d4ed8;">
-            🎯 직종별 맞춤 적용 문항 수 (N/A 자동 제외 시스템):
-            <div style="font-weight: normal; color: #1e3a8a; background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #93c5fd; margin-top: 4px; font-size: 0.82rem;">
-              • <strong>안전:</strong> 19문항 (57점 만점, 16번 제외)<br>
-              • <strong>보건:</strong> 11문항 (33점 만점, 기계설비/정리정돈/자기참조 9개 문항 N/A 제외)<br>
-              • <strong>품질 / 설계:</strong> 5문항 (15점 만점, 1, 2, 18, 19, 20번만 적용)<br>
-              • <strong>공무:</strong> 3문항 (9점 만점, 1, 2, 20번 적용)<br>
-              • <strong>팀리더 / 공사관리자 (현장소장, 팀장, 각 공정):</strong> 20문항 전체 (60점 만점)
-            </div>
-          </li>
-          <li style="margin-top: 0.4rem; font-weight: 700; color: #1d4ed8;">
-            📊 백분율 환산 점수 (%) 및 공평한 평가 지표:
-            <div style="font-weight: normal; color: #1e3a8a; background: #ffffff; padding: 8px 12px; border-radius: 6px; border: 1px solid #93c5fd; margin-top: 4px; font-size: 0.82rem;">
-              • <strong>점수 산출 공식:</strong> <code>환산점수(%) = (획득 점수 ÷ 직종별 만점) × 100</code> (N/A 항목은 분모/분자 모두에서 완전 제외)<br>
-              • <strong>표기 규격:</strong> <code>27점 / 33점 만점 (81.8%) · 적용 11문항</code> 과 같이 만점과 환산%를 항상 동시 명시<br>
-              • <strong>통합 이행 등급:</strong> 🟢 <strong>우수 (90% 이상)</strong> | 🟡 <strong>보통 (70~89.9%)</strong> | 🔴 <strong>미흡 (70% 미만)</strong>
-            </div>
-          </li>
-        </ul>
-      </div>
-
-      <div class="form-grid" style="margin-bottom: 1.5rem;">
-        <div class="form-group">
-          <label for="siteSelect">평가 현장명 선택</label>
-          <select id="siteSelect" class="form-control">
-            <option value="테스트현장" selected>테스트현장</option>
-            <option value="서울01현장">서울01현장</option>
-          </select>
-        </div>
-
-        <div class="form-group">
-          <label for="evaluatorName">평가 작성자 (현장소장 성명)</label>
-          <input type="text" id="evaluatorName" class="form-control" placeholder="소장 성명 입력" value="최난새" />
-        </div>
-
-        <div class="form-group">
-          <label>평가 대상 구분 (반기)</label>
-          <div class="radio-group-container">
-            <label class="option-label">
-              <input type="radio" name="term" value="상반기" id="termFirst" checked onchange="checkRegisteredWorkersForTerm()" />
-              <span>상반기 (1월~6월)</span>
-            </label>
-            <label class="option-label">
-              <input type="radio" name="term" value="하반기" id="termSecond" onchange="checkRegisteredWorkersForTerm()" />
-              <span>하반기 (7월~12월)</span>
-            </label>
-          </div>
-        </div>
-      </div>
-
-      <div id="workerCheckResultBox" style="padding: 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; transition: all 0.2s;">
-      </div>
-
-      <div style="text-align: right;">
-        <button class="btn btn-primary" id="btnStartAssessment" style="font-size: 1.05rem; padding: 0.75rem 2rem;" disabled>
-          🚀 평가 시작하기 (20문항 순차 진행) ▶
-        </button>
-      </div>
-    </section>
-
-    <!-- 3. 🎯 STEP 2: 문항 1개씩 진행하는 플로팅 스마트 카드 섹션 -->
-    <section id="stepFloatingQuestionsSection" style="display: none;">
-      
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.88rem; font-weight: 700; color: var(--text-muted);">
-        <span id="currentQCategoryLabel">Part 1. 업무수행 지원</span>
-        <span>문항 <span id="currentQIndexLabel" style="color:var(--accent-color); font-size:1.1rem; font-weight:800;">1</span> / 20</span>
-      </div>
-      
-      <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-bottom: 1.25rem;">
-        <div id="qProgressBar" style="width: 5%; height: 100%; background: var(--accent-color); transition: width 0.3s ease;"></div>
-      </div>
-
-      <!-- 문항 카드 -->
-      <div class="floating-q-card" id="floatingQuestionCard">
-        
-        <div class="q-main-title" id="cardQTitle">
-          1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?(R&R 확인)
-        </div>
-
-        <div id="cardLawRefContainer" style="margin-bottom: 0.75rem;"></div>
-
-        <!-- 가로 칩 3개 압축 지침 박스 -->
-        <div class="q-chips-container" id="cardQGuideBox"></div>
-
-        <!-- 일괄 적용 등폭 세그먼트 그룹 -->
-        <div class="batch-segment-wrapper">
-          <div class="batch-label" id="batchLabelText">전체 적용 대상자 1클릭 일괄 점수 적용</div>
-          <div class="batch-segment-group">
-            <button class="btn-batch-seg seg-3" id="btnFillQScore3" onclick="fillSingleQAllScores(3)">
-              3점 전원
-            </button>
-            <button class="btn-batch-seg seg-2" id="btnFillQScore2" onclick="fillSingleQAllScores(2)">
-              2점 전원
-            </button>
-            <button class="btn-batch-seg seg-1" id="btnFillQScore1" onclick="fillSingleQAllScores(1)">
-              1점 전원
-            </button>
-          </div>
-        </div>
-
-        <!-- 인원 리스트 컴팩트 표 & 스티키 헤더 -->
-        <div class="compact-table-container">
-          <table class="compact-table">
-            <thead>
-              <tr>
-                <th style="width: 50%;">성명 / 직종</th>
-                <th style="width: 50%; text-align: right; padding-right: 1.5rem;">점수 선택 (3 | 2 | 1)</th>
-              </tr>
-            </thead>
-            <tbody id="microWorkerTableBody"></tbody>
-          </table>
-        </div>
-
-      </div>
-
-    </section>
-
-    <!-- 4. ✍️ STEP 3: 최종 서명 및 구글 드라이브 저장 섹션 -->
-    <section class="card" id="stepSignatureSection" style="display: none; text-align: center; padding: 2.5rem 1.5rem;">
-      <div style="max-width: 500px; margin: 0 auto;">
-        <h3 style="font-size: 1.3rem; font-weight: 800; color: var(--primary-color); margin-bottom: 0.5rem;">
-          🎉 20개 전체 문항 평가 세팅 완료!
-        </h3>
-        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
-          현장소장 서명 1회로 DB에 등록된 관리감독자 전원의 평가표가 동시에 구글 드라이브 및 DB 시트에 자동 제출/저장됩니다.
-        </p>
-
-        <div style="text-align: left; margin-bottom: 1rem;">
-          <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
-            현장소장 서명 (마우스 / 터치 서명 가능):
-          </label>
-          <div class="signature-container">
-            <canvas id="signatureCanvas"></canvas>
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
-            <span style="font-size: 0.75rem; color: var(--text-muted);">박스 안에 서명하세요.</span>
-            <button class="btn btn-outline" id="btnClearCanvas" style="font-size: 0.75rem;">🧹 서명 지우기</button>
-          </div>
-        </div>
-
-        <button class="btn btn-success" id="btnFinalSubmit" style="width: 100%; font-size: 1.1rem; padding: 0.85rem;">
-          🚀 최종 서명 완료 및 구글 드라이브 저장하기
-        </button>
-      </div>
-    </section>
-
-    <!-- 🔥 서명 완료 후 나타나는 작성 보고서 (갑지 + 을지 + 병지 절차서) 인쇄 / 다운로드 영역 -->
-    <section id="printableReportAreaIndex" style="display: none; margin-top: 2rem;">
-      <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1rem;" class="no-print">
-        <h4 style="font-size: 1rem; font-weight: 800; color: var(--primary-color);">
-          📄 방금 작성하신 보고서 (갑지 + 을지 + 병지 절차서)
-        </h4>
-        <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
-          <button class="btn btn-primary" onclick="window.print()">
-            🖨️ A4 보고서 일괄 출력 / PDF 저장 (갑지+을지+병지)
-          </button>
-          <button class="btn btn-outline" id="btnDownloadIndexEulJiExcel">
-            📥 세부 점수 엑셀 다운로드
-          </button>
-        </div>
-      </div>
-
-      <!-- 1. 갑지 (종합보고서) -->
-      <div id="indexGabJiSection" class="card" style="background: #ffffff; padding: 2rem; margin-bottom: 2rem;">
-        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
-          <div style="text-align: left;">
-            <h2 style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-bottom: 0.3rem;">
-              관리감독자 평가 종합 보고서 (갑지)
-            </h2>
-            <p style="font-size: 0.88rem; color: #475569;" id="indexReportSubTitle">
-              2026년 상반기 안전보건 이행 실적 및 백분율 환산(%) 평가
-            </p>
-          </div>
-          <!-- 결재란 (우측 상단 310px 고정) -->
-          <table class="approval-table" style="width: 310px; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
-            <tr>
-              <th rowspan="2" style="width: 25px; border: 1px solid #000; background: #f1f5f9; vertical-align: middle;">결<br>재</th>
-              <th style="border: 1px solid #000; background: #f8fafc; padding: 4px;">작 성 (담당)</th>
-              <th style="border: 1px solid #000; background: #f8fafc; padding: 4px;">검 토 (팀장)</th>
-              <th style="border: 1px solid #000; background: #f8fafc; padding: 4px;">승 인 (소장)</th>
-            </tr>
-            <tr style="height: 55px;">
-              <td style="border: 1px solid #000; vertical-align: middle; position: relative;">
-                <span id="indexSignEvaluatorName" style="font-size: 0.75rem; color: #64748b;">(서명)</span>
-              </td>
-              <td style="border: 1px solid #000; vertical-align: middle;">
-                <span style="font-size: 0.75rem; color: #64748b;">(인)</span>
-              </td>
-              <td style="border: 1px solid #000; vertical-align: middle; text-align: center;">
-                <img id="indexSignImage" src="" alt="서명" style="max-height: 48px; max-width: 80px; display: none; margin: 0 auto;" />
-                <span id="indexSignPlaceholder" style="font-size: 0.75rem; color: #64748b;">(인)</span>
-              </td>
-            </tr>
-          </table>
-        </div>
-
-        <div style="border: 1px solid #000; padding: 10px; margin-bottom: 1.5rem; text-align: left; font-size: 0.9rem; background: #f8fafc;">
-          <strong>현장명:</strong> <span id="indexRepSiteLabel">테스트현장</span> &nbsp;|&nbsp; 
-          <strong>평가대상:</strong> <span id="indexRepWorkerCountLabel">20명</span> &nbsp;|&nbsp; 
-          <strong>평가자:</strong> <span id="indexRepEvaluatorLabel">최난새</span>
-        </div>
-
-        <!-- 8개 영역 세부 결과 표 -->
-        <table class="main-report-table" style="width: 100%; border-collapse: collapse; font-size: 0.83rem; text-align: center;">
-          <thead>
-            <tr style="background: #f1f5f9; border-bottom: 2px solid #000;">
-              <th style="border: 1px solid #000; padding: 6px;">평가 분야 (8가지 항목)</th>
-              <th style="border: 1px solid #000; padding: 6px;">문항수</th>
-              <th style="border: 1px solid #000; padding: 6px;">획득 평균점수</th>
-              <th style="border: 1px solid #000; padding: 6px;">백분율 환산 (%)</th>
-              <th style="border: 1px solid #000; padding: 6px;">평가 등급</th>
-            </tr>
-          </thead>
-          <tbody id="indexGabJiTableBody"></tbody>
-        </table>
-      </div>
-
-      <!-- 2. 을지 (세부점수표) -->
-      <div id="indexEulJiSection" class="card report-page-break" style="background: #ffffff; padding: 2rem; margin-bottom: 2rem;">
-        <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 0.3rem; text-align: left;">
-          관리감독자 직종별 세부 평가 내역서 (을지)
-        </h3>
-        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 1.25rem; text-align: left;" id="indexEulJiSubTitle">
-          직종별 N/A 제외 개별 환산 점수 및 세부 평가 결과
-        </p>
-
-        <div style="overflow-x: auto;">
-          <table class="main-report-table" style="width: 100%; border-collapse: collapse; font-size: 0.72rem; text-align: center;">
-            <thead>
-              <tr style="background: #f1f5f9;">
-                <th style="border: 1px solid #000; padding: 4px;" rowspan="2">성명</th>
-                <th style="border: 1px solid #000; padding: 4px;" rowspan="2">직종</th>
-                <th style="border: 1px solid #000; padding: 4px;" colspan="20">문항별 점수 (1~20)</th>
-                <th style="border: 1px solid #000; padding: 4px;" rowspan="2">획득/만점</th>
-                <th style="border: 1px solid #000; padding: 4px;" rowspan="2">환산%</th>
-                <th style="border: 1px solid #000; padding: 4px;" rowspan="2">등급</th>
-              </tr>
-              <tr style="background: #f8fafc;">
-                <th style="border: 1px solid #000; padding: 2px;">1</th>
-                <th style="border: 1px solid #000; padding: 2px;">2</th>
-                <th style="border: 1px solid #000; padding: 2px;">3</th>
-                <th style="border: 1px solid #000; padding: 2px;">4</th>
-                <th style="border: 1px solid #000; padding: 2px;">5</th>
-                <th style="border: 1px solid #000; padding: 2px;">6</th>
-                <th style="border: 1px solid #000; padding: 2px;">7</th>
-                <th style="border: 1px solid #000; padding: 2px;">8</th>
-                <th style="border: 1px solid #000; padding: 2px;">9</th>
-                <th style="border: 1px solid #000; padding: 2px;">10</th>
-                <th style="border: 1px solid #000; padding: 2px;">11</th>
-                <th style="border: 1px solid #000; padding: 2px;">12</th>
-                <th style="border: 1px solid #000; padding: 2px;">13</th>
-                <th style="border: 1px solid #000; padding: 2px;">14</th>
-                <th style="border: 1px solid #000; padding: 2px;">15</th>
-                <th style="border: 1px solid #000; padding: 2px;">16</th>
-                <th style="border: 1px solid #000; padding: 2px;">17</th>
-                <th style="border: 1px solid #000; padding: 2px;">18</th>
-                <th style="border: 1px solid #000; padding: 2px;">19</th>
-                <th style="border: 1px solid #000; padding: 2px;">20</th>
-              </tr>
-            </thead>
-            <tbody id="indexEulJiTableBody"></tbody>
-          </table>
-        </div>
-      </div>
-
-      <!-- 🔥 3. 병지 (관리감독자 평가 절차서) -->
-      <div id="indexByeongJiSection" class="card report-page-break" style="background: #ffffff; padding: 2rem; text-align: left;">
-        <div style="border-bottom: 2px solid #000; padding-bottom: 0.75rem; margin-bottom: 1.5rem; display: flex; justify-content: space-between; align-items: flex-end;">
+    <header class="app-header no-print">
+      <div class="container" style="display: flex; justify-content: space-between; align-items: center;">
+        <div class="brand">
+          <span style="font-size: 1.5rem;">🏗️</span>
           <div>
-            <h2 style="font-size: 1.35rem; font-weight: 800; color: #0f172a; margin-bottom: 0.2rem;">
-              관리감독자 업무수행 평가 절차서 (병지)
-            </h2>
-            <p style="font-size: 0.85rem; color: #475569;">
-              산업안전보건법 제16조 및 중대재해처벌법 시행령 제4조 근거 규정
-            </p>
+            <h1>관리감독자 안전보건 업무수행 평가시스템</h1>
+            <p>7개 규격 직종별 N/A 자동 파싱 및 백분율 환산(%) 산출</p>
           </div>
-          <span style="font-size: 0.8rem; font-weight: 700; color: #2563eb; border: 1px solid #93c5fd; padding: 3px 8px; border-radius: 4px; background: #eff6ff;">
-            표준 운영 절차서 (SOP)
-          </span>
+        </div>
+        <div>
+          <button onclick="location.href='admin.html'" class="btn btn-outline" style="font-size: 0.85rem; padding: 0.4rem 0.8rem;">
+            ⚙️ 관리자 페이지
+          </button>
+        </div>
+      </div>
+    </header>
+
+    <div class="container" style="padding-bottom: 6rem;">
+
+      <!-- 위자드 진행 단계 헤더 (인쇄시 자동 숨김) -->
+      <div class="wizard-progress-card card shadow-md no-print" style="margin-bottom: 1.5rem;">
+        <div class="wizard-steps">
+          <div id="wizStep1" class="step-item active">
+            <div class="step-icon">1</div>
+            <div class="step-title">평가 대상자 등록 검증</div>
+          </div>
+          <div id="wizStep2" class="step-item">
+            <div class="step-icon">2</div>
+            <div class="step-title">20문항 개별/일괄 평가</div>
+          </div>
+          <div id="wizStep3" class="step-item">
+            <div class="step-icon">3</div>
+            <div class="step-title">서명 & 평가표 완수</div>
+          </div>
+        </div>
+      </div>
+
+      <!-- STEP 1: 평가 대상 인원 검증 및 설정 카드 -->
+      <div id="stepIntroCard" class="card shadow-md" style="margin-bottom: 1.5rem;">
+        <h3 style="margin-top: 0; color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+          📋 1단계: 평가 기본 정보 및 대상자 인원 검증
+        </h3>
+
+        <div style="display: grid; grid-template-columns: repeat(auto-fit, minmax(220px, 1fr)); gap: 1rem; margin-top: 1rem;">
+          <div class="form-group">
+            <label>소속 현장명</label>
+            <select id="siteSelect" class="form-control">
+              <option value="테스트현장" selected>테스트현장</option>
+              <option value="울산 PJT">울산 PJT</option>
+              <option value="여수 PJT">여수 PJT</option>
+              <option value="평택 PJT">평택 PJT</option>
+              <option value="인천 PJT">인천 PJT</option>
+            </select>
+          </div>
+          <div class="form-group">
+            <label>평가 대상 연도 및 반기</label>
+            <div style="display: flex; gap: 0.5rem; align-items: center; height: 38px;">
+              <span style="font-weight: 700; color: #1e293b;">2026년</span>
+              <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="radio" name="term" value="상반기" id="termFirst"> 상반기
+              </label>
+              <label style="display: inline-flex; align-items: center; gap: 4px; cursor: pointer;">
+                <input type="radio" name="term" value="하반기" id="termSecond"> 하반기
+              </label>
+            </div>
+          </div>
+          <div class="form-group">
+            <label>평가 작성자 (안전보건관리책임자)</label>
+            <input type="text" id="evaluatorName" class="form-control" value="최난새">
+          </div>
         </div>
 
-        <div style="font-size: 0.84rem; color: #1e293b; line-height: 1.7;">
-          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 1rem 0 0.4rem 0;">1. 평가 목적 및 법적 근거</h4>
-          <p style="margin-left: 0.5rem; color: #334155;">
-            본 절차서는 산업안전보건법 제16조(관리감독자) 및 중대재해처벌법 시행령 제4조 제3호에 따라, 사업장 내 관리감독자의 안전·보건 업무수행 적정성을 반기별로 평가하고 필요한 조치를 이행하기 위한 표준 절차를 규정합니다.
-          </p>
+        <div id="workerCheckResultBox" style="margin-top: 1rem; padding: 1rem; border-radius: 8px; background: #f8fafc; border: 1px solid #e2e8f0;">
+          <!-- JS 동적 검증 문구 -->
+        </div>
 
-          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 1rem 0 0.4rem 0;">2. 평가 기간 및 대상</h4>
-          <ul style="margin-left: 1.5rem; color: #334155;">
-            <li><strong>평가 주기:</strong> 연 2회 정기 평가 실시 (상반기: 1월~6월 / 하반기: 7월~12월)</li>
-            <li><strong>평가 대상:</strong> 현장소장이 관리감독자로 지정하여 R&R(권한 및 책무)을 부여한 전 관리감독자</li>
-          </ul>
+        <div style="margin-top: 1.25rem; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <button id="btnOpenOtpUploadModal" class="btn btn-outline" style="font-size: 0.85rem;">
+            📁 이메일 OTP 인증으로 명단 엑셀 재등록
+          </button>
+          <button id="btnStartAssessment" class="btn btn-primary btn-lg" style="font-weight: 700;">
+            🚀 20문항 개별/일괄 평가 시작하기 ➔
+          </button>
+        </div>
+      </div>
 
-          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 1rem 0 0.4rem 0;">3. 7개 정규 직종 분류 및 N/A 적용 기준</h4>
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.78rem; margin: 0.5rem 0 1rem 0; text-align: center;">
+      <!-- STEP 2: 플로팅 싱글 문항 가이드 & 평가 카드 -->
+      <div id="stepFloatingQuestionsSection" style="display: none;">
+        
+        <!-- 문항 헤더 & 프로그레스 바 -->
+        <div class="card shadow-md" style="margin-bottom: 1rem; background: #0f172a; color: #fff;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+            <span style="font-size: 0.85rem; font-weight: 700; color: #94a3b8;" id="currentQCategoryLabel">
+              [Part 1] 관리감독자 업무수행 지원 (2문항)
+            </span>
+            <span style="font-size: 0.9rem; font-weight: 800; color: #38bdf8;">
+              문항 <span id="currentQIndexLabel">1</span> / 20
+            </span>
+          </div>
+          <div style="width: 100%; background: #334155; height: 8px; border-radius: 4px; overflow: hidden;">
+            <div id="qProgressBar" style="width: 5%; height: 100%; background: #38bdf8; transition: width 0.3s ease;"></div>
+          </div>
+        </div>
+
+        <!-- 질문 내용 및 점수 기준 가이드 카드 -->
+        <div class="card shadow-md" style="margin-bottom: 1.25rem; border-left: 5px solid var(--accent-color);">
+          <div style="display: flex; justify-content: space-between; align-items: flex-start; gap: 1rem; margin-bottom: 0.75rem;">
+            <h3 id="cardQTitle" style="margin: 0; font-size: 1.15rem; color: #0f172a; line-height: 1.4;">
+              1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?(R&R 확인)
+            </h3>
+            <div id="cardLawRefContainer"></div>
+          </div>
+
+          <div id="cardQGuideBox" style="display: flex; gap: 0.75rem; flex-wrap: wrap; padding: 0.75rem; background: #f8fafc; border-radius: 8px; font-size: 0.85rem;">
+            <span class="q-chip score-3">● 3점 · 적정 권한 부여</span>
+            <span class="q-chip score-2">● 2점 · 지정만 함</span>
+            <span class="q-chip score-1">● 1점 · 미지정</span>
+          </div>
+        </div>
+
+        <!-- 1클릭 일괄 적용 및 평가 대상자 마이크로 테이블 -->
+        <div class="card shadow-md" style="margin-bottom: 1.5rem;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.5rem; background: #f1f5f9; padding: 0.75rem; border-radius: 8px;">
+            <span style="font-weight: 700; font-size: 0.85rem; color: #334155;" id="batchLabelText">
+              전체 적용 대상자 1클릭 일괄 점수 적용
+            </span>
+            <div style="display: flex; gap: 0.4rem;">
+              <button class="btn btn-success" onclick="fillSingleQAllScores(3)" style="padding: 3px 10px; font-size: 0.8rem;">● 전원 3점 일괄 부여</button>
+              <button class="btn btn-warning" onclick="fillSingleQAllScores(2)" style="padding: 3px 10px; font-size: 0.8rem;">● 전원 2점 일괄 부여</button>
+              <button class="btn btn-danger" onclick="fillSingleQAllScores(1)" style="padding: 3px 10px; font-size: 0.8rem;">● 전원 1점 일괄 부여</button>
+            </div>
+          </div>
+
+          <div style="max-height: 400px; overflow-y: auto; border: 1px solid #e2e8f0; border-radius: 8px;">
+            <table class="report-table" style="font-size: 0.85rem; width: 100%;">
+              <thead>
+                <tr style="background: #f8fafc; position: sticky; top: 0;">
+                  <th style="text-align: left; padding-left: 1rem;">성명 (직종)</th>
+                  <th style="width: 220px; text-align: right; padding-right: 1rem;">평가 점수 선택</th>
+                </tr>
+              </thead>
+              <tbody id="microWorkerTableBody">
+                <!-- JS 동적 생성 -->
+              </tbody>
+            </table>
+          </div>
+        </div>
+
+      </div>
+
+      <!-- 하단 스티키 네비게이션 바 (Step 2 인쇄시 숨김) -->
+      <div id="stickyBottomNavBar" class="no-print" style="display: none; position: fixed; bottom: 0; left: 0; width: 100vw; background: #ffffff; border-top: 1px solid #cbd5e1; padding: 0.75rem 1.5rem; box-shadow: 0 -4px 10px rgba(0,0,0,0.08); z-index: 1000;">
+        <div style="max-width: 1200px; margin: 0 auto; display: flex; justify-content: space-between; align-items: center;">
+          <button id="btnPrevQuestion" class="btn btn-secondary" style="font-weight: 700;">◀ 이전 문항</button>
+          <span style="font-size: 0.85rem; font-weight: 700; color: #475569;" id="stickyProgressText">
+            7개 규격 직종 자동 파싱 & N/A 제외 반영
+          </span>
+          <button id="btnNextQuestion" class="btn btn-primary" style="font-weight: 700;">다음 문항 이동 ▶</button>
+        </div>
+      </div>
+
+      <!-- STEP 3: 최종 서명 및 제출 단계 -->
+      <div id="stepSignatureSection" class="card shadow-md" style="display: none; margin-bottom: 1.5rem;">
+        <h3 style="margin-top: 0; color: var(--primary-color); border-bottom: 2px solid var(--border-color); padding-bottom: 0.5rem;">
+          ✍️ 3단계: 최종 현장소장 전자 서명 및 평가표 저장 완수
+        </h3>
+
+        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 1rem;">
+          20문항에 대한 평가가 완료되었습니다. 아래 캔버스 영역에 **현장소장 전자 서명**을 하시고 [최종 평가표 제출]을 누르시면 갑지+을지+병지 보고서가 생성됩니다.
+        </p>
+
+        <div style="max-width: 500px; margin: 0 auto 1.25rem auto;">
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.4rem;">
+            <label style="font-size: 0.85rem; font-weight: 700; color: #334155;">현장소장 전자 서명란</label>
+            <button id="btnClearCanvas" class="btn btn-outline" style="font-size: 0.75rem; padding: 2px 8px;">🔄 서명 지우기</button>
+          </div>
+          <div style="border: 2px dashed #94a3b8; border-radius: 8px; background: #fafafa; position: relative;">
+            <canvas id="signatureCanvas" style="width: 100%; height: 160px; cursor: crosshair; touch-action: none;"></canvas>
+          </div>
+        </div>
+
+        <div style="text-align: center;">
+          <button id="btnFinalSubmit" class="btn btn-success btn-lg" style="font-weight: 800; font-size: 1.1rem; padding: 0.75rem 2.5rem;">
+            💾 평가표 최종 저장 및 보고서 생성 ➔
+          </button>
+        </div>
+      </div>
+
+      <!-- ==========================================
+           [서명 직후 생성되는 보고서 인쇄 및 다운로드 영역]
+           ========================================== -->
+      <div id="printableReportAreaIndex" style="display: none; margin-top: 2rem;">
+        
+        <div class="no-print" style="margin-bottom: 1rem; background: #ecfdf5; border: 1px solid #a7f3d0; padding: 1rem; border-radius: 8px; display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 0.75rem;">
+          <div>
+            <h4 style="margin: 0 0 0.25rem 0; color: #065f46;">🎉 서명 평가표 작성이 성공적으로 완료되었습니다!</h4>
+            <p style="font-size: 0.8rem; color: #047857; margin: 0;">아래 버튼으로 갑지+을지+병지 보고서를 A4로 즉시 인쇄하거나 엑셀로 다운로드받으실 수 있습니다.</p>
+          </div>
+          <div style="display: flex; gap: 0.5rem;">
+            <button class="btn btn-primary" onclick="window.print()" style="font-weight: 700;">
+              🖨️ 평가 보고서 전체 (갑지+을지+병지 절차서) A4 출력 / PDF 저장
+            </button>
+            <button id="btnDownloadIndexEulJiExcel" class="btn btn-secondary" style="font-size: 0.85rem;">
+              📥 세부 점수 엑셀 다운로드
+            </button>
+          </div>
+        </div>
+
+        <!-- 1. [갑지] 종합 보고서 -->
+        <div class="a4-page">
+          <div class="report-header">
+            <h2 style="font-size: 1.6rem; margin-bottom: 0.25rem;">[갑지] 관리감독자 업무수행 평가 종합 보고서</h2>
+            <p id="indexReportSubTitle" style="font-size: 0.9rem; color: #475569; margin: 0;">2026년 상반기 안전보건 이행 실적 및 백분율 환산(%) 평가</p>
+          </div>
+
+          <!-- 🔥 줄 딱 맞춤: 100% 1개 통합 규격 테이블 적용 -->
+          <table class="report-table" style="width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.85rem;">
+            <tr>
+              <th style="width: 14%; background: #f1f5f9; border: 1px solid #000; padding: 6px;">소속 현장명</th>
+              <td id="indexRepSiteLabel" style="width: 20%; border: 1px solid #000; padding: 6px;">테스트현장</td>
+              <th style="width: 14%; background: #f1f5f9; border: 1px solid #000; padding: 6px;">평가 대상 인원</th>
+              <td id="indexRepWorkerCountLabel" style="width: 14%; border: 1px solid #000; padding: 6px;">20명</td>
+              <th rowspan="2" style="width: 6%; background: #f1f5f9; border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: 700;">결<br>재</th>
+              <th style="width: 16%; background: #f1f5f9; border: 1px solid #000; padding: 6px;">평 가 자</th>
+              <th style="width: 16%; background: #f1f5f9; border: 1px solid #000; padding: 6px;">현장소장 (최종)</th>
+            </tr>
+            <tr>
+              <th style="background: #f1f5f9; border: 1px solid #000; padding: 6px;">평가 구분</th>
+              <td style="border: 1px solid #000; padding: 6px;">연 2회 정기평가</td>
+              <th style="background: #f1f5f9; border: 1px solid #000; padding: 6px;">평가 담당자</th>
+              <td id="indexRepEvaluatorLabel" style="border: 1px solid #000; padding: 6px;">최난새</td>
+              <td style="height: 55px; border: 1px solid #000; vertical-align: middle; text-align: center;">
+                <div style="font-size: 0.8rem; color: #64748b;">(서명/인)</div>
+              </td>
+              <td style="height: 55px; border: 1px solid #000; vertical-align: middle; text-align: center;">
+                <img id="indexSignImage" src="" alt="서명" style="display:none; max-height: 45px; margin: 0 auto;">
+                <div id="indexSignPlaceholder" style="font-size: 0.8rem; color: #64748b;"><span id="indexSignEvaluatorName">최난새</span> (인)</div>
+              </td>
+            </tr>
+          </table>
+
+          <h4 style="margin: 1rem 0 0.5rem 0; font-size: 0.95rem;">1. 8개 평가 영역별 종합 환산 성적</h4>
+          <table class="report-table" style="font-size: 0.85rem; margin-bottom: 1.5rem; width: 100%;">
             <thead>
               <tr style="background: #f1f5f9;">
-                <th style="border: 1px solid #000; padding: 5px;">직종 구분</th>
-                <th style="border: 1px solid #000; padding: 5px;">적용 문항 수</th>
-                <th style="border: 1px solid #000; padding: 5px;">만점 기준</th>
-                <th style="border: 1px solid #000; padding: 5px;">N/A (해당 없음) 제외 항목</th>
+                <th>평가 영역</th>
+                <th>평가 문항 수</th>
+                <th>평균 획득 점수</th>
+                <th>백분율 환산 점수(%)</th>
+                <th>평가 등급</th>
               </tr>
             </thead>
-            <tbody>
-              <tr>
-                <td style="border: 1px solid #000; padding: 5px; font-weight: 700;">안전</td>
-                <td style="border: 1px solid #000; padding: 5px;">19문항</td>
-                <td style="border: 1px solid #000; padding: 5px;">57점 만점</td>
-                <td style="border: 1px solid #000; padding: 5px; text-align: left;">16번(안전관리자 지도조언 - 자기참조 제외)</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #000; padding: 5px; font-weight: 700;">보건</td>
-                <td style="border: 1px solid #000; padding: 5px;">11문항</td>
-                <td style="border: 1px solid #000; padding: 5px;">33점 만점</td>
-                <td style="border: 1px solid #000; padding: 5px; text-align: left;">3~6번, 8번, 10번, 13~14번, 17번(자기참조) 9개 항목 제외</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #000; padding: 5px; font-weight: 700;">품질 / 설계</td>
-                <td style="border: 1px solid #000; padding: 5px;">5문항</td>
-                <td style="border: 1px solid #000; padding: 5px;">15점 만점</td>
-                <td style="border: 1px solid #000; padding: 5px; text-align: left;">1, 2, 18, 19, 20번만 적용 (나머지 15개 항목 N/A 제외)</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #000; padding: 5px; font-weight: 700;">공무</td>
-                <td style="border: 1px solid #000; padding: 5px;">3문항</td>
-                <td style="border: 1px solid #000; padding: 5px;">9점 만점</td>
-                <td style="border: 1px solid #000; padding: 5px; text-align: left;">1, 2, 20번만 적용 (나머지 17개 항목 N/A 제외)</td>
-              </tr>
-              <tr>
-                <td style="border: 1px solid #000; padding: 5px; font-weight: 700;">팀리더 / 공사관리자</td>
-                <td style="border: 1px solid #000; padding: 5px;">20문항</td>
-                <td style="border: 1px solid #000; padding: 5px;">60점 만점</td>
-                <td style="border: 1px solid #000; padding: 5px; text-align: left;">20개 전체 문항 100% 적용</td>
-              </tr>
+            <tbody id="indexGabJiTableBody">
+              <!-- JS 동적 생성 -->
             </tbody>
           </table>
 
-          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 1rem 0 0.4rem 0;">4. 평가 산출 및 백분율 환산 기준</h4>
-          <ul style="margin-left: 1.5rem; color: #334155;">
-            <li><strong>문항 배점:</strong> 적정 (3점) | 보통 (2점) | 미흡 (1점) 3단계 원클릭 평가</li>
-            <li><strong>환산 공식:</strong> <code>환산점수(%) = (획득 점수 ÷ 적용문항 만점) × 100</code></li>
-            <li><strong>등급 매핑:</strong> 🟢 <strong>우수 (90% 이상)</strong> | 🟡 <strong>보통 (70~89.9%)</strong> | 🔴 <strong>미흡 (70% 미만)</strong></li>
-          </ul>
-
-          <h4 style="font-size: 0.95rem; font-weight: 800; color: #0f172a; margin: 1rem 0 0.4rem 0;">5. 결재 및 데이터 이관 보관 절차</h4>
-          <ol style="margin-left: 1.5rem; color: #334155;">
-            <li><strong>작성/검토:</strong> 현장 안전보건 담당자가 E-mail OTP 인증 후 평가 대상자 명단을 검증 및 등록합니다.</li>
-            <li><strong>승인(서명):</strong> 현장소장이 20문항 점수를 세팅한 후 1회 전자 서명을 이행하여 승인합니다.</li>
-            <li><strong>자동 이관:</strong> 전자 서명 이행 즉시 Google Cloud Drive 및 DB 시트에 자동으로 영구 보관됩니다.</li>
-          </ol>
+          <h4 style="margin: 1rem 0 0.5rem 0; font-size: 0.95rem;">2. 총평 및 향후 개선 대책</h4>
+          <div style="border: 1px solid #000; padding: 1rem; font-size: 0.85rem; line-height: 1.6; min-height: 100px;">
+            상기 현장의 2026년 관리감독자 업무수행 평가 결과, 7개 정규 직종별 N/A 적용 문항을 엄격히 반영하여 종합 환산 점수 94.1%(우수)를 기록함. 향후 보건 및 설비 직종의 작업 전 점검 이행을 집중 지도하여 중대재해 예방에 만전을 기하고자 함.
+          </div>
         </div>
+
+        <!-- 2. [을지] 세부 평가 내역서 -->
+        <div class="a4-page" style="page-break-before: always;">
+          <div class="report-header">
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">[을지] 관리감독자 직종별 세부 평가 내역서</h2>
+            <p id="indexEulJiSubTitle" style="font-size: 0.85rem; color: #475569; margin: 0;">7개 규격 직종별 N/A 제외 개별 환산 점수 및 세부 평가 결과</p>
+          </div>
+
+          <table class="report-table" style="font-size: 0.72rem; width: 100%; border-collapse: collapse; text-align: center;">
+            <thead>
+              <tr style="background: #f1f5f9; font-weight: 700;">
+                <th style="width: 55px; border: 1px solid #000;">성명</th>
+                <th style="width: 65px; border: 1px solid #000;">직종</th>
+                <th style="border: 1px solid #000;">Q1</th><th style="border: 1px solid #000;">Q2</th>
+                <th style="border: 1px solid #000;">Q3</th><th style="border: 1px solid #000;">Q4</th>
+                <th style="border: 1px solid #000;">Q5</th><th style="border: 1px solid #000;">Q6</th>
+                <th style="border: 1px solid #000;">Q7</th><th style="border: 1px solid #000;">Q8</th>
+                <th style="border: 1px solid #000;">Q9</th><th style="border: 1px solid #000;">Q10</th>
+                <th style="border: 1px solid #000;">Q11</th><th style="border: 1px solid #000;">Q12</th>
+                <th style="border: 1px solid #000;">Q13</th><th style="border: 1px solid #000;">Q14</th>
+                <th style="border: 1px solid #000;">Q15</th><th style="border: 1px solid #000;">Q16</th>
+                <th style="border: 1px solid #000;">Q17</th><th style="border: 1px solid #000;">Q18</th>
+                <th style="border: 1px solid #000;">Q19</th><th style="border: 1px solid #000;">Q20</th>
+                <th style="width: 70px; border: 1px solid #000;">획득/만점</th>
+                <th style="width: 60px; border: 1px solid #000;">환산(%)</th>
+                <th style="width: 50px; border: 1px solid #000;">등급</th>
+              </tr>
+            </thead>
+            <tbody id="indexEulJiTableBody">
+              <!-- JS 동적 생성 -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 3. [병지] 평가 절차서 SOP -->
+        <div class="a4-page" style="page-break-before: always;">
+          <div class="report-header">
+            <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">[병지] 관리감독자 업무수행 평가 절차서 (SOP)</h2>
+            <p style="font-size: 0.85rem; color: #475569; margin: 0;">산업안전보건법 제16조 및 중대재해처벌법 시행령 제4조에 따른 표준 운영 절차서</p>
+          </div>
+
+          <div style="font-size: 0.85rem; line-height: 1.6; color: #1e293b;">
+            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">1. 목적 및 법적 근거</h4>
+            <p style="margin: 0 0 0.5rem 0;">
+              본 절차서는 사업장 내 관리감독자의 안전·보건 업무수행 능력을 정기적으로 평가하여, 재해 예방 의무를 충실히 이행하도록 지원하고 이행 실적을 객관적 지표(백분율 환산 점수 %)로 관리함을 목적으로 한다.
+            </p>
+
+            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">2. 평가 주기 및 환산 공식</h4>
+            <ul style="margin: 0 0 0.5rem 1.2rem; padding: 0;">
+              <li><strong>평가 주기</strong>: 연 2회 (상반기: 6월 말 기준 / 하반기: 12월 말 기준)</li>
+              <li><strong>환산 공식</strong>: <code>환산점수(%) = (직종별 획득 점수 합계 / 적용 문항수 × 3점) × 100</code></li>
+            </ul>
+
+            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">3. 7개 정규 직종별 N/A 제외 문항 적용 기준표</h4>
+            <table class="report-table" style="font-size: 0.8rem; width: 100%; margin-bottom: 0.75rem;">
+              <thead>
+                <tr style="background: #f1f5f9;">
+                  <th>직종 구분</th>
+                  <th>적용 문항 목록 (총 20문항 중)</th>
+                  <th>적용 문항수</th>
+                  <th>만점 기준</th>
+                </tr>
+              </thead>
+              <tbody>
+                <tr><td>안전</td><td>Q1~Q15, Q17~Q20 (Q16 제외)</td><td>19문항</td><td>57점</td></tr>
+                <tr><td>보건</td><td>Q1, Q2, Q7, Q9, Q11, Q12, Q15, Q16, Q18~Q20</td><td>11문항</td><td>33점</td></tr>
+                <tr><td>품질</td><td>Q1, Q2, Q18~Q20</td><td>5문항</td><td>15점</td></tr>
+                <tr><td>공사관리자</td><td>Q1~Q20 (전 문항 적용)</td><td>20문항</td><td>60점</td></tr>
+                <tr><td>공무</td><td>Q1, Q2, Q20</td><td>3문항</td><td>9점</td></tr>
+                <tr><td>팀리더</td><td>Q1~Q20 (전 문항 적용)</td><td>20문항</td><td>60점</td></tr>
+                <tr><td>설계</td><td>Q1, Q2, Q18~Q20</td><td>5문항</td><td>15점</td></tr>
+              </tbody>
+            </table>
+
+            <h4 style="margin: 0.75rem 0 0.25rem 0; color: var(--primary-color);">4. 결재 및 전자 보관 절차</h4>
+            <p style="margin: 0;">
+              평가 완료 후 현장소장 전자 서명을 거쳐 구글 드라이브 및 감사 시트에 3년간 안전보건 법적 증빙 서류로 보관한다.
+            </p>
+          </div>
+        </div>
+
       </div>
-    </section>
 
-  </main>
-
-  <!-- 1. 모던 로딩 스피너 및 실시간 저장 프로그레스 바 전면 오버레이 모달 -->
-  <div class="modal-backdrop" id="loadingOverlayModal" style="z-index: 3000 !important;">
-    <div class="modal-content" style="max-width: 420px; text-align: center; padding: 2.25rem 1.5rem;">
-      <div class="loading-spinner"></div>
-      <h3 style="font-size: 1.15rem; font-weight: 800; color: #0f172a; margin-bottom: 0.4rem;">
-        ⏳ 구글 드라이브 & DB 저장 처리 중...
-      </h3>
-      <p style="font-size: 0.85rem; color: var(--text-muted);" id="loadingStatusText">
-        선택된 관리감독자의 평가표 생성 및 제출 작업을 진행하고 있습니다.
-      </p>
-
-      <div class="progress-track-bg">
-        <div class="progress-track-fill" id="saveProgressBar"></div>
-      </div>
-
-      <div style="font-size: 0.9rem; font-weight: 800; color: var(--accent-color);" id="saveProgressPercent">
-        0%
-      </div>
     </div>
   </div>
 
-  <!-- 🔥 2. 저장 완수 안내 커스텀 성공 모달 (갑지+을지+병지 다운로드 버튼 포함) -->
-  <div class="modal-backdrop" id="saveSuccessModal" style="z-index: 3100 !important;">
-    <div class="modal-content" style="max-width: 480px; text-align: center; padding: 2rem 1.5rem;">
-      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
-      <h3 style="font-size: 1.25rem; font-weight: 800; color: #059669; margin-bottom: 0.75rem;">
-        평가표 제출 및 저장 완수!
-      </h3>
-      <p style="font-size: 0.92rem; color: #334155; line-height: 1.6; margin-bottom: 1.5rem;" id="saveSuccessMsgText">
-        선택하신 현장의 관리감독자 평가표가 구글 드라이브 및 DB 시트에 안전하게 제출/저장되었습니다.
-      </p>
-
-      <div style="display: flex; flex-direction: column; gap: 0.6rem;">
-        <button class="btn btn-primary" id="btnDownloadReportIndexModal" style="width: 100%; font-size: 0.95rem; padding: 0.75rem;">
-          🖨️ 평가 보고서 전체 (갑지+을지+병지 절차서) A4 출력 / PDF 저장
-        </button>
-        <button class="btn btn-success" id="btnConfirmSaveSuccess" style="width: 100%; font-size: 0.9rem; padding: 0.65rem;">
-          ✅ 완료 확인 (처음으로 돌아가기)
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 이메일 OTP 인증 & 명단 엑셀 업로드 Modal -->
-  <div class="modal-backdrop" id="otpUploadModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3>📁 현장 관리감독자 엑셀 명단 등록 (OTP 인증)</h3>
-        <button class="modal-close" onclick="closeModal('otpUploadModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        
-        <div id="otpStep1Panel">
-          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-            무단 명단 수정을 방지하기 위해 선택하신 현장에 등록된 <strong>작성자/담당자 이메일</strong>로 6자리 OTP 인증번호를 발송합니다.
-          </p>
-
-          <div class="form-group" style="margin-bottom: 1rem;">
-            <label for="otpEmailInput">담당자 이메일 주소</label>
-            <div style="display: flex; gap: 0.5rem;">
-              <input type="email" id="otpEmailInput" class="form-control" placeholder="예: nschoi@sebangtec.com" value="nschoi@sebangtec.com" style="flex:1;" />
-              <button class="btn btn-outline" id="btnSendOtpMail" style="font-size: 0.8rem; white-space: nowrap;">
-                📧 OTP 발송
-              </button>
-            </div>
+  <!-- [모달] 이메일 OTP 인증 & 명단 엑셀 등록 모달 -->
+  <div id="otpUploadModal" class="modal-backdrop">
+    <div class="modal-card shadow-lg" style="max-width: 580px;">
+      <h3 style="margin-top:0; color:var(--primary-color);">📁 이메일 OTP 인증 후 엑셀 명단 등록</h3>
+      
+      <div id="otpStep1Panel" style="margin-bottom: 1rem;">
+        <p style="font-size:0.85rem; color:var(--text-muted);">
+          등록 권한 확인을 위해 담당자 이메일로 6자리 OTP 인증번호를 발송합니다.
+        </p>
+        <div class="form-group">
+          <label>담당자 이메일 주소</label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="email" id="otpEmailInput" class="form-control" placeholder="예: nschoi@sebangtec.com" value="nschoi@sebangtec.com">
+            <button id="btnSendOtpMail" class="btn btn-secondary" style="width: 140px;">📧 OTP 발송</button>
           </div>
-
-          <div class="form-group" style="margin-bottom: 1rem;">
-            <label for="otpCodeInput">수신된 6자리 OTP 인증번호</label>
-            <input type="text" id="otpCodeInput" class="form-control" placeholder="6자리 숫자 입력" maxlength="6" />
-          </div>
-
-          <button class="btn btn-primary" id="btnVerifyOtp" style="width: 100%; font-size: 0.95rem; padding: 0.65rem;">
-            ✅ OTP 인증번호 확인
-          </button>
         </div>
-
-        <div id="otpStep2Panel" style="display: none; text-align: center; padding: 1rem 0;">
-          <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 0.75rem; margin-bottom: 1rem; color: #065f46; font-size: 0.85rem; font-weight: 700;">
-            ✅ E-mail OTP 인증이 완료되었습니다. 명단 엑셀 파일을 업로드하세요.
+        <div class="form-group">
+          <label>6자리 OTP 인증번호 입력</label>
+          <div style="display:flex; gap:0.5rem;">
+            <input type="text" id="otpCodeInput" class="form-control text-center" placeholder="6자리 숫자 입력" style="font-size: 1.1rem; letter-spacing: 2px;">
+            <button id="btnVerifyOtp" class="btn btn-primary" style="width: 180px;">✅ OTP 인증 확인</button>
           </div>
-
-          <button class="btn btn-outline" id="btnDownloadTemplateIndex" style="width: 100%; margin-bottom: 0.75rem; font-size: 0.85rem;">
-            📥 업로드용 엑셀양식 다운로드
-          </button>
-
-          <input type="file" id="indexExcelFileInput" accept=".xlsx, .xls, .csv" style="display: none;" />
-          <button class="btn btn-success" id="btnSelectExcelFileIndex" style="width: 100%; font-size: 1rem; padding: 0.75rem;">
-            📁 엑셀 파일 선택 및 일괄 업로드 (.xlsx)
-          </button>
-          
-          <div id="indexExcelStatusMsg" style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted);"></div>
         </div>
-
       </div>
-      <div class="modal-footer">
+
+      <div id="otpStep2Panel" style="display: none; background: #f0fdf4; border: 1px solid #bbf7d0; padding: 1rem; border-radius: 8px;">
+        <div style="font-weight: 700; color: #166534; margin-bottom: 0.5rem;">✅ 이메일 OTP 인증 완료! 엑셀 업로드 가능</div>
+        <p style="font-size: 0.8rem; color: #15803d; margin-bottom: 0.75rem;">
+          양식 다운로드 버튼을 누르시면 7개 정규 직종 및 실무 직종명이 포함된 샘플 파일이 제공됩니다.
+        </p>
+        <div style="display: flex; gap: 0.5rem;">
+          <button id="btnDownloadTemplateIndex" class="btn btn-outline" style="font-size: 0.8rem;">📥 엑셀 업로드 양식 다운로드</button>
+          <button id="btnSelectExcelFileIndex" class="btn btn-success" style="font-size: 0.8rem;">📁 엑셀 파일 선택 및 업로드</button>
+          <input type="file" id="indexExcelFileInput" accept=".xlsx, .xls" style="display: none;">
+        </div>
+      </div>
+
+      <div style="display:flex; justify-content:flex-end; margin-top:1.25rem;">
         <button class="btn btn-secondary" onclick="closeModal('otpUploadModal')">닫기</button>
       </div>
     </div>
   </div>
 
-  <!-- 법률 조항 보기 Modal -->
-  <div class="modal-backdrop" id="lawModal">
-    <div class="modal-content">
-      <div class="modal-header">
-        <h3 id="lawModalTitle">📖 관련 법률 및 점검 지침 참조</h3>
-        <button class="modal-close" onclick="closeModal('lawModal')">&times;</button>
+  <!-- [모달] 저장 진행 프로그레스 오버레이 -->
+  <div id="loadingOverlayModal" class="modal-backdrop">
+    <div class="modal-card shadow-lg text-center" style="max-width: 440px; padding: 2rem 1.5rem;">
+      <div class="spinner-icon" style="font-size: 2.5rem; margin-bottom: 1rem;">⏳</div>
+      <h3 style="margin-bottom: 0.5rem; color: var(--primary-color);">구글 드라이브 및 DB 저장 중</h3>
+      <p id="loadingStatusText" style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+        관리감독자 평가표 생성을 진행하고 있습니다...
+      </p>
+      <div style="width: 100%; background: #e2e8f0; height: 12px; border-radius: 6px; overflow: hidden; margin-bottom: 0.5rem;">
+        <div id="saveProgressBar" style="width: 0%; height: 100%; background: var(--accent-color); transition: width 0.2s ease;"></div>
       </div>
-      <div class="modal-body">
-        <div style="margin-bottom: 1rem;">
-          <input type="text" id="lawSearchInput" class="form-control" placeholder="작업명 검색 (예: 프레스, 크레인, 용접)..." />
-        </div>
-        <div id="lawModalContent"></div>
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-secondary" onclick="closeModal('lawModal')">닫기</button>
+      <div id="saveProgressPercent" style="font-size: 0.9rem; font-weight: 800; color: var(--accent-color);">0%</div>
+    </div>
+  </div>
+
+  <!-- [모달] 저장 성공 축하 모달 -->
+  <div id="saveSuccessModal" class="modal-backdrop">
+    <div class="modal-card shadow-lg text-center" style="max-width: 460px; padding: 2rem 1.5rem;">
+      <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
+      <h2 style="margin-bottom: 0.5rem; color: #059669;">평가표 저장 완료!</h2>
+      <p id="saveSuccessMsgText" style="font-size: 0.85rem; color: #334155; line-height: 1.5; margin-bottom: 1.5rem;">
+        관리감독자 20명의 평가표 및 전자 서명이 구글 드라이브와 DB 시트에 성공적으로 등록되었습니다.
+      </p>
+      <div style="display: flex; gap: 0.5rem; justify-content: center;">
+        <button id="btnDownloadReportIndexModal" class="btn btn-primary" style="font-weight: 700;">
+          🖨️ 보고서 A4 즉시 출력
+        </button>
+        <button id="btnConfirmSaveSuccess" class="btn btn-outline">
+          📄 보고서 화면 보기
+        </button>
       </div>
     </div>
   </div>

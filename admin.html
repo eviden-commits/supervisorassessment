@@ -41,7 +41,6 @@
           </div>
         </div>
         <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-          <!-- 🔥 독립 전용 버튼: [병지] 평가 절차서 1클릭 인쇄/다운로드 -->
           <button id="btnDirectPrintByeongJiHeader" class="btn btn-success" style="font-size: 0.85rem; padding: 0.5rem 0.9rem; font-weight: 700;">
             📄 [병지] 평가 절차서 (SOP) 출력
           </button>
@@ -68,7 +67,6 @@
             <span id="userCountSpan" class="badge" style="background: var(--accent-color); color: #fff;">0명</span>
           </div>
 
-          <!-- 현장 필수 선택 드롭다운 -->
           <div style="display: flex; gap: 0.5rem; align-items: center;">
             <label style="font-size: 0.85rem; font-weight: 700; color: #334155;">현장 선택:</label>
             <select id="adminSiteSelect" class="form-control" style="width: 220px; font-size: 0.85rem;">
@@ -85,13 +83,12 @@
           </div>
         </div>
 
-        <!-- 현장 미선택 시 안내 메시지 / 선택 시 아코디언 컨테이너 -->
         <div id="siteWorkerAccordionContainer">
-          <!-- JS에서 동적 렌더링 -->
+          <!-- JS 동적 렌더링 -->
         </div>
       </section>
 
-      <!-- 시스템 감사 로그 섹션 (인쇄시 숨김) -->
+      <!-- 감사 로그 섹션 -->
       <section class="card shadow-md no-print" style="margin-bottom: 1.5rem; background: #fff; border-radius: 12px; padding: 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; flex-wrap: wrap; gap: 0.75rem;">
           <div style="display: flex; align-items: center; gap: 0.5rem;">
@@ -130,9 +127,7 @@
         </div>
       </section>
 
-      <!-- ==========================================
-           보고서 출력 조율 컨트롤러 (웹용 / 인쇄시 전면 자동 숨김)
-           ========================================== -->
+      <!-- 보고서 출력 조율 컨트롤러 -->
       <section class="card shadow-md no-print" style="margin-bottom: 1.5rem; background: #f8fafc; border: 2px solid var(--accent-color); border-radius: 12px; padding: 1.25rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; flex-wrap: wrap; gap: 1rem;">
           <div>
@@ -140,7 +135,6 @@
             <p style="font-size: 0.8rem; color: #64748b; margin: 0;">아래 화면에서 서식을 확인하시고 [A4 출력 / PDF 저장] 버튼을 클릭하면 불필요한 컨트롤러 없이 깔끔한 보고서만 인쇄됩니다.</p>
           </div>
           <div style="display: flex; gap: 0.5rem; align-items: center; flex-wrap: wrap;">
-            <!-- 🔥 [병지 단독 출력] 독립 버튼 추가 -->
             <button id="btnDirectPrintByeongJiBody" class="btn btn-success" style="font-size: 0.85rem; padding: 0.5rem 1rem; font-weight: 700;">
               📄 [병지] 평가 절차서만 출력
             </button>
@@ -165,9 +159,7 @@
         </div>
       </section>
 
-      <!-- ==========================================
-           [A4 출력 보고서 전용 영역] (모든 조절 바/버튼이 제거된 순수 보고서)
-           ========================================== -->
+      <!-- [A4 출력 보고서 전용 영역] -->
       <div id="printableReportArea">
         
         <!-- 1. [갑지] 관리감독자 평가 종합 보고서 -->
@@ -177,42 +169,31 @@
             <p id="reportSubTitle" style="font-size: 0.9rem; color: #475569; margin: 0;">2026년 상반기 안전보건 이행 실적 및 백분율 환산(%) 평가</p>
           </div>
 
-          <!-- 현장 정보 및 우측 상단 소장 결재란 (310px 고정) -->
-          <div style="display: flex; justify-content: space-between; align-items: flex-end; margin-bottom: 1.25rem;">
-            <table class="report-info-table" style="width: 55%; font-size: 0.85rem;">
-              <tr>
-                <th>소속 현장명</th>
-                <td id="repSiteLabel">테스트현장</td>
-                <th>평가 대상 인원</th>
-                <td id="repWorkerCountLabel">20명</td>
-              </tr>
-              <tr>
-                <th>평가 구분</th>
-                <td>연 2회 정기평가</td>
-                <th>평가 담당자</th>
-                <td>안전보건관리책임자</td>
-              </tr>
-            </table>
-
-            <div class="approval-box-container">
-              <table class="approval-table">
-                <tr>
-                  <th rowspan="2" class="approval-header-title">결<br>재</th>
-                  <th style="width: 130px;">평 가 자</th>
-                  <th style="width: 130px;">현장소장 (최종)</th>
-                </tr>
-                <tr>
-                  <td class="sign-cell">
-                    <div style="font-size: 0.8rem; color: #64748b;">(서명/인)</div>
-                  </td>
-                  <td class="sign-cell">
-                    <img id="signImage" src="" alt="서명 이미지" style="display:none; max-height: 50px; margin: 0 auto;">
-                    <div id="signPlaceholder" style="font-size: 0.8rem; color: #64748b;">최난새 (인)</div>
-                  </td>
-                </tr>
-              </table>
-            </div>
-          </div>
+          <!-- 🔥 줄 딱 맞춤: 100% 1개 통합 규격 테이블 적용 -->
+          <table class="report-table" style="width: 100%; border-collapse: collapse; margin-bottom: 1.25rem; font-size: 0.85rem;">
+            <tr>
+              <th style="width: 14%; background: #f1f5f9; border: 1px solid #000; padding: 6px;">소속 현장명</th>
+              <td id="repSiteLabel" style="width: 20%; border: 1px solid #000; padding: 6px;">테스트현장</td>
+              <th style="width: 14%; background: #f1f5f9; border: 1px solid #000; padding: 6px;">평가 대상 인원</th>
+              <td id="repWorkerCountLabel" style="width: 14%; border: 1px solid #000; padding: 6px;">20명</td>
+              <th rowspan="2" style="width: 6%; background: #f1f5f9; border: 1px solid #000; text-align: center; vertical-align: middle; font-weight: 700;">결<br>재</th>
+              <th style="width: 16%; background: #f1f5f9; border: 1px solid #000; padding: 6px;">평 가 자</th>
+              <th style="width: 16%; background: #f1f5f9; border: 1px solid #000; padding: 6px;">현장소장 (최종)</th>
+            </tr>
+            <tr>
+              <th style="background: #f1f5f9; border: 1px solid #000; padding: 6px;">평가 구분</th>
+              <td style="border: 1px solid #000; padding: 6px;">연 2회 정기평가</td>
+              <th style="background: #f1f5f9; border: 1px solid #000; padding: 6px;">평가 담당자</th>
+              <td style="border: 1px solid #000; padding: 6px;">안전보건관리책임자</td>
+              <td style="height: 55px; border: 1px solid #000; vertical-align: middle; text-align: center;">
+                <div style="font-size: 0.8rem; color: #64748b;">(서명/인)</div>
+              </td>
+              <td style="height: 55px; border: 1px solid #000; vertical-align: middle; text-align: center;">
+                <img id="signImage" src="" alt="서명" style="display:none; max-height: 45px; margin: 0 auto;">
+                <div id="signPlaceholder" style="font-size: 0.8rem; color: #64748b;">최난새 (인)</div>
+              </td>
+            </tr>
+          </table>
 
           <h4 style="margin: 1rem 0 0.5rem 0; font-size: 0.95rem;">1. 8개 평가 영역별 종합 환산 성적</h4>
           <table class="report-table" style="font-size: 0.85rem; margin-bottom: 1.5rem;">
@@ -242,7 +223,7 @@
           </div>
         </div>
 
-        <!-- 2. [을지] 관리감독자 직종별 세부 평가 내역서 -->
+        <!-- 2. [을지] 세부 평가 내역서 -->
         <div id="eulJiSection" class="a4-page" style="page-break-before: always;">
           <div class="report-header">
             <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">[을지] 관리감독자 직종별 세부 평가 내역서</h2>
@@ -270,12 +251,12 @@
               </tr>
             </thead>
             <tbody id="eulJiTableBody">
-              <!-- JS에서 7개 카테고리별 Group by + 20명 세부 점수 동적 생성 -->
+              <!-- JS 동적 생성 -->
             </tbody>
           </table>
         </div>
 
-        <!-- 3. [병지] 관리감독자 업무수행 평가 절차서 (SOP) -->
+        <!-- 3. [병지] 평가 절차서 SOP -->
         <div id="byeongJiSection" class="a4-page" style="page-break-before: always;">
           <div class="report-header">
             <h2 style="font-size: 1.5rem; margin-bottom: 0.25rem;">[병지] 관리감독자 업무수행 평가 절차서 (SOP)</h2>
@@ -335,7 +316,6 @@
         <button onclick="closeModal('reminderMailModal')" style="background: none; border: none; font-size: 1.25rem; cursor: pointer;">✕</button>
       </div>
 
-      <!-- 상반기 / 하반기 탭 -->
       <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; border-bottom: 2px solid #cbd5e1;">
         <button id="tabTermFirst" class="btn active-tab" onclick="switchReminderTab('상반기')" style="padding: 0.5rem 1.25rem; font-weight: 700; border-radius: 8px 8px 0 0; border: none; background: var(--primary-color); color: #fff; cursor: pointer;">
           📅 2026년 상반기 미제출 현장
@@ -345,7 +325,6 @@
         </button>
       </div>
 
-      <!-- 현장 검색 & 리스트 -->
       <div style="margin-bottom: 1rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
           <span style="font-size: 0.85rem; font-weight: 700; color: #334155;" id="reminderTargetCountText">
@@ -358,11 +337,10 @@
         </div>
 
         <div id="unsubmittedSiteListContainer" style="max-height: 220px; overflow-y: auto; border: 1px solid #cbd5e1; border-radius: 8px; padding: 0.5rem; background: #f8fafc;">
-          <!-- JS에서 동적 체크박스 렌더링 -->
+          <!-- JS 동적 생성 -->
         </div>
       </div>
 
-      <!-- 안내 메세지 미리보기 -->
       <div style="background: #eff6ff; border: 1px solid #bfdbfe; padding: 0.75rem; border-radius: 8px; margin-bottom: 1.25rem;">
         <div style="font-size: 0.8rem; font-weight: 700; color: #1e40af; margin-bottom: 0.25rem;">✉️ 발송 안내 메일 내용 미리보기:</div>
         <p id="reminderMailPreviewText" style="font-size: 0.8rem; color: #1e3a8a; margin: 0; line-height: 1.4;">
