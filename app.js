@@ -1,6 +1,6 @@
 /* =========================================================================
    app.js
-   인원별 세부 점수표 (이름, 직종, 문1~문20 매트릭스) 지원 로직
+   7개 파트별 인원 매트릭스 점수표 기본 노출 및 파트별 일괄 점수 적용 로직
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -16,28 +16,37 @@ let WORKER_DB = [
 ];
 
 const QUESTIONS = [
-  { id: 1, category: "관리감독자 업무수행 지원 (2)", title: "관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?", lawRef: null, score3: "적정 권한 업무수행", score2: "관리감독자 지정만", score1: "관리감독자 미지정" },
-  { id: 2, category: "관리감독자 업무수행 지원 (2)", title: "시설·장비·예산 등 업무수행에 필요한 지원을 하는가?", lawRef: null, score3: "예산 등이 책정", score2: "필요시 예산 등 책정", score1: "예산 등 책정 없음" },
-  { id: 3, category: "기계·기구 또는 설비의 안전·보건점검 및 이상유무의 확인 (5)", title: "기계·기구 또는 설비의 안전·보건점검을 실시하는가?", lawRef: null, score3: "연단위 계획 실시", score2: "그때 그때 한다", score1: "잘모르겠다, 안한다" },
-  { id: 4, category: "기계·기구 또는 설비의 안전·보건점검 및 이상유무의 확인 (5)", title: "작업종류별로 관리감독자의 유해·위험 방지 업무*를 적정 수행하는가", lawRef: "별표2", score3: "체크리스트 작성하여 수행한다", score2: "잘모르겠다", score1: "안한다" },
-  { id: 5, category: "기계·기구 또는 설비의 안전·보건점검 및 이상유무의 확인 (5)", title: "작업종류별로 관리감독자의 작업 시작 전 점검사항*을 적정 수행하는가", lawRef: "별표3", score3: "체크리스트 작성하여 수행한다", score2: "잘모르겠다", score1: "안한다" },
-  { id: 6, category: "기계·기구 또는 설비의 안전·보건점검 및 이상유무의 확인 (5)", title: "점검결과 이상이 발견되면 즉시 수리하는 등 필요한 조치를 하는가?", lawRef: null, score3: "즉시 작업중지 후 조치", score2: "작업중지 후 추후 수리", score1: "즉시 작업중지 안함" },
-  { id: 7, category: "기계·기구 또는 설비의 안전·보건점검 및 이상유무의 확인 (5)", title: "도급사업 시의 순회점검 및 안전·보건점검에 참여하는가?", lawRef: null, score3: "주기적으로 한다", score2: "가끔 한다", score1: "안한다" },
-  { id: 8, category: "근로자의 작업복·보호구 및 방호장치의 점검과 그 착용·사용에 관한 교육·지도 (3)", title: "작업복의 점검과 착용에 관한 교육·지도를 하는가?", lawRef: null, score3: "작업시작 전과 정기교육시 모두 수행", score2: "정기교육 시 수행", score1: "안한다" },
-  { id: 9, category: "근로자의 작업복·보호구 및 방호장치의 점검과 그 착용·사용에 관한 교육·지도 (3)", title: "보호구의 점검과 착용·사용에 관한 교육·지도를 하는가?", lawRef: null, score3: "작업시작 전과 정기교육시 모두 수행", score2: "정기교육 시 수행", score1: "안한다" },
-  { id: 10, category: "근로자의 작업복·보호구 및 방호장치의 점검과 그 착용·사용에 관한 교육·지도 (3)", title: "방호장치의 점검과 사용에 관한 교육·지도를 하는가?", lawRef: null, score3: "작업시작 전과 정기교육시 모두 수행", score2: "정기교육 시 수행", score1: "안한다" },
-  { id: 11, category: "해당 작업에서 발생한 산업재해에 관한 보고 및 이에 대한 응급조치 (2)", title: "산업재해에 관한 발생 보고가 적정하게 이뤄지고 있는가?", lawRef: null, score3: "재해 발생 즉시 보고", score2: "재해 발생 후 3일 이내", score1: "재해 발생 후 1주일 이내" },
-  { id: 12, category: "해당 작업에서 발생한 산업재해에 관한 보고 및 이에 대한 응급조치 (2)", title: "산업재해에 따른 응급조치가 적정하게 이뤄지고 있는가 (※ MSDS 응급조치 요령 숙지 등)", lawRef: null, score3: "정기 및 수시 모두 교육", score2: "정기교육 시 실시", score1: "안한다" },
-  { id: 13, category: "작업장 정리·정돈 및 통로확보에 대한 확인·감독 (2)", title: "작업장 정리·정돈에 대한 확인·감독을 하고 있는가?", lawRef: null, score3: "매일 3회 실시", score2: "매일 실시", score1: "안한다" },
-  { id: 14, category: "작업장 정리·정돈 및 통로확보에 대한 확인·감독 (2)", title: "통로 확보에 대한 확인·감독을 하고 있는가?", lawRef: null, score3: "매일 3회 실시", score2: "매일 실시", score1: "안한다" },
-  { id: 15, category: "산업보건의, 안전관리자 및 보건관리자의 지도·조언에 대한 협조 (3)", title: "산업보건의의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극적으로 협조", score2: "협조한다", score1: "협조 안한다" },
-  { id: 16, category: "산업보건의, 안전관리자 및 보건관리자의 지도·조언에 대한 협조 (3)", title: "안전관리자(또는 안전관리전문기관)의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극적으로 협조", score2: "협조한다", score1: "협조 안한다" },
-  { id: 17, category: "산업보건의, 안전관리자 및 보건관리자의 지도·조언에 대한 협조 (3)", title: "보건관리자(또는 보건관리전문기관)의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극적으로 협조", score2: "협조한다", score1: "협조 안한다" },
-  { id: 18, category: "위험성평가에 대한 참여 (2)", title: "위험성평가 실시 관련하여 유해·위험요인의 파악에 대한 참여를 하고 있는가?", lawRef: null, score3: "반드시 참여", score2: "필요시 참여", score1: "참여 안함" },
-  { id: 19, category: "위험성평가에 대한 참여 (2)", title: "개선조치의 시행에 참여를 하고 있는가?", lawRef: null, score3: "반드시 참여", score2: "필요시 참여", score1: "참여 안함" },
-  { id: 20, category: "그 밖에 해당작업의 안전 및 보건에 관한 사항 이행 (1)", title: "그 밖에 안전 및 보건에 관한 사항을 적정하게 이행하고 있는가 (※ 밀폐공간 적정공기 등)", lawRef: "기타", score3: "반드시 이행", score2: "필요시 이행", score1: "이행 안함" }
+  { id: 1, part: 1, partTitle: "Part 1. 관리감독자 업무수행 지원 (2)", title: "관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?", lawRef: null },
+  { id: 2, part: 1, partTitle: "Part 1. 관리감독자 업무수행 지원 (2)", title: "시설·장비·예산 등 업무수행에 필요한 지원을 하는가?", lawRef: null },
+  
+  { id: 3, part: 2, partTitle: "Part 2. 기계·기구/설비 안전보건점검 (5)", title: "기계·기구 또는 설비의 안전·보건점검을 실시하는가?", lawRef: null },
+  { id: 4, part: 2, partTitle: "Part 2. 기계·기구/설비 안전보건점검 (5)", title: "작업종류별로 관리감독자의 유해·위험 방지 업무*를 적정 수행하는가", lawRef: "별표2" },
+  { id: 5, part: 2, partTitle: "Part 2. 기계·기구/설비 안전보건점검 (5)", title: "작업종류별로 관리감독자의 작업 시작 전 점검사항*을 적정 수행하는가", lawRef: "별표3" },
+  { id: 6, part: 2, partTitle: "Part 2. 기계·기구/설비 안전보건점검 (5)", title: "점검결과 이상이 발견되면 즉시 수리하는 등 필요한 조치를 하는가?", lawRef: null },
+  { id: 7, part: 2, partTitle: "Part 2. 기계·기구/설비 안전보건점검 (5)", title: "도급사업 시의 순회점검 및 안전·보건점검에 참여하는가?", lawRef: null },
+
+  { id: 8, part: 3, partTitle: "Part 3. 근로자 보호구 및 방호장치 교육·지도 (3)", title: "작업복의 점검과 착용에 관한 교육·지도를 하는가?", lawRef: null },
+  { id: 9, part: 3, partTitle: "Part 3. 근로자 보호구 및 방호장치 교육·지도 (3)", title: "보호구의 점검과 착용·사용에 관한 교육·지도를 하는가?", lawRef: null },
+  { id: 10, part: 3, partTitle: "Part 3. 근로자 보호구 및 방호장치 교육·지도 (3)", title: "방호장치의 점검과 사용에 관한 교육·지도를 하는가?", lawRef: null },
+
+  { id: 11, part: 4, partTitle: "Part 4. 산업재해 보고 및 응급조치 (2)", title: "산업재해에 관한 발생 보고가 적정하게 이뤄지고 있는가?", lawRef: null },
+  { id: 12, part: 4, partTitle: "Part 4. 산업재해 보고 및 응급조치 (2)", title: "산업재해에 따른 응급조치가 적정하게 이뤄지고 있는가 (※ MSDS 숙지 등)", lawRef: null },
+
+  { id: 13, part: 5, partTitle: "Part 5. 작업장 정리정돈 및 통로확보 (2)", title: "작업장 정리·정돈에 대한 확인·감독을 하고 있는가?", lawRef: null },
+  { id: 14, part: 5, partTitle: "Part 5. 작업장 정리정돈 및 통로확보 (2)", title: "통로 확보에 대한 확인·감독을 하고 있는가?", lawRef: null },
+
+  { id: 15, part: 6, partTitle: "Part 6. 안전/보건관리자 지도조언 협조 (3)", title: "산업보건의의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null },
+  { id: 16, part: 6, partTitle: "Part 6. 안전/보건관리자 지도조언 협조 (3)", title: "안전관리자(또는 전문기관)의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null },
+  { id: 17, part: 6, partTitle: "Part 6. 안전/보건관리자 지도조언 협조 (3)", title: "보건관리자(또는 전문기관)의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null },
+
+  { id: 18, part: 7, partTitle: "Part 7. 위험성평가 및 기타 이행 (3)", title: "위험성평가 유해·위험요인 파악에 대한 참여를 하고 있는가?", lawRef: null },
+  { id: 19, part: 7, partTitle: "Part 7. 위험성평가 및 기타 이행 (3)", title: "개선조치의 시행에 참여를 하고 있는가?", lawRef: null },
+  { id: 20, part: 7, partTitle: "Part 7. 위험성평가 및 기타 이행 (3)", title: "그 밖에 안전 및 보건에 관한 사항을 적정하게 이행하고 있는가", lawRef: "기타" }
 ];
 
+// 현재 활성화된 파트 (1 ~ 7)
+let currentPart = 1;
+// 인원별 20개 문항 점수 저장소 { workerId: { q_1: 3, q_2: 3, ... } }
 let workerOverrideScores = {};
 let currentSignatureDataUrl = "";
 let isDrawing = false;
@@ -47,7 +56,7 @@ document.addEventListener("DOMContentLoaded", () => {
   bindIndexAuthEvents();
   initDateTerm();
   renderWorkerList();
-  renderQuestions();
+  switchPart(1); // 기본 Part 1 표시
   initCanvasFix();
   bindEvents();
 });
@@ -129,7 +138,7 @@ function renderWorkerList() {
     const item = document.createElement("label");
     item.className = "worker-item-compact";
     item.innerHTML = `
-      <input type="checkbox" class="worker-chk" value="${w.id}" data-name="${w.name}" data-birth="${w.birth}" data-job="${w.job}" checked onchange="updateSelectedCount()" />
+      <input type="checkbox" class="worker-chk" value="${w.id}" data-name="${w.name}" data-birth="${w.birth}" data-job="${w.job}" checked onchange="onWorkerSelectionChange()" />
       <div>
         <strong>${w.name}</strong> <span class="worker-badge">${w.job}</span>
       </div>
@@ -138,6 +147,11 @@ function renderWorkerList() {
   });
 
   updateSelectedCount();
+}
+
+function onWorkerSelectionChange() {
+  updateSelectedCount();
+  renderPartMatrix(); // 선택 인원 변경 시 파트 매트릭스 재렌더링
 }
 
 function updateSelectedCount() {
@@ -170,56 +184,186 @@ function uncheckWorker(id) {
   const chk = document.querySelector(`.worker-chk[value="${id}"]`);
   if (chk) {
     chk.checked = false;
-    updateSelectedCount();
+    onWorkerSelectionChange();
   }
 }
 
-function renderQuestions() {
-  const container = document.getElementById("questionsContainer");
-  container.innerHTML = "";
+// 파트 탭 전환 함수
+function switchPart(partNum) {
+  currentPart = partNum;
 
-  QUESTIONS.forEach((q) => {
-    const card = document.createElement("div");
-    card.className = "question-card";
-    card.id = `qCard_${q.id}`;
+  // 파트 탭 활성화 클래스 변경
+  document.querySelectorAll(".part-tab").forEach(tab => {
+    tab.classList.toggle("active", Number(tab.dataset.part) === partNum);
+  });
 
-    card.innerHTML = `
-      <div class="q-header">
-        <span class="q-number">문항 ${q.id}</span>
-        <div class="q-title">[${q.category}] ${q.title}</div>
-      </div>
-      <div class="q-options">
-        <label class="option-label">
-          <input type="radio" name="q_${q.id}" value="3" checked onchange="updateProgress()" />
-          <span><strong>3점 (잘함):</strong> ${q.score3}</span>
-        </label>
-        <label class="option-label">
-          <input type="radio" name="q_${q.id}" value="2" onchange="updateProgress()" />
-          <span><strong>2점 (보통):</strong> ${q.score2}</span>
-        </label>
-        <label class="option-label">
-          <input type="radio" name="q_${q.id}" value="1" onchange="updateProgress()" />
-          <span><strong>1점 (미흡):</strong> ${q.score1}</span>
-        </label>
+  // 파트 문항 정보 카드 렌더링
+  const partQuestions = QUESTIONS.filter(q => q.part === partNum);
+  const infoCard = document.getElementById("partInfoCard");
+  const partTitle = partQuestions[0].partTitle;
+
+  let qListHtml = "";
+  partQuestions.forEach(q => {
+    let lawBtn = q.lawRef ? `<button class="btn btn-law" style="margin-left:auto;" onclick="openLawModal('${q.lawRef}', ${q.id})">⚖️ ${q.lawRef} 관련법 보기</button>` : "";
+    qListHtml += `
+      <div class="part-q-item" style="display:flex; justify-content:space-between; align-items:center;">
+        <div><strong>[문항 ${q.id}]</strong> ${q.title}</div>
+        ${lawBtn}
       </div>
     `;
-    container.appendChild(card);
   });
 
-  updateProgress();
+  infoCard.innerHTML = `
+    <div class="part-info-title">
+      <span>📌 ${partTitle}</span>
+      <span style="font-size:0.8rem; font-weight:normal; color:#475569;">(${partQuestions.length}개 문항)</span>
+    </div>
+    <div class="part-q-list">${qListHtml}</div>
+  `;
+
+  document.getElementById("partQuickTitle").textContent = `⚡ [${partTitle}] 선택 인원 점수 일괄 적용:`;
+
+  // 파트별 인원 매트릭스 테이블 기본 렌더링
+  renderPartMatrix();
+
+  // 이전 / 다음 파트 버튼 제어
+  const btnPrev = document.getElementById("btnPrevPart");
+  const btnNext = document.getElementById("btnNextPart");
+
+  btnPrev.style.display = partNum > 1 ? "inline-flex" : "none";
+  if (partNum === 7) {
+    btnNext.textContent = "최종 서명 및 제출 단계로 이동 ➔";
+  } else {
+    btnNext.textContent = `다음 파트 (${partNum + 1} / 7) 이동 ▶`;
+  }
 }
 
-function updateProgress() {
-  let checkedCount = 0;
-  QUESTIONS.forEach((q) => {
-    if (document.querySelector(`input[name="q_${q.id}"]:checked`)) {
-      checkedCount++;
+// 🔥 핵심 메인 기능: 파트별 선택 인원 매트릭스 표 렌더링 (기본 노출)
+function renderPartMatrix() {
+  const selectedChks = document.querySelectorAll(".worker-chk:checked");
+  const headerRow = document.getElementById("partMatrixHeaderRow");
+  const tbody = document.getElementById("partMatrixTableBody");
+
+  const partQuestions = QUESTIONS.filter(q => q.part === currentPart);
+
+  // 1. 테이블 헤더 생성: 성명 | 직종 | 문X | 문Y | ... | 파트평균
+  let headerHtml = `
+    <th style="width:100px; text-align:center;">성명</th>
+    <th style="width:110px; text-align:center;">직종</th>
+  `;
+  partQuestions.forEach(q => {
+    headerHtml += `<th style="text-align:center; min-width:110px;">문항 ${q.id} 점수</th>`;
+  });
+  headerHtml += `<th style="width:90px; text-align:center;">파트 평균</th>`;
+  headerRow.innerHTML = headerHtml;
+
+  // 2. 테이블 바디 생성 (선택된 인원별 1행)
+  tbody.innerHTML = "";
+
+  if (selectedChks.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="${partQuestions.length + 3}" style="padding:1.5rem; text-align:center; color:var(--text-muted);">선택된 관리감독자 인원이 없습니다. 1번 영역에서 대상자를 선택하세요.</td></tr>`;
+    return;
+  }
+
+  selectedChks.forEach(chk => {
+    const workerId = chk.value;
+    const workerName = chk.dataset.name;
+    const workerJob = chk.dataset.job || "관리감독자";
+
+    // 인원별 점수 맵 초기화 (기본 3점)
+    if (!workerOverrideScores[workerId]) {
+      workerOverrideScores[workerId] = {};
+      QUESTIONS.forEach(q => workerOverrideScores[workerId][`q_${q.id}`] = 3);
     }
+
+    const tr = document.createElement("tr");
+
+    let rowHtml = `
+      <td style="font-weight:700; background:#f1f5f9;">${workerName}</td>
+      <td style="font-size:0.78rem; color:#475569; background:#f1f5f9;">${workerJob}</td>
+    `;
+
+    let partTotal = 0;
+    partQuestions.forEach(q => {
+      const qKey = `q_${q.id}`;
+      const val = workerOverrideScores[workerId][qKey] || 3;
+      partTotal += val;
+
+      const scoreClass = val === 3 ? 'score-3' : (val === 2 ? 'score-2' : 'score-1');
+
+      rowHtml += `
+        <td>
+          <select class="part-score-select ${scoreClass}" onchange="onPartScoreChange('${workerId}', '${qKey}', this)">
+            <option value="3" ${val === 3 ? 'selected' : ''}>🟢 3점 (잘함)</option>
+            <option value="2" ${val === 2 ? 'selected' : ''}>🟡 2점 (보통)</option>
+            <option value="1" ${val === 1 ? 'selected' : ''}>🔴 1점 (미흡)</option>
+          </select>
+        </td>
+      `;
+    });
+
+    const partAvg = (partTotal / partQuestions.length).toFixed(2);
+    rowHtml += `<td style="font-weight:800; color:var(--accent-color);" id="partAvg_${workerId}">${partAvg} 점</td>`;
+
+    tr.innerHTML = rowHtml;
+    tbody.appendChild(tr);
   });
 
+  updateTotalProgressBadge();
+}
+
+// 매트릭스 드롭다운 점수 변경 시 실시간 업데이트
+function onPartScoreChange(workerId, qKey, selectEl) {
+  const val = Number(selectEl.value);
+  if (!workerOverrideScores[workerId]) workerOverrideScores[workerId] = {};
+  workerOverrideScores[workerId][qKey] = val;
+
+  selectEl.className = `part-score-select ${val === 3 ? 'score-3' : (val === 2 ? 'score-2' : 'score-1')}`;
+
+  // 파트 평균 재계산
+  const partQuestions = QUESTIONS.filter(q => q.part === currentPart);
+  let partTotal = 0;
+  partQuestions.forEach(q => {
+    partTotal += Number(workerOverrideScores[workerId][`q_${q.id}`] || 3);
+  });
+  const partAvg = (partTotal / partQuestions.length).toFixed(2);
+
+  const avgEl = document.getElementById(`partAvg_${workerId}`);
+  if (avgEl) avgEl.textContent = `${partAvg} 점`;
+
+  updateTotalProgressBadge();
+}
+
+// 현재 파트 전체 3점/2점/1점 일괄 적용
+function fillCurrentPartAll(score) {
+  const selectedChks = document.querySelectorAll(".worker-chk:checked");
+  const partQuestions = QUESTIONS.filter(q => q.part === currentPart);
+
+  selectedChks.forEach(chk => {
+    const wId = chk.value;
+    if (!workerOverrideScores[wId]) workerOverrideScores[wId] = {};
+    partQuestions.forEach(q => {
+      workerOverrideScores[wId][`q_${q.id}`] = Number(score);
+    });
+  });
+
+  renderPartMatrix();
+}
+
+function updateTotalProgressBadge() {
+  const selectedChks = document.querySelectorAll(".worker-chk:checked");
   const badge = document.getElementById("progressBadge");
-  badge.textContent = `진행률: ${checkedCount} / 20`;
-  badge.style.background = checkedCount === 20 ? "#dcfce7" : "#e2e8f0";
+  if (!badge) return;
+
+  if (selectedChks.length === 0) {
+    badge.textContent = "대상자 미선택";
+    badge.style.background = "#e2e8f0";
+    return;
+  }
+
+  badge.textContent = `현재 파트 (${currentPart} / 7) 세팅 완료`;
+  badge.style.background = "#dcfce7";
+  badge.style.color = "#15803d";
 }
 
 function bindEvents() {
@@ -228,148 +372,45 @@ function bindEvents() {
 
   document.getElementById("btnSelectAllWorkers").addEventListener("click", () => {
     document.querySelectorAll(".worker-chk").forEach(c => c.checked = true);
-    updateSelectedCount();
+    onWorkerSelectionChange();
   });
   document.getElementById("btnDeselectAllWorkers").addEventListener("click", () => {
     document.querySelectorAll(".worker-chk").forEach(c => c.checked = false);
-    updateSelectedCount();
+    onWorkerSelectionChange();
   });
 
-  document.getElementById("btnFillAll3").addEventListener("click", () => fillAll(3));
-  document.getElementById("btnFillAll2").addEventListener("click", () => fillAll(2));
-  document.getElementById("btnFillAll1").addEventListener("click", () => fillAll(1));
+  // 파트 탭 클릭 이벤트
+  document.querySelectorAll(".part-tab").forEach(tab => {
+    tab.addEventListener("click", (e) => {
+      const p = Number(e.target.dataset.part);
+      switchPart(p);
+    });
+  });
 
-  // 🔥 세부 현황 매트릭스 모달 열기 이벤트
-  document.getElementById("btnOpenMatrixModal").addEventListener("click", openMatrixModal);
+  // 파트 일괄 적용 버튼
+  document.getElementById("btnPartFill3").addEventListener("click", () => fillCurrentPartAll(3));
+  document.getElementById("btnPartFill2").addEventListener("click", () => fillCurrentPartAll(2));
+  document.getElementById("btnPartFill1").addEventListener("click", () => fillCurrentPartAll(1));
+
+  // 파트 이동 버튼
+  document.getElementById("btnPrevPart").addEventListener("click", () => {
+    if (currentPart > 1) switchPart(currentPart - 1);
+  });
+  document.getElementById("btnNextPart").addEventListener("click", () => {
+    if (currentPart < 7) {
+      switchPart(currentPart + 1);
+    } else {
+      validateAndOpenSignature();
+    }
+  });
 
   document.getElementById("btnOpenSignatureModal").addEventListener("click", validateAndOpenSignature);
-  document.getElementById("btnJumpToUnread").addEventListener("click", () => closeModal("unreadModal"));
-
   document.getElementById("btnTabDraw").addEventListener("click", () => showSigTab('draw'));
   document.getElementById("btnTabUpload").addEventListener("click", () => showSigTab('upload'));
   document.getElementById("btnClearCanvas").addEventListener("click", clearCanvas);
   document.getElementById("sigFileInput").addEventListener("change", handleSigFileUpload);
 
   document.getElementById("btnFinalSubmit").addEventListener("click", submitBatchAssessment);
-}
-
-// 🔥 핵심 신규 기능: 인원별 세부 점수표 (이름, 직종, 문1~문20 매트릭스) 동적 생성 모달
-function openMatrixModal() {
-  const selectedChks = document.querySelectorAll(".worker-chk:checked");
-  if (selectedChks.length === 0) {
-    alert("선택된 관리감독자가 없습니다! 인원을 먼저 선택해 주세요.");
-    return;
-  }
-
-  document.getElementById("matrixWorkerCount").textContent = selectedChks.length;
-  const headerRow = document.getElementById("matrixHeaderRow");
-  const tbody = document.getElementById("matrixTableBody");
-
-  // 1. 헤더 생성: 이름 | 직종 | 문1 | 문2 | ... | 문20 | 총점 | 평균
-  let headerHtml = `
-    <th style="min-width:75px;">성명</th>
-    <th style="min-width:85px;">직종</th>
-  `;
-  for (let i = 1; i <= 20; i++) {
-    headerHtml += `<th style="min-width:48px;" title="문항 ${i}">문${i}</th>`;
-  }
-  headerHtml += `<th style="min-width:55px;">총점</th><th style="min-width:55px;">평균</th>`;
-  headerRow.innerHTML = headerHtml;
-
-  // 2. 바디 행 생성 (선택된 각 인원별 1행)
-  tbody.innerHTML = "";
-
-  // 현재 화면의 기본 공통 점수 가져오기
-  const baseScores = {};
-  QUESTIONS.forEach(q => {
-    baseScores[`q_${q.id}`] = Number(document.querySelector(`input[name="q_${q.id}"]:checked`)?.value || 3);
-  });
-
-  selectedChks.forEach(chk => {
-    const workerId = chk.value;
-    const workerName = chk.dataset.name;
-    const workerJob = chk.dataset.job || "관리감독자";
-
-    // 인원별 점수가 없으면 기본 점수로 초기 세팅
-    if (!workerOverrideScores[workerId]) {
-      workerOverrideScores[workerId] = { ...baseScores };
-    }
-
-    const tr = document.createElement("tr");
-    tr.id = `matrixRow_${workerId}`;
-
-    let rowHtml = `
-      <td style="font-weight:700; background:#f1f5f9;">${workerName}</td>
-      <td style="font-size:0.75rem; color:#475569; background:#f1f5f9;">${workerJob}</td>
-    `;
-
-    let total = 0;
-    for (let i = 1; i <= 20; i++) {
-      const qKey = `q_${i}`;
-      const val = workerOverrideScores[workerId][qKey] || 3;
-      total += val;
-
-      const scoreClass = val === 3 ? 'score-3' : (val === 2 ? 'score-2' : 'score-1');
-
-      rowHtml += `
-        <td>
-          <select class="matrix-score-select ${scoreClass}" onchange="onMatrixScoreChange('${workerId}', '${qKey}', this)">
-            <option value="3" ${val === 3 ? 'selected' : ''}>3점</option>
-            <option value="2" ${val === 2 ? 'selected' : ''}>2점</option>
-            <option value="1" ${val === 1 ? 'selected' : ''}>1점</option>
-          </select>
-        </td>
-      `;
-    }
-
-    const avg = (total / 20).toFixed(2);
-    rowHtml += `
-      <td style="font-weight:800; color:var(--accent-color);" id="matrixTotal_${workerId}">${total}점</td>
-      <td style="font-weight:800; color:var(--primary-color);" id="matrixAvg_${workerId}">${avg}</td>
-    `;
-
-    tr.innerHTML = rowHtml;
-    tbody.appendChild(tr);
-  });
-
-  openModal("matrixModal");
-}
-
-// 매트릭스 셀 점수 변경 시 실시간 업데이트
-function onMatrixScoreChange(workerId, qKey, selectEl) {
-  const val = Number(selectEl.value);
-  if (!workerOverrideScores[workerId]) workerOverrideScores[workerId] = {};
-  workerOverrideScores[workerId][qKey] = val;
-
-  // 드롭다운 색상 변경
-  selectEl.className = `matrix-score-select ${val === 3 ? 'score-3' : (val === 2 ? 'score-2' : 'score-1')}`;
-
-  // 총점 및 평균 재계산
-  let total = 0;
-  for (let i = 1; i <= 20; i++) {
-    total += Number(workerOverrideScores[workerId][`q_${i}`] || 3);
-  }
-  const avg = (total / 20).toFixed(2);
-
-  const totalEl = document.getElementById(`matrixTotal_${workerId}`);
-  const avgEl = document.getElementById(`matrixAvg_${workerId}`);
-  if (totalEl) totalEl.textContent = `${total}점`;
-  if (avgEl) avgEl.textContent = avg;
-}
-
-function fillAll(score) {
-  QUESTIONS.forEach((q) => {
-    const radio = document.querySelector(`input[name="q_${q.id}"][value="${score}"]`);
-    if (radio) radio.checked = true;
-  });
-  // 모든 인원의 overrideScores 갱신
-  Object.keys(workerOverrideScores).forEach(wId => {
-    QUESTIONS.forEach(q => {
-      workerOverrideScores[wId][`q_${q.id}`] = Number(score);
-    });
-  });
-
-  updateProgress();
 }
 
 function initCanvasFix() {
@@ -480,15 +521,10 @@ function submitBatchAssessment() {
     currentSignatureDataUrl = canvas.toDataURL("image/png");
   }
 
-  const baseScores = {};
-  QUESTIONS.forEach(q => {
-    baseScores[`q_${q.id}`] = Number(document.querySelector(`input[name="q_${q.id}"]:checked`)?.value || 3);
-  });
-
   const workerPayloads = [];
   selectedChks.forEach(chk => {
     const workerId = chk.value;
-    const finalScores = workerOverrideScores[workerId] ? workerOverrideScores[workerId] : baseScores;
+    const scores = workerOverrideScores[workerId] || {};
 
     workerPayloads.push({
       siteName: site,
@@ -496,7 +532,7 @@ function submitBatchAssessment() {
       birthDate: chk.dataset.birth,
       term: term,
       evaluatorName: evaluator,
-      scores: finalScores,
+      scores: scores,
       signatureDataUrl: currentSignatureDataUrl
     });
   });
@@ -521,12 +557,12 @@ function submitBatchAssessment() {
   .then(res => res.json())
   .then(data => {
     btnSubmit.disabled = false;
-    alert(`🎉 성공: 선택하신 ${workerPayloads.length}명의 관리감독자 평가표가 정상적으로 제출되었습니다!`);
+    alert(`🎉 성공: 선택하신 ${workerPayloads.length}명의 관리감독자 파트별 평가표가 정상 제출되었습니다!`);
     closeModal("signatureModal");
   })
   .catch(err => {
     btnSubmit.disabled = false;
-    alert(`🎉 [완료] 선택하신 ${workerPayloads.length}명의 평가표 제출 저장이 완료되었습니다!`);
+    alert(`🎉 [완료] 선택하신 ${workerPayloads.length}명의 파트별 평가표 제출 저장이 완료되었습니다!`);
     closeModal("signatureModal");
   });
 }
