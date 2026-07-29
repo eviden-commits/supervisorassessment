@@ -146,16 +146,27 @@
         </div>
 
         <!-- 법률 보기 버튼 -->
-        <div id="cardLawRefContainer" style="margin-bottom: 1.25rem;"></div>
+        <div id="cardLawRefContainer" style="margin-bottom: 1rem;"></div>
+
+        <!-- 🔥 문항별 점수 지침 명세 박스 (3점/2점/1점 평가 기준 안내) -->
+        <div class="q-guide-box" id="cardQGuideBox">
+          <!-- JS 동적 생성 -->
+        </div>
 
         <!-- 문항 전용 3점/2점/1점 일괄 적용 바 -->
         <div class="q-quick-fill-bar">
           <span style="font-size:0.85rem; font-weight:700; color:var(--text-muted); width:100%; margin-bottom:0.4rem;">
-            ⚡ DB 등록 관리감독자전원 이 문항 점수 일괄 적용:
+            ⚡ DB 등록 관리감독자 전원 이 문항 점수 일괄 적용:
           </span>
-          <button class="btn-score-fill btn-score-3" onclick="fillSingleQAllScores(3)">🟢전원 3점 (잘함/적정)</button>
-          <button class="btn-score-fill btn-score-2" onclick="fillSingleQAllScores(2)">🟡 전원 2점 (보통/필요시)</button>
-          <button class="btn-score-fill btn-score-1" onclick="fillSingleQAllScores(1)">🔴 전원 1점 (미흡/안함)</button>
+          <button class="btn-score-fill btn-score-3" id="btnFillQScore3" onclick="fillSingleQAllScores(3)">
+            🟢 전원 3점
+          </button>
+          <button class="btn-score-fill btn-score-2" id="btnFillQScore2" onclick="fillSingleQAllScores(2)">
+            🟡 전원 2점
+          </button>
+          <button class="btn-score-fill btn-score-1" id="btnFillQScore1" onclick="fillSingleQAllScores(1)">
+            🔴 전원 1점
+          </button>
         </div>
 
         <!-- 인원별 이 문항 미세 점수 조정 매트릭스 테이블 -->
@@ -170,7 +181,7 @@
               <tr>
                 <th style="width: 100px;">성명</th>
                 <th style="width: 120px;">직종</th>
-                <th>현재 문항 점수 선택</th>
+                <th>현재 문항 점수 선택 (지침 명시)</th>
               </tr>
             </thead>
             <tbody id="microWorkerTableBody">
