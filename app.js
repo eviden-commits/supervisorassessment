@@ -1,6 +1,6 @@
 /* =========================================================================
    app.js
-   가이드 박스 내 직접 명단 양식 다운로드 버튼 이벤트 연결 로직
+   가독성 극대화 및 미세 점수 체크 표 고급화 로직
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -193,6 +193,7 @@ function startAssessmentWizard() {
   renderSingleFloatingQuestion(currentQIndex);
 }
 
+// 🔥 문항 카드 동적 렌더링 (가독성 개편)
 function renderSingleFloatingQuestion(qIdx) {
   const q = QUESTIONS.find(item => item.id === qIdx);
   if (!q) return;
@@ -215,10 +216,11 @@ function renderSingleFloatingQuestion(qIdx) {
     lawContainer.innerHTML = "";
   }
 
+  // 문항 세부 지침 박스
   const guideBox = document.getElementById("cardQGuideBox");
   guideBox.innerHTML = `
     <div class="q-guide-title">
-      <span>📋 문항 ${qIdx} 평가 지침 세부 기준:</span>
+      📋 <strong>문항 ${qIdx} 평가 세부 판단 기준:</strong>
     </div>
     <div class="q-guide-grid">
       <div class="q-guide-item score-3">🟢 <strong>3점 (우수/적정):</strong> ${q.score3}</div>
@@ -227,9 +229,10 @@ function renderSingleFloatingQuestion(qIdx) {
     </div>
   `;
 
-  document.getElementById("btnFillQScore3").innerHTML = `🟢 전원 3점 (${q.score3})`;
-  document.getElementById("btnFillQScore2").innerHTML = `🟡 전원 2점 (${q.score2})`;
-  document.getElementById("btnFillQScore1").innerHTML = `🔴 전원 1점 (${q.score1})`;
+  // 전원 일괄 적용 3컬럼 그리드 버튼 문구
+  document.getElementById("btnFillQScore3").innerHTML = `🟢 전원 3점 적용<br><span style="font-size:0.75rem; font-weight:normal;">(${q.score3})</span>`;
+  document.getElementById("btnFillQScore2").innerHTML = `🟡 전원 2점 적용<br><span style="font-size:0.75rem; font-weight:normal;">(${q.score2})</span>`;
+  document.getElementById("btnFillQScore1").innerHTML = `🔴 전원 1점 적용<br><span style="font-size:0.75rem; font-weight:normal;">(${q.score1})</span>`;
 
   renderMicroWorkerTable(qIdx, q);
 
@@ -246,6 +249,7 @@ function renderSingleFloatingQuestion(qIdx) {
   }
 }
 
+// 🔥 개별 미세 점수 체크 표 렌더링 (가독성 개편 & 직종 태그 뱃지화)
 function renderMicroWorkerTable(qIdx, qObj) {
   const q = qObj || QUESTIONS.find(item => item.id === qIdx);
   const tbody = document.getElementById("microWorkerTableBody");
@@ -259,13 +263,13 @@ function renderMicroWorkerTable(qIdx, qObj) {
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td style="font-weight:700;">${w.name}</td>
-      <td style="font-size:0.78rem; color:#475569;">${w.job}</td>
+      <td style="font-weight:800; color:#0f172a;">${w.name}</td>
+      <td><span class="job-tag-badge">${w.job}</span></td>
       <td>
         <select class="micro-score-select ${scoreClass}" onchange="onSingleQWorkerScoreChange('${w.id}', ${qIdx}, this)">
-          <option value="3" ${curVal === 3 ? 'selected' : ''}>🟢 3점 (${q.score3})</option>
-          <option value="2" ${curVal === 2 ? 'selected' : ''}>🟡 2점 (${q.score2})</option>
-          <option value="1" ${curVal === 1 ? 'selected' : ''}>🔴 1점 (${q.score1})</option>
+          <option value="3" ${curVal === 3 ? 'selected' : ''}>🟢 3점 - ${q.score3}</option>
+          <option value="2" ${curVal === 2 ? 'selected' : ''}>🟡 2점 - ${q.score2}</option>
+          <option value="1" ${curVal === 1 ? 'selected' : ''}>🔴 1점 - ${q.score1}</option>
         </select>
       </td>
     `;
@@ -443,10 +447,9 @@ function bindEvents() {
   document.getElementById("btnSendOtpMail")?.addEventListener("click", handleSendOtp);
   document.getElementById("btnVerifyOtp")?.addEventListener("click", handleVerifyOtp);
 
-  // 🔥 가이드 박스 내 직접 명단 양식 다운로드 버튼 이벤트 연결
   document.getElementById("btnDirectDownloadTemplate")?.addEventListener("click", downloadExcelTemplateIndex);
   document.getElementById("btnDownloadTemplateIndex")?.addEventListener("click", downloadExcelTemplateIndex);
-  
+
   document.getElementById("btnSelectExcelFileIndex")?.addEventListener("click", () => document.getElementById("indexExcelFileInput").click());
   document.getElementById("indexExcelFileInput")?.addEventListener("change", handleIndexExcelUpload);
 
