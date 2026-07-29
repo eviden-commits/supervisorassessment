@@ -3,8 +3,8 @@
    관리감독자 평가표 프론트엔드 애플리케이션 로직
    ========================================================================= */
 
-// GAS Web App 엔드포인트 URL (GAS 배포 후 본인의 Exec URL로 대체)
-const GAS_API_URL = "YOUR_GAS_WEB_APP_URL_HERE";
+// GAS Web App 엔드포인트 URL
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
 // PDF 1p~2p 기반 20개 평가 문항 정의
 const QUESTIONS = [

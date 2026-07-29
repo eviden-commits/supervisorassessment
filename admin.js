@@ -3,7 +3,7 @@
    관리자 대시보드 로그인, 명단 양식 다운로드, 일괄 등록 및 보고서 처리
    ========================================================================= */
 
-const GAS_API_URL = "YOUR_GAS_WEB_APP_URL_HERE";
+const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
 document.addEventListener("DOMContentLoaded", () => {
   bindAdminEvents();
