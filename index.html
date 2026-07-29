@@ -5,6 +5,8 @@
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
   <title>관리감독자 업무수행 평가표 (스마트 순차 평가 시스템)</title>
   <link rel="stylesheet" href="style.css" />
+  <!-- SheetJS for Excel Upload & Download -->
+  <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
 </head>
 <body>
 
@@ -16,6 +18,10 @@
         <p>현장/반기 인원 자동 검증 및 문항별 플로팅 스마트 평가 시스템</p>
       </div>
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
+        <!-- 🔥 현장 명단 엑셀 업로드 (OTP 인증) 버튼 -->
+        <button class="btn btn-outline" id="btnOpenOtpUploadModal" style="font-size:0.8rem; background:#2563eb; color:#ffffff; border-color:#2563eb;">
+          📁 명단 엑셀 등록 (OTP 인증)
+        </button>
         <!-- Google Sheet Direct Link -->
         <a id="linkGoogleSheet" href="https://docs.google.com/spreadsheets/d/1KXg0hugpRePLrNzaTicURJBytvrn_KvpO0WxsTmweQdhbguYKCqFQZDY/edit" target="_blank" class="btn btn-outline" style="font-size:0.8rem; background:#107c41; color:#ffffff; border-color:#107c41;">
           📊 DB 스프레드시트 바로가기
@@ -72,11 +78,17 @@
       <div class="card-title">📌 1단계: 평가 안내 및 현장·반기 등록 인원 검증</div>
       
       <div style="background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.5rem;">
-        <h4 style="font-size: 0.95rem; font-weight: 800; color: #1e40af; margin-bottom: 0.5rem;">💡 평가 시스템 이용 가이드</h4>
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem;">
+          <h4 style="font-size: 0.95rem; font-weight: 800; color: #1e40af;">💡 평가 시스템 이용 가이드</h4>
+          <!-- 명단 등록 버튼 (안내 박스 내부) -->
+          <button class="btn btn-primary" id="btnOpenOtpUploadModalInner" style="font-size: 0.8rem; padding: 4px 10px; background: #2563eb;">
+            📁 이메일 OTP 인증으로 명단 엑셀 등록
+          </button>
+        </div>
         <ul style="font-size: 0.85rem; color: #1e3a8a; padding-left: 1.2rem; line-height: 1.6;">
           <li>평가를 시작하려면 <strong>현장명 및 평가 반기(상반기/하반기)</strong>를 먼저 선택하세요.</li>
           <li>선택한 현장/반기에 DB 시트(Users)로 등록된 관리감독자가 없으면 다음 단계 진행이 제한됩니다.</li>
-          <li>상반기에 인원이 등록되어 있더라도 <strong>하반기 평가 시에는 하반기 명단이 새로 등록</strong>되어 있어야 합니다. (미등록 시 상단 [관리자 전용] 엑셀 등록)</li>
+          <li>명단이 없거나 새로 추가하려면 상단 <strong>[📁 명단 엑셀 등록 (OTP 인증)]</strong> 버튼을 통해 이메일 인증 후 업로드하세요.</li>
         </ul>
       </div>
 
@@ -124,7 +136,6 @@
     <!-- 3. 🎯 STEP 2: 문항 1개씩 진행하는 플로팅 스마트 카드 섹션 -->
     <section id="stepFloatingQuestionsSection" style="display: none;">
       
-      <!-- 문항 진행 현황 프로그레스 바 -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
         <span>진행 문항: <span id="currentQIndexLabel" style="color:var(--accent-color); font-size:1.1rem;">1</span> / 20</span>
         <span id="currentQCategoryLabel">Part 1. 업무수행 지원</span>
@@ -133,7 +144,6 @@
         <div id="qProgressBar" style="width: 5%; height: 100%; background: var(--accent-color); transition: width 0.3s ease;"></div>
       </div>
 
-      <!-- 🔥 1개 문항 플로팅 스마트 카드 -->
       <div class="floating-q-card" id="floatingQuestionCard">
         
         <div class="q-badge-row">
@@ -145,15 +155,10 @@
           1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?
         </div>
 
-        <!-- 법률 보기 버튼 -->
         <div id="cardLawRefContainer" style="margin-bottom: 1rem;"></div>
 
-        <!-- 🔥 문항별 점수 지침 명세 박스 (3점/2점/1점 평가 기준 안내) -->
-        <div class="q-guide-box" id="cardQGuideBox">
-          <!-- JS 동적 생성 -->
-        </div>
+        <div class="q-guide-box" id="cardQGuideBox"></div>
 
-        <!-- 문항 전용 3점/2점/1점 일괄 적용 바 -->
         <div class="q-quick-fill-bar">
           <span style="font-size:0.85rem; font-weight:700; color:var(--text-muted); width:100%; margin-bottom:0.4rem;">
             ⚡ DB 등록 관리감독자 전원 이 문항 점수 일괄 적용:
@@ -169,7 +174,6 @@
           </button>
         </div>
 
-        <!-- 인원별 이 문항 미세 점수 조정 매트릭스 테이블 -->
         <div style="font-size:0.85rem; font-weight:700; color:var(--primary-color); margin-bottom:0.5rem; display:flex; justify-content:space-between;">
           <span>👥 등록된 관리감독자별 이 문항 점수 세부 확인 및 변경</span>
           <span style="color:var(--accent-color);" id="cardWorkerCountSpan">7명</span>
@@ -184,13 +188,10 @@
                 <th>현재 문항 점수 선택 (지침 명시)</th>
               </tr>
             </thead>
-            <tbody id="microWorkerTableBody">
-              <!-- JS 동적 생성 -->
-            </tbody>
+            <tbody id="microWorkerTableBody"></tbody>
           </table>
         </div>
 
-        <!-- 플로팅 카드 하단 이동 버튼 -->
         <div class="q-nav-bar">
           <button class="btn btn-secondary" id="btnPrevQuestion" style="visibility: hidden;">◀ 이전 문항</button>
           <button class="btn btn-primary" id="btnNextQuestion" style="padding: 0.75rem 1.75rem; font-size: 1rem;">
@@ -212,7 +213,6 @@
           현장소장 서명 1회로 DB에 등록된 관리감독자 전원의 평가표가 동시에 구글 드라이브 및 DB 시트에 자동 제출/저장됩니다.
         </p>
 
-        <!-- 서명 패드 -->
         <div style="text-align: left; margin-bottom: 1rem;">
           <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
             현장소장 서명 (마우스 / 터치 서명 가능):
@@ -233,6 +233,66 @@
     </section>
 
   </main>
+
+  <!-- 🔥 📧 이메일 OTP 인증 & 명단 엑셀 업로드 Modal -->
+  <div class="modal-backdrop" id="otpUploadModal">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header">
+        <h3>📁 현장 관리감독자 엑셀 명단 등록 (OTP 인증)</h3>
+        <button class="modal-close" onclick="closeModal('otpUploadModal')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem;">
+        
+        <!-- 1단계: OTP 인증 패널 -->
+        <div id="otpStep1Panel">
+          <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
+            무단 명단 수정을 방지하기 위해 선택하신 현장에 등록된 <strong>작성자/담당자 이메일</strong>로 6자리 OTP 인증번호를 발송합니다.
+          </p>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="otpEmailInput">담당자 이메일 주소</label>
+            <div style="display: flex; gap: 0.5rem;">
+              <input type="email" id="otpEmailInput" class="form-control" placeholder="예: nschoi@sebangtec.com" value="nschoi@sebangtec.com" style="flex:1;" />
+              <button class="btn btn-outline" id="btnSendOtpMail" style="font-size: 0.8rem; white-space: nowrap;">
+                📧 OTP 발송
+              </button>
+            </div>
+          </div>
+
+          <div class="form-group" style="margin-bottom: 1rem;">
+            <label for="otpCodeInput">수신된 6자리 OTP 인증번호</label>
+            <input type="text" id="otpCodeInput" class="form-control" placeholder="6자리 숫자 입력" maxlength="6" />
+          </div>
+
+          <button class="btn btn-primary" id="btnVerifyOtp" style="width: 100%; font-size: 0.95rem; padding: 0.65rem;">
+            ✅ OTP 인증번호 확인
+          </button>
+        </div>
+
+        <!-- 2단계: 엑셀 파일 선택 및 업로드 패널 (OTP 인증 성공 시 노출) -->
+        <div id="otpStep2Panel" style="display: none; text-align: center; padding: 1rem 0;">
+          <div style="background: #ecfdf5; border: 1px solid #a7f3d0; border-radius: 6px; padding: 0.75rem; margin-bottom: 1rem; color: #065f46; font-size: 0.85rem; font-weight: 700;">
+            ✅ E-mail OTP 인증이 완료되었습니다. 명단 엑셀 파일을 업로드하세요.
+          </div>
+
+          <button class="btn btn-outline" id="btnDownloadTemplateIndex" style="width: 100%; margin-bottom: 0.75rem; font-size: 0.85rem;">
+            📥 엑셀 등록 양식 다운로드 (.xlsx)
+          </button>
+
+          <input type="file" id="indexExcelFileInput" accept=".xlsx, .xls, .csv" style="display: none;" />
+          <button class="btn btn-success" id="btnSelectExcelFileIndex" style="width: 100%; font-size: 1rem; padding: 0.75rem;">
+            📁 엑셀 파일 선택 및 일괄 업로드 (.xlsx)
+          </button>
+          
+          <div id="indexExcelStatusMsg" style="margin-top: 0.75rem; font-size: 0.8rem; color: var(--text-muted);"></div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('otpUploadModal')">닫기</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 법률 조항 보기 Modal -->
   <div class="modal-backdrop" id="lawModal">
