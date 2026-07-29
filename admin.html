@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>관리자 대시보드 & 엑셀 명단 업로드 - 관리감독자 평가</title>
+  <title>관리자 대시보드 & 로그 기록 - 관리감독자 평가</title>
   <link rel="stylesheet" href="style.css" />
   <!-- SheetJS for Excel Upload & Download -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -14,8 +14,8 @@
   <header class="app-header">
     <div class="header-container">
       <div class="header-title">
-        <h1>🔒 관리자 대시보드 & 종합 보고서</h1>
-        <p>관리감독자 인원 엑셀 일괄 등록, 제출 현황 및 결재 보고서</p>
+        <h1>🔒 관리자 대시보드 & 로그 기록 센터</h1>
+        <p>관리감독자 인원 등록, 평가 제출 현황, 시스템 감사 로그(Audit Logs)</p>
       </div>
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <!-- Google Sheet Direct Link -->
@@ -109,7 +109,7 @@
     <!-- 2. 등록된 평가 대상자 명단 현황 -->
     <section class="card">
       <div class="card-title">
-        <span>👥 등록된 관리감독자(평가 대상자) 명단 (<span id="userCountSpan">4</span>명)</span>
+        <span>👥 등록된 관리감독자(평가 대상자) 명단 (<span id="userCountSpan">7</span>명)</span>
       </div>
 
       <div style="overflow-x: auto;">
@@ -149,7 +149,53 @@
       </div>
     </section>
 
-    <!-- 3. A4 보고서 출력 및 3단계 결재선 -->
+    <!-- 🔥 3. 시스템 작업 & 작업 감사 로그 센터 (Audit Logs) -->
+    <section class="card">
+      <div class="card-title" style="justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.5rem;">
+          <span>📜 3. 시스템 실시간 작업 및 감사 로그 기록 (Audit Logs)</span>
+          <span id="logCountBadge" style="font-size:0.8rem; background:#e2e8f0; padding:2px 8px; border-radius:12px;">총 0건</span>
+        </div>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-outline" id="btnRefreshLogs" style="font-size:0.75rem; padding:4px 8px;">🔄 로그 새로고침</button>
+          <button class="btn btn-outline" id="btnExportLogsExcel" style="font-size:0.75rem; padding:4px 8px; background:#ecfdf5; color:#065f46; border-color:#a7f3d0;">📥 로그 엑셀 다운로드</button>
+        </div>
+      </div>
+
+      <!-- 로그 검색 필터 -->
+      <div style="display: flex; gap: 0.5rem; margin-bottom: 1rem; flex-wrap: wrap;">
+        <input type="text" id="logSearchInput" class="form-control" placeholder="🔍 작업명 / 현장명 / 담당자 / 내역 검색..." style="flex: 1; min-width: 220px;" />
+        <select id="logTypeFilter" class="form-control" style="width: 160px;">
+          <option value="">전체 작업 유형</option>
+          <option value="평가제출">평가 제출 (submit)</option>
+          <option value="명단업로드">명단 업로드 (upload)</option>
+          <option value="OTP발송">이메일 OTP 인증</option>
+          <option value="비밀번호변경">비밀번호 변경</option>
+          <option value="관리자접속">관리자 접속 로그</option>
+        </select>
+      </div>
+
+      <!-- 로그 데이터 테이블 -->
+      <div style="overflow-x: auto; max-height: 380px; overflow-y: auto; border: 1px solid var(--border-color); border-radius: var(--radius-sm);">
+        <table style="width: 100%; border-collapse: collapse; font-size: 0.8rem;">
+          <thead>
+            <tr style="background: var(--primary-color); color: #ffffff; text-align: left; position: sticky; top: 0; z-index: 10;">
+              <th style="padding: 8px; width: 140px;">일시 (Timestamp)</th>
+              <th style="padding: 8px; width: 110px;">작업 구분</th>
+              <th style="padding: 8px; width: 120px;">현장명 / 반기</th>
+              <th style="padding: 8px; width: 140px;">작성자 / 담당자</th>
+              <th style="padding: 8px;">상세 작업 내역</th>
+              <th style="padding: 8px; width: 75px; text-align: center;">상태</th>
+            </tr>
+          </thead>
+          <tbody id="logTableBody">
+            <!-- JS 동적 생성 -->
+          </tbody>
+        </table>
+      </div>
+    </section>
+
+    <!-- 4. A4 보고서 출력 및 3단계 결재선 -->
     <section class="card report-page">
       <div class="no-print" style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem;">
         <h3 style="font-weight: 700;">📄 관리감독자 평가 종합 보고서 (인쇄용)</h3>
