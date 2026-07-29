@@ -1,41 +1,36 @@
 /* =========================================================================
    admin.js
-   을지(인원별 세부 내역표) 직종 카테고리별 그룹핑 렌더링 및 A4 정밀 인쇄
+   등록된 실제 직종(Job)별 동적 그룹핑(Group by) 및 을지(인원별 세부내역) 렌더링
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 20명 관리감독자 테스트 DB (5개 대표 직종 카테고리 구성)
+// 20명 관리감독자 테스트 DB (현장에서 실제 입력되는 직종명 표기)
 let ADMIN_WORKERS = [
-  // 1. 안전/보건관리 직종 그룹
-  { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전관리자", category: "안전/보건관리 직종", email: "nschoi@sebangtec.com", status: "제출완료" },
-  { id: "EMP007", name: "황희찬", site: "테스트현장", term: "상반기", birth: "960126", job: "안전담당자", category: "안전/보건관리 직종", email: "hwang@example.com", status: "제출완료" },
-  { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "품질관리자", category: "안전/보건관리 직종", email: "jacheol@example.com", status: "제출완료" },
-  { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "환경관리자", category: "안전/보건관리 직종", email: "hyunwoo@example.com", status: "제출완료" },
+  { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전", email: "nschoi@sebangtec.com", status: "제출완료" },
+  { id: "EMP007", name: "황희찬", site: "테스트현장", term: "상반기", birth: "960126", job: "안전", email: "hwang@example.com", status: "제출완료" },
+  { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "안전", email: "jacheol@example.com", status: "제출완료" },
+  { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "안전", email: "hyunwoo@example.com", status: "제출완료" },
 
-  // 2. 소장 및 공무/관리 직종 그룹
-  { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "현장소장", category: "소장 및 공무/관리 직종", email: "gildong@example.com", status: "제출완료" },
-  { id: "EMP010", name: "기성용", site: "테스트현장", term: "상반기", birth: "890124", job: "공무팀장", category: "소장 및 공무/관리 직종", email: "sungyueng@example.com", status: "제출완료" },
-  { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "자재팀장", category: "소장 및 공무/관리 직종", email: "juyoung@example.com", status: "제출완료" },
+  { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "공무/관리", email: "gildong@example.com", status: "제출완료" },
+  { id: "EMP010", name: "기성용", site: "테스트현장", term: "상반기", birth: "890124", job: "공무/관리", email: "sungyueng@example.com", status: "제출완료" },
+  { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "공무/관리", email: "juyoung@example.com", status: "제출완료" },
 
-  // 3. 토목/건축/구조 공종 그룹
-  { id: "EMP003", name: "김철수", site: "테스트현장", term: "상반기", birth: "900320", job: "토목팀장", category: "토목/건축/구조 공종", email: "chulsoo@example.com", status: "제출완료" },
-  { id: "EMP004", name: "이영희", site: "테스트현장", term: "상반기", birth: "921110", job: "건축팀장", category: "토목/건축/구조 공종", email: "younghee@example.com", status: "제출완료" },
-  { id: "EMP008", name: "김민재", site: "테스트현장", term: "상반기", birth: "961115", job: "구조팀장", category: "토목/건축/구조 공종", email: "minjae@example.com", status: "제출완료" },
-  { id: "EMP018", name: "김영권", site: "테스트현장", term: "상반기", birth: "900227", job: "형틀팀장", category: "토목/건축/구조 공종", email: "younggwon@example.com", status: "제출완료" },
-  { id: "EMP019", name: "조규성", site: "테스트현장", term: "상반기", birth: "980125", job: "철근팀장", category: "토목/건축/구조 공종", email: "gyuesung@example.com", status: "제출완료" },
+  { id: "EMP003", name: "김철수", site: "테스트현장", term: "상반기", birth: "900320", job: "토목", email: "chulsoo@example.com", status: "제출완료" },
+  { id: "EMP004", name: "이영희", site: "테스트현장", term: "상반기", birth: "921110", job: "건축", email: "younghee@example.com", status: "제출완료" },
+  { id: "EMP008", name: "김민재", site: "테스트현장", term: "상반기", birth: "961115", job: "건축", email: "minjae@example.com", status: "제출완료" },
+  { id: "EMP018", name: "김영권", site: "테스트현장", term: "상반기", birth: "900227", job: "건축", email: "younggwon@example.com", status: "제출완료" },
+  { id: "EMP019", name: "조규성", site: "테스트현장", term: "상반기", birth: "980125", job: "토목", email: "gyuesung@example.com", status: "제출완료" },
 
-  // 4. 설비/전기/기계 공종 그룹
-  { id: "EMP005", name: "박지성", site: "테스트현장", term: "상반기", birth: "880225", job: "설비팀장", category: "설비/전기/기계 공종", email: "jisung@example.com", status: "제출완료" },
-  { id: "EMP006", name: "손흥민", site: "테스트현장", term: "상반기", birth: "920708", job: "전기팀장", category: "설비/전기/기계 공종", email: "sonny@example.com", status: "제출완료" },
-  { id: "EMP009", name: "이강인", site: "테스트현장", term: "상반기", birth: "010219", job: "배관팀장", category: "설비/전기/기계 공종", email: "kangin@example.com", status: "제출완료" },
-  { id: "EMP016", name: "백승호", site: "테스트현장", term: "상반기", birth: "970317", job: "용접팀장", category: "설비/전기/기계 공종", email: "seungho@example.com", status: "제출완료" },
-  { id: "EMP017", name: "설영우", site: "테스트현장", term: "상반기", birth: "981205", job: "비계팀장", category: "설비/전기/기계 공종", email: "youngwoo@example.com", status: "제출완료" },
-  { id: "EMP020", name: "송민규", site: "테스트현장", term: "상반기", birth: "990912", job: "마감팀장", category: "설비/전기/기계 공종", email: "mingyu@example.com", status: "제출완료" },
+  { id: "EMP005", name: "박지성", site: "테스트현장", term: "상반기", birth: "880225", job: "설비", email: "jisung@example.com", status: "제출완료" },
+  { id: "EMP006", name: "손흥민", site: "테스트현장", term: "상반기", birth: "920708", job: "전기", email: "sonny@example.com", status: "제출완료" },
+  { id: "EMP009", name: "이강인", site: "테스트현장", term: "상반기", birth: "010219", job: "설비", email: "kangin@example.com", status: "제출완료" },
+  { id: "EMP016", name: "백승호", site: "테스트현장", term: "상반기", birth: "970317", job: "전기", email: "seungho@example.com", status: "제출완료" },
+  { id: "EMP017", name: "설영우", site: "테스트현장", term: "상반기", birth: "981205", job: "설비", email: "youngwoo@example.com", status: "제출완료" },
+  { id: "EMP020", name: "송민규", site: "테스트현장", term: "상반기", birth: "990912", job: "전기", email: "mingyu@example.com", status: "제출완료" },
 
-  // 5. 장비 및 신호/안전지원 그룹
-  { id: "EMP014", name: "황의조", site: "테스트현장", term: "상반기", birth: "920828", job: "중장비반장", category: "장비 및 신호/안전지원", email: "uijo@example.com", status: "제출완료" },
-  { id: "EMP015", name: "정우영", site: "테스트현장", term: "상반기", birth: "990920", job: "신호수반장", category: "장비 및 신호/안전지원", email: "wooyoung@example.com", status: "제출완료" }
+  { id: "EMP014", name: "황의조", site: "테스트현장", term: "상반기", birth: "920828", job: "장비/안전지원", email: "uijo@example.com", status: "제출완료" },
+  { id: "EMP015", name: "정우영", site: "테스트현장", term: "상반기", birth: "990920", job: "장비/안전지원", email: "wooyoung@example.com", status: "제출완료" }
 ];
 
 let AUDIT_LOGS = [
@@ -119,7 +114,7 @@ function renderUserTable() {
       <td style="padding: 8px; font-weight:700;">${w.name}</td>
       <td style="padding: 8px; color: var(--accent-color);">${w.email || '-'}</td>
       <td style="padding: 8px;">${w.birth}</td>
-      <td style="padding: 8px;">${w.job} <span style="font-size:0.7rem; color:#64748b;">(${w.category || '기타'})</span></td>
+      <td style="padding: 8px; font-weight:700; color:var(--primary-color);">${w.job}</td>
       <td style="padding: 8px;"><span class="score-badge score-3">${w.status || '등록완료'}</span></td>
     `;
     tbody.appendChild(tr);
@@ -174,7 +169,7 @@ function updateReportView() {
   const eulSubTitle = document.getElementById("eulJiSubTitle");
 
   if (gabSubTitle) gabSubTitle.textContent = subTitleText;
-  if (eulSubTitle) eulSubTitle.textContent = `${year} ${term} 직종 카테고리별 개별 점수 및 세부 평가 결과`;
+  if (eulSubTitle) eulSubTitle.textContent = `${year} ${term} 등록 직종별 개별 점수 및 세부 평가 결과`;
 
   document.getElementById("repSiteLabel").textContent = site;
   document.getElementById("repWorkerCountLabel").textContent = `${ADMIN_WORKERS.length}명`;
@@ -195,43 +190,42 @@ function updateReportView() {
     if (eulSection) eulSection.classList.add("report-page-break");
   }
 
-  renderGroupedEulJiTable();
+  renderDynamicGroupedEulJiTable();
 }
 
-// 🔥 핵심 구현: 을지 직종 카테고리별 그룹핑 렌더링 (요구사항 완수)
-function renderGroupedEulJiTable() {
+// 🔥 완벽한 해결: DB에 등록된 실제 '직종(Job)'명을 추출하여 100% 동적으로 그룹핑(Group by) 렌더링!
+function renderDynamicGroupedEulJiTable() {
   const tbody = document.getElementById("eulJiTableBody");
   if (!tbody) return;
   tbody.innerHTML = "";
 
-  // 직종 카테고리별 데이터 그룹화
-  const categories = [
-    "안전/보건관리 직종",
-    "소장 및 공무/관리 직종",
-    "토목/건축/구조 공종",
-    "설비/전기/기계 공종",
-    "장비 및 신호/안전지원"
-  ];
+  if (ADMIN_WORKERS.length === 0) {
+    tbody.innerHTML = `<tr><td colspan="25" style="padding:1.5rem; text-align:center; color:var(--text-muted);">등록된 평가 대상자가 없습니다.</td></tr>`;
+    return;
+  }
 
-  categories.forEach(catName => {
-    const groupWorkers = ADMIN_WORKERS.filter(w => (w.category || "기타 직종") === catName || (!w.category && catName === "기타 직종"));
+  // 1. 등록된 모든 인원에서 유니크한 실제 직종(Job) 목록을 동적 추출
+  const uniqueJobs = Array.from(new Set(ADMIN_WORKERS.map(w => w.job || "미지정 직종")));
+
+  uniqueJobs.forEach(jobName => {
+    const groupWorkers = ADMIN_WORKERS.filter(w => (w.job || "미지정 직종") === jobName);
     if (groupWorkers.length === 0) return;
 
-    // 1. 직종 카테고리 헤더 행 생성
-    const catHeaderTr = document.createElement("tr");
-    catHeaderTr.style.background = "#e2e8f0";
-    catHeaderTr.style.fontWeight = "800";
-    catHeaderTr.innerHTML = `
+    // 2. 직종별 그룹 헤더 행 생성 (예: 📁 [직종: 토목] (총 5명))
+    const jobHeaderTr = document.createElement("tr");
+    jobHeaderTr.style.background = "#e2e8f0";
+    jobHeaderTr.style.fontWeight = "800";
+    jobHeaderTr.innerHTML = `
       <td colspan="25" style="border: 1px solid #000; padding: 6px 10px; text-align: left; background: #e2e8f0; color: #0f172a; font-size: 0.8rem;">
-        📁 <strong>[직종 그룹] ${catName}</strong> (총 ${groupWorkers.length}명)
+        📁 <strong>[직종] ${jobName}</strong> (총 ${groupWorkers.length}명)
       </td>
     `;
-    tbody.appendChild(catHeaderTr);
+    tbody.appendChild(jobHeaderTr);
 
     let groupSumTotal = 0;
     let groupCount = 0;
 
-    // 2. 카테고리 내 속한 관리감독자 명단 렌더링
+    // 3. 해당 직종 소속 인원들 렌더링
     groupWorkers.forEach(w => {
       const scores = [];
       for (let i = 1; i <= 20; i++) {
@@ -263,23 +257,23 @@ function renderGroupedEulJiTable() {
       tbody.appendChild(tr);
     });
 
-    // 3. 직종 그룹 소계 및 평균 행 생성
+    // 4. 직종별 소계 및 평균 행 생성
     const groupAvg = (groupSumTotal / groupCount).toFixed(2);
-    const groupSubTotalTr = document.createElement("tr");
-    groupSubTotalTr.style.background = "#f8fafc";
-    groupSubTotalTr.style.fontWeight = "700";
-    groupSubTotalTr.innerHTML = `
+    const jobSubTotalTr = document.createElement("tr");
+    jobSubTotalTr.style.background = "#f8fafc";
+    jobSubTotalTr.style.fontWeight = "700";
+    jobSubTotalTr.innerHTML = `
       <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: center; background: #f1f5f9; color: #1e293b;">
-        └ [${catName}] 평균 소계
+        └ [${jobName}] 직종 평균 소계
       </td>
       <td colspan="20" style="border: 1px solid #000; padding: 5px; text-align: center; color: #64748b;">
-        소속 인원 ${groupCount}명 전원 평가 완료
+        소속 인원 ${groupCount}명 평가 완료
       </td>
       <td style="border: 1px solid #000; padding: 5px; text-align: center;">-</td>
       <td style="border: 1px solid #000; padding: 5px; text-align: center; color: #2563eb; font-weight:800;">${groupAvg}</td>
       <td style="border: 1px solid #000; padding: 5px; text-align: center; color: #059669; font-weight:800;">우수</td>
     `;
-    tbody.appendChild(groupSubTotalTr);
+    tbody.appendChild(jobSubTotalTr);
   });
 }
 
