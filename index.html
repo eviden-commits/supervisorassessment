@@ -1,0 +1,195 @@
+<!DOCTYPE html>
+<html lang="ko">
+<head>
+  <meta charset="UTF-8" />
+  <meta name="viewport" content="width=device-width, initial-scale=1.0" />
+  <title>관리감독자 업무수행 평가표</title>
+  <link rel="stylesheet" href="style.css" />
+</head>
+<body>
+
+  <!-- App Header -->
+  <header class="app-header">
+    <div class="header-container">
+      <div class="header-title">
+        <h1>📋 관리감독자 업무수행 평가표</h1>
+        <p>산업안전보건법 관련 관리감독자 정기 점검 시스템</p>
+      </div>
+      <div>
+        <a href="admin.html" class="btn btn-outline" style="font-size:0.8rem;">🔒 관리자 전용</a>
+      </div>
+    </div>
+  </header>
+
+  <!-- Main Content -->
+  <main class="main-container">
+    
+    <!-- 1. 기본 정보 선택 카테고리 -->
+    <section class="card">
+      <div class="card-title">📌 1. 기본 평가 정보 설정</div>
+      <div class="form-grid">
+        <div class="form-group">
+          <label for="siteSelect">현장명 선택</label>
+          <select id="siteSelect" class="form-control">
+            <option value="">-- 현장을 선택하세요 --</option>
+            <option value="테스트현장" selected>테스트현장</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="supervisorSelect">관리감독자(성명)</label>
+          <select id="supervisorSelect" class="form-control">
+            <option value="">-- 성명을 선택하세요 --</option>
+            <option value="최난새" selected>최난새 (nschoi@sebangtec.com)</option>
+          </select>
+        </div>
+
+        <div class="form-group">
+          <label for="birthDate">생년월일 (YYMMDD)</label>
+          <input type="text" id="birthDate" class="form-control" placeholder="예: 800101" value="800101" readonly />
+        </div>
+
+        <div class="form-group">
+          <label>평가 대상 구분 (반기)</label>
+          <div style="display: flex; gap: 1rem; margin-top: 0.4rem;">
+            <label class="option-label" style="flex:1;">
+              <input type="radio" name="term" value="상반기" id="termFirst" />
+              <span>상반기 (1월 ~ 6월)</span>
+            </label>
+            <label class="option-label" style="flex:1;">
+              <input type="radio" name="term" value="하반기" id="termSecond" />
+              <span>하반기 (7월 ~ 12월)</span>
+            </label>
+          </div>
+        </div>
+      </div>
+    </section>
+
+    <!-- 2. 점수 일괄 입력 및 문항 카드 영역 -->
+    <section class="card">
+      <div class="card-title" style="justify-content: space-between;">
+        <span>📝 2. 평가 문항 체크 (1번 ~ 20번)</span>
+        <span id="progressBadge" class="score-badge" style="font-size:0.9rem; background:#e2e8f0; padding:4px 10px; border-radius:12px;">진행률: 0 / 20</span>
+      </div>
+
+      <!-- Quick Fill Buttons -->
+      <div class="quick-score-bar">
+        <span class="quick-score-title">⚡ 점수 일괄 입력 선택:</span>
+        <button class="btn btn-outline" id="btnFillAll3">🟢 전체 3점 (잘함/적정) 적용</button>
+        <button class="btn btn-outline" id="btnFillAll2">🟡 전체 2점 (보통/필요시) 적용</button>
+        <button class="btn btn-outline" id="btnFillAll1">🔴 전체 1점 (미흡/안함) 적용</button>
+      </div>
+
+      <!-- Questions List Container -->
+      <div id="questionsContainer">
+        <!-- JS 동적 생성 -->
+      </div>
+    </section>
+
+    <!-- 3. 서명 및 제출 영역 -->
+    <section class="card" style="text-align: center; padding: 2rem;">
+      <div style="margin-bottom: 1rem;">
+        <h3 style="font-weight: 700; margin-bottom: 0.5rem;">평가표 작성 완료 및 제출</h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem;">
+          모든 20개 문항 입력을 완료하신 후 서명을 첨부하여 제출해 주세요.
+        </p>
+      </div>
+      <button class="btn btn-primary" id="btnOpenSignatureModal" style="font-size: 1.1rem; padding: 0.8rem 2.5rem;">
+        🖋️ 서명 및 평가표 제출하기
+      </button>
+    </section>
+
+  </main>
+
+  <!-- 법률 조항 보기 Modal -->
+  <div class="modal-backdrop" id="lawModal">
+    <div class="modal-content">
+      <div class="modal-header">
+        <h3 id="lawModalTitle">📖 관련 법률 및 점검 지침 참조</h3>
+        <button class="modal-close" onclick="closeModal('lawModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 1rem;">
+          <input type="text" id="lawSearchInput" class="form-control" placeholder="작업명 검색 (예: 프레스, 크레인, 용접, 밀폐공간)..." />
+        </div>
+        <div id="lawModalContent">
+          <!-- Law Details -->
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-secondary" onclick="closeModal('lawModal')">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 미체크 항목 경고 Modal -->
+  <div class="modal-backdrop" id="unreadModal">
+    <div class="modal-content" style="max-width: 480px;">
+      <div class="modal-header" style="background: var(--danger-color);">
+        <h3>⚠️ 미체크 항목 안내</h3>
+        <button class="modal-close" onclick="closeModal('unreadModal')">&times;</button>
+      </div>
+      <div class="modal-body" style="text-align: center; padding: 1.5rem;">
+        <p id="unreadModalMsg" style="font-size: 1rem; font-weight: 600; color: var(--text-main); margin-bottom: 1rem;">
+          작성되지 않은 평가 문항이 있습니다.
+        </p>
+        <p style="font-size: 0.85rem; color: var(--text-muted);">
+          아래 버튼을 누르면 첫 번째 미체크 문항으로 이동합니다.
+        </p>
+      </div>
+      <div class="modal-footer" style="justify-content: center;">
+        <button class="btn btn-primary" id="btnJumpToUnread">📌 미체크 문항으로 이동</button>
+        <button class="btn btn-secondary" onclick="closeModal('unreadModal')">닫기</button>
+      </div>
+    </div>
+  </div>
+
+  <!-- 서명 모달 (Signature Modal) -->
+  <div class="modal-backdrop" id="signatureModal">
+    <div class="modal-content" style="max-width: 520px;">
+      <div class="modal-header">
+        <h3>✍️ 최종 작성자 서명 및 인증</h3>
+        <button class="modal-close" onclick="closeModal('signatureModal')">&times;</button>
+      </div>
+      <div class="modal-body">
+        <div style="margin-bottom: 1rem;">
+          <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
+            서명방식을 선택하세요:
+          </label>
+          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
+            <button class="btn btn-outline" id="btnTabDraw" style="flex:1;">마우스/터치 직접 서명</button>
+            <button class="btn btn-outline" id="btnTabUpload" style="flex:1;">서명 이미지 업로드</button>
+          </div>
+        </div>
+
+        <!-- Direct Drawing Tab -->
+        <div id="tabDrawContent">
+          <div class="signature-container">
+            <canvas id="signatureCanvas"></canvas>
+          </div>
+          <div style="display: flex; justify-content: flex-end; margin-top: 0.4rem;">
+            <button class="btn btn-outline" id="btnClearCanvas" style="font-size: 0.75rem;">🧹 서명 지우기</button>
+          </div>
+        </div>
+
+        <!-- Image Upload Tab -->
+        <div id="tabUploadContent" style="display: none; text-align: center; padding: 1rem; border: 2px dashed #cbd5e1; border-radius: 6px;">
+          <input type="file" id="sigFileInput" accept="image/*" style="display: none;" />
+          <button class="btn btn-secondary" onclick="document.getElementById('sigFileInput').click();">📁 파일 선택 (PNG/JPG)</button>
+          <div id="uploadPreview" style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
+            선택된 서명 이미지 파일 없음
+          </div>
+        </div>
+
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-success" id="btnFinalSubmit" style="width: 100%; font-size: 1rem; padding: 0.75rem;">
+          🚀 최종 제출하기
+        </button>
+      </div>
+    </div>
+  </div>
+
+  <script src="app.js"></script>
+</body>
+</html>
