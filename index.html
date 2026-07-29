@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>관리감독자 업무수행 평가표 (파트별 일괄 평가 모드)</title>
+  <title>관리감독자 업무수행 평가표 (스마트 순차 평가 시스템)</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -12,8 +12,8 @@
   <header class="app-header">
     <div class="header-container">
       <div class="header-title">
-        <h1>📋 관리감독자 업무수행 평가표 (파트별 일괄 평가)</h1>
-        <p>평가 파트별 선택 인원 매트릭스 점수표 기반 손쉬운 정기 평가 시스템</p>
+        <h1>📋 관리감독자 업무수행 평가표</h1>
+        <p>현장/반기 인원 자동 검증 및 문항별 플로팅 스마트 평가 시스템</p>
       </div>
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <!-- Google Sheet Direct Link -->
@@ -25,15 +25,15 @@
     </div>
   </header>
 
-  <!-- 🔑 Index Access Password Modal Gate (보안 필수 인증 팝업) -->
+  <!-- 1. 🔑 접속 비밀번호 인증 게이트 (Step 1) -->
   <div class="modal-backdrop active" id="indexLoginGateModal">
     <div class="modal-content" style="max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
-      <div class="modal-header" style="background: var(--primary-color);">
+      <div class="modal-header">
         <h3>🔑 평가 시스템 접속 인증</h3>
       </div>
       <div class="modal-body" style="padding: 1.75rem 1.5rem;">
         <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-          보안 정책에 따라 구글 스크립트 속성에 등록된 <strong>접속 비밀번호(Login_Index)</strong>를 입력해야 평가 시스템에 입장할 수 있습니다.
+          구글 스크립트 속성에 설정된 <strong>접속 비밀번호(Login_Index)</strong>를 입력하여 입장하세요.
         </p>
         <div class="form-group">
           <label for="indexPassInput" style="font-weight: 700;">접속 비밀번호 (Login_Index)</label>
@@ -48,16 +48,41 @@
     </div>
   </div>
 
-  <!-- 🔥 Main Content (비밀번호 인증 완료 후 노출) -->
+  <!-- Main Container -->
   <main class="main-container" id="indexMainContent" style="display: none;">
     
-    <!-- 1. 기본 정보 & 다수 평가 대상자 선택 -->
-    <section class="card">
-      <div class="card-title">📌 1. 평가 현장 및 다수 평가 대상자 선택 (50명 이상 대규모 대응)</div>
+    <!-- 위저드 진행바 (Step Navigation) -->
+    <div class="wizard-bar">
+      <div class="wizard-step active" id="wizStep1">
+        <div class="wizard-step-num">1</div>
+        <span>안내 및 현장/인원 검증</span>
+      </div>
+      <div class="wizard-step" id="wizStep2">
+        <div class="wizard-step-num">2</div>
+        <span>문항별 순차 평가 (1~20)</span>
+      </div>
+      <div class="wizard-step" id="wizStep3">
+        <div class="wizard-step-num">3</div>
+        <span>최종 서명 및 저장</span>
+      </div>
+    </div>
+
+    <!-- 2. 📋 STEP 1: 시스템 안내 & 현장/반기 선택 & DB 인원 자동 검증 -->
+    <section class="card" id="stepIntroCard">
+      <div class="card-title">📌 1단계: 평가 안내 및 현장·반기 등록 인원 검증</div>
       
-      <div class="form-grid" style="margin-bottom: 1rem;">
+      <div style="background: #f0f7ff; border: 1px solid #bfdbfe; border-radius: var(--radius-sm); padding: 1.25rem; margin-bottom: 1.5rem;">
+        <h4 style="font-size: 0.95rem; font-weight: 800; color: #1e40af; margin-bottom: 0.5rem;">💡 평가 시스템 이용 가이드</h4>
+        <ul style="font-size: 0.85rem; color: #1e3a8a; padding-left: 1.2rem; line-height: 1.6;">
+          <li>평가를 시작하려면 <strong>현장명 및 평가 반기(상반기/하반기)</strong>를 먼저 선택하세요.</li>
+          <li>선택한 현장/반기에 DB 시트(Users)로 등록된 관리감독자가 없으면 다음 단계 진행이 제한됩니다.</li>
+          <li>상반기에 인원이 등록되어 있더라도 <strong>하반기 평가 시에는 하반기 명단이 새로 등록</strong>되어 있어야 합니다. (미등록 시 상단 [관리자 전용] 엑셀 등록)</li>
+        </ul>
+      </div>
+
+      <div class="form-grid" style="margin-bottom: 1.5rem;">
         <div class="form-group">
-          <label for="siteSelect">평가 현장명 선택</label>
+          <label for="siteSelect" style="font-weight: 700;">평가 현장명 선택</label>
           <select id="siteSelect" class="form-control">
             <option value="테스트현장" selected>테스트현장</option>
             <option value="서울01현장">서울01현장</option>
@@ -65,111 +90,135 @@
         </div>
 
         <div class="form-group">
-          <label for="evaluatorName">평가 작성자 (현장소장 성명)</label>
+          <label for="evaluatorName" style="font-weight: 700;">평가 작성자 (현장소장 성명)</label>
           <input type="text" id="evaluatorName" class="form-control" placeholder="소장 성명 입력" value="최난새" />
         </div>
 
         <div class="form-group">
-          <label>평가 대상 구분 (반기)</label>
+          <label style="font-weight: 700;">평가 대상 구분 (반기)</label>
           <div style="display: flex; gap: 1rem; margin-top: 0.4rem;">
             <label class="option-label" style="flex:1;">
-              <input type="radio" name="term" value="상반기" id="termFirst" />
-              <span>상반기 (1월 ~ 6월)</span>
+              <input type="radio" name="term" value="상반기" id="termFirst" checked onchange="checkRegisteredWorkersForTerm()" />
+              <span>상반기 (1월~6월)</span>
             </label>
             <label class="option-label" style="flex:1;">
-              <input type="radio" name="term" value="하반기" id="termSecond" />
-              <span>하반기 (7월 ~ 12월)</span>
+              <input type="radio" name="term" value="하반기" id="termSecond" onchange="checkRegisteredWorkersForTerm()" />
+              <span>하반기 (7월~12월)</span>
             </label>
           </div>
         </div>
       </div>
 
-      <!-- 다수 대상자 컴팩트 체크박스 영역 -->
-      <div style="margin-top: 1rem;">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
-          <label style="font-size: 0.9rem; font-weight: 700; color: var(--primary-color);">
-            👥 평가 대상 관리감독자 선택 (<span id="selectedWorkerCount">0</span>명 선택됨)
+      <!-- DB 인원 등록 현황 검증 알림 박스 -->
+      <div id="workerCheckResultBox" style="padding: 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; transition: all 0.2s;">
+        <!-- JS 동적 생성: 등록 완료 (초록) 또는 등록 필요 (빨강/경고) -->
+      </div>
+
+      <div style="text-align: right;">
+        <button class="btn btn-primary" id="btnStartAssessment" style="font-size: 1.05rem; padding: 0.75rem 2rem;" disabled>
+          🚀 평가 시작하기 (20문항 플로팅 진행) ▶
+        </button>
+      </div>
+    </section>
+
+    <!-- 3. 🎯 STEP 2: 문항 1개씩 진행하는 플로팅 스마트 카드 섹션 -->
+    <section id="stepFloatingQuestionsSection" style="display: none;">
+      
+      <!-- 문항 진행 현황 프로그레스 바 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.85rem; font-weight: 700; color: var(--text-muted);">
+        <span>진행 문항: <span id="currentQIndexLabel" style="color:var(--accent-color); font-size:1.1rem;">1</span> / 20</span>
+        <span id="currentQCategoryLabel">Part 1. 업무수행 지원</span>
+      </div>
+      <div style="width: 100%; height: 8px; background: #e2e8f0; border-radius: 4px; overflow: hidden; margin-bottom: 1.5rem;">
+        <div id="qProgressBar" style="width: 5%; height: 100%; background: var(--accent-color); transition: width 0.3s ease;"></div>
+      </div>
+
+      <!-- 🔥 1개 문항 플로팅 스마트 카드 -->
+      <div class="floating-q-card" id="floatingQuestionCard">
+        
+        <div class="q-badge-row">
+          <span class="q-badge-num" id="cardQNum">문항 1</span>
+          <span class="q-part-title" id="cardQCategory">[Part 1] 관리감독자 업무수행 지원</span>
+        </div>
+
+        <div class="q-main-title" id="cardQTitle">
+          1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?
+        </div>
+
+        <!-- 법률 보기 버튼 -->
+        <div id="cardLawRefContainer" style="margin-bottom: 1.25rem;"></div>
+
+        <!-- 문항 전용 3점/2점/1점 일괄 적용 바 -->
+        <div class="q-quick-fill-bar">
+          <span style="font-size:0.85rem; font-weight:700; color:var(--text-muted); width:100%; margin-bottom:0.4rem;">
+            ⚡ DB 등록 관리감독자전원 이 문항 점수 일괄 적용:
+          </span>
+          <button class="btn-score-fill btn-score-3" onclick="fillSingleQAllScores(3)">🟢전원 3점 (잘함/적정)</button>
+          <button class="btn-score-fill btn-score-2" onclick="fillSingleQAllScores(2)">🟡 전원 2점 (보통/필요시)</button>
+          <button class="btn-score-fill btn-score-1" onclick="fillSingleQAllScores(1)">🔴 전원 1점 (미흡/안함)</button>
+        </div>
+
+        <!-- 인원별 이 문항 미세 점수 조정 매트릭스 테이블 -->
+        <div style="font-size:0.85rem; font-weight:700; color:var(--primary-color); margin-bottom:0.5rem; display:flex; justify-content:space-between;">
+          <span>👥 등록된 관리감독자별 이 문항 점수 세부 확인 및 변경</span>
+          <span style="color:var(--accent-color);" id="cardWorkerCountSpan">7명</span>
+        </div>
+
+        <div class="micro-worker-table-container">
+          <table class="micro-worker-table">
+            <thead>
+              <tr>
+                <th style="width: 100px;">성명</th>
+                <th style="width: 120px;">직종</th>
+                <th>현재 문항 점수 선택</th>
+              </tr>
+            </thead>
+            <tbody id="microWorkerTableBody">
+              <!-- JS 동적 생성 -->
+            </tbody>
+          </table>
+        </div>
+
+        <!-- 플로팅 카드 하단 이동 버튼 -->
+        <div class="q-nav-bar">
+          <button class="btn btn-secondary" id="btnPrevQuestion" style="visibility: hidden;">◀ 이전 문항</button>
+          <button class="btn btn-primary" id="btnNextQuestion" style="padding: 0.75rem 1.75rem; font-size: 1rem;">
+            다음 문항 이동 ▶
+          </button>
+        </div>
+
+      </div>
+
+    </section>
+
+    <!-- 4. ✍️ STEP 3: 최종 서명 및 구글 드라이브 저장 섹션 -->
+    <section class="card" id="stepSignatureSection" style="display: none; text-align: center; padding: 2.5rem 1.5rem;">
+      <div style="max-width: 500px; margin: 0 auto;">
+        <h3 style="font-size: 1.3rem; font-weight: 800; color: var(--primary-color); margin-bottom: 0.5rem;">
+          🎉 20개 전체 문항 평가 세팅 완료!
+        </h3>
+        <p style="color: var(--text-muted); font-size: 0.9rem; margin-bottom: 1.5rem;">
+          현장소장 서명 1회로 DB에 등록된 관리감독자 전원의 평가표가 동시에 구글 드라이브 및 DB 시트에 자동 제출/저장됩니다.
+        </p>
+
+        <!-- 서명 패드 -->
+        <div style="text-align: left; margin-bottom: 1rem;">
+          <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
+            현장소장 서명 (마우스 / 터치 서명 가능):
           </label>
-          <div>
-            <button class="btn btn-outline" id="btnSelectAllWorkers" style="font-size:0.75rem; padding:3px 8px;">☑️ 전체 선택</button>
-            <button class="btn btn-outline" id="btnDeselectAllWorkers" style="font-size:0.75rem; padding:3px 8px;">⏹️ 전체 해제</button>
+          <div class="signature-container">
+            <canvas id="signatureCanvas"></canvas>
+          </div>
+          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.5rem;">
+            <span style="font-size: 0.75rem; color: var(--text-muted);">박스 안에 서명하세요.</span>
+            <button class="btn btn-outline" id="btnClearCanvas" style="font-size: 0.75rem;">🧹 서명 지우기</button>
           </div>
         </div>
 
-        <div class="worker-search-bar">
-          <input type="text" id="workerSearchInput" class="form-control" placeholder="🔍 인원 성명 / 직종 / 사번으로 빠르게 검색 (예: 홍길동, 토목, TEST)..." />
-        </div>
-
-        <div class="worker-grid-compact" id="workerListContainer"></div>
-
-        <div style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted); font-weight: 700;">
-          선택된 관리감독자 리스트:
-        </div>
-        <div class="selected-tags-container" id="selectedTagsContainer">
-          <span style="font-size: 0.75rem; color: var(--text-muted);">선택된 인원이 없습니다.</span>
-        </div>
+        <button class="btn btn-success" id="btnFinalSubmit" style="width: 100%; font-size: 1.1rem; padding: 0.85rem;">
+          🚀 최종 서명 완료 및 구글 드라이브 저장하기
+        </button>
       </div>
-    </section>
-
-    <!-- 2. 파트별 매트릭스 점수표 평가 영역 (기본 노출) -->
-    <section class="card">
-      <div class="card-title" style="justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
-        <span>📝 2. 파트별 인원 점수 매트릭스 평가</span>
-        <span id="progressBadge" class="score-badge" style="font-size:0.85rem; background:#e2e8f0; padding:4px 10px; border-radius:12px;">전체 점수 세팅 현황</span>
-      </div>
-
-      <!-- 7개 파트 탭 헤더 -->
-      <div class="part-tabs-container" id="partTabsContainer">
-        <button class="part-tab active" data-part="1">Part 1. 업무수행 지원 (1~2번)</button>
-        <button class="part-tab" data-part="2">Part 2. 기계·설비 점검 (3~7번)</button>
-        <button class="part-tab" data-part="3">Part 3. 보호구/교육 (8~10번)</button>
-        <button class="part-tab" data-part="4">Part 4. 산재/응급조치 (11~12번)</button>
-        <button class="part-tab" data-part="5">Part 5. 정리정돈/통로 (13~14번)</button>
-        <button class="part-tab" data-part="6">Part 6. 관리자 지도협조 (15~17번)</button>
-        <button class="part-tab" data-part="7">Part 7. 위험성평가/기타 (18~20번)</button>
-      </div>
-
-      <!-- 현재 선택된 파트 정보 및 문항 지침 카드 -->
-      <div class="part-info-card" id="partInfoCard"></div>
-
-      <!-- 파트 전용 일괄 적용 바 -->
-      <div class="quick-score-bar">
-        <span class="quick-score-title" id="partQuickTitle">⚡ 현재 파트 선택 인원 점수 일괄 적용:</span>
-        <button class="btn btn-outline" id="btnPartFill3">🟢 해당 파트 전체 3점 (잘함)</button>
-        <button class="btn btn-outline" id="btnPartFill2">🟡 해당 파트 전체 2점 (보통)</button>
-        <button class="btn btn-outline" id="btnPartFill1">🔴 해당 파트 전체 1점 (미흡)</button>
-      </div>
-
-      <!-- 파트별 인원 매트릭스 점수표 -->
-      <div class="part-matrix-container">
-        <table class="part-matrix-table">
-          <thead>
-            <tr id="partMatrixHeaderRow"></tr>
-          </thead>
-          <tbody id="partMatrixTableBody"></tbody>
-        </table>
-      </div>
-
-      <!-- 파트 이동 버튼 -->
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 1rem;">
-        <button class="btn btn-secondary" id="btnPrevPart" style="display: none;">◀ 이전 파트</button>
-        <div style="margin-left: auto;">
-          <button class="btn btn-primary" id="btnNextPart">다음 파트 이동 ▶</button>
-        </div>
-      </div>
-    </section>
-
-    <!-- 3. 서명 및 일괄 제출 -->
-    <section class="card" style="text-align: center; padding: 2rem;">
-      <div style="margin-bottom: 1rem;">
-        <h3 style="font-weight: 700; margin-bottom: 0.5rem;">일괄 평가표 작성 완료 및 서명 제출</h3>
-        <p style="color: var(--text-muted); font-size: 0.9rem;">
-          7개 파트 평가를 마친 후 현장소장 서명 1회로 평가표가 동시에 일괄 제출됩니다.
-        </p>
-      </div>
-      <button class="btn btn-primary" id="btnOpenSignatureModal" style="font-size: 1.1rem; padding: 0.8rem 2.5rem;">
-        🖋️ 현장소장 서명 및 다수 인원 일괄 제출하기
-      </button>
     </section>
 
   </main>
@@ -183,75 +232,12 @@
       </div>
       <div class="modal-body">
         <div style="margin-bottom: 1rem;">
-          <input type="text" id="lawSearchInput" class="form-control" placeholder="작업명 검색 (예: 프레스, 크레인, 용접, 밀폐공간)..." />
+          <input type="text" id="lawSearchInput" class="form-control" placeholder="작업명 검색 (예: 프레스, 크레인, 용접)..." />
         </div>
         <div id="lawModalContent"></div>
       </div>
       <div class="modal-footer">
         <button class="btn btn-secondary" onclick="closeModal('lawModal')">닫기</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 미체크 항목 경고 Modal -->
-  <div class="modal-backdrop" id="unreadModal">
-    <div class="modal-content" style="max-width: 480px;">
-      <div class="modal-header" style="background: var(--danger-color);">
-        <h3>⚠️ 미체크 항목 안내</h3>
-        <button class="modal-close" onclick="closeModal('unreadModal')">&times;</button>
-      </div>
-      <div class="modal-body" style="text-align: center; padding: 1.5rem;">
-        <p id="unreadModalMsg" style="font-size: 1rem; font-weight: 600; color: var(--text-main); margin-bottom: 1rem;">
-          작성되지 않은 평가 문항이 있거나 대상자가 선택되지 않았습니다.
-        </p>
-      </div>
-      <div class="modal-footer" style="justify-content: center;">
-        <button class="btn btn-primary" onclick="closeModal('unreadModal')">📌 확인하기</button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 서명 모달 (Signature Modal) -->
-  <div class="modal-backdrop" id="signatureModal">
-    <div class="modal-content" style="max-width: 520px;">
-      <div class="modal-header">
-        <h3>✍️ 최종 작성자(소장) 서명 및 일괄 제출</h3>
-        <button class="modal-close" onclick="closeModal('signatureModal')">&times;</button>
-      </div>
-      <div class="modal-body">
-        <div style="margin-bottom: 1rem;">
-          <label style="font-size: 0.85rem; font-weight: 700; color: var(--text-muted); display: block; margin-bottom: 0.4rem;">
-            서명방식을 선택하세요 (마우스 / 터치 서명 가능):
-          </label>
-          <div style="display: flex; gap: 0.5rem; margin-bottom: 0.75rem;">
-            <button class="btn btn-outline" id="btnTabDraw" style="flex:1;">🖋️ 마우스 / 터치 서명</button>
-            <button class="btn btn-outline" id="btnTabUpload" style="flex:1;">📁 파일 업로드</button>
-          </div>
-        </div>
-
-        <div id="tabDrawContent">
-          <div class="signature-container">
-            <canvas id="signatureCanvas"></canvas>
-          </div>
-          <div style="display: flex; justify-content: space-between; align-items: center; margin-top: 0.4rem;">
-            <span style="font-size: 0.75rem; color: var(--text-muted);">마우스 또는 터치로 네모 박스 안에 서명하세요.</span>
-            <button class="btn btn-outline" id="btnClearCanvas" style="font-size: 0.75rem;">🧹 서명 지우기</button>
-          </div>
-        </div>
-
-        <div id="tabUploadContent" style="display: none; text-align: center; padding: 1rem; border: 2px dashed #cbd5e1; border-radius: 6px;">
-          <input type="file" id="sigFileInput" accept="image/*" style="display: none;" />
-          <button class="btn btn-secondary" onclick="document.getElementById('sigFileInput').click();">📁 서명 이미지 선택 (PNG/JPG)</button>
-          <div id="uploadPreview" style="margin-top: 0.5rem; font-size: 0.8rem; color: var(--text-muted);">
-            선택된 서명 파일 없음
-          </div>
-        </div>
-
-      </div>
-      <div class="modal-footer">
-        <button class="btn btn-success" id="btnFinalSubmit" style="width: 100%; font-size: 1rem; padding: 0.75rem;">
-          🚀 선택된 <span id="submitCountLabel">0</span>명 일괄 제출하기
-        </button>
       </div>
     </div>
   </div>
