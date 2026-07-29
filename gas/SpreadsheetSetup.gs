@@ -3,7 +3,10 @@
    초기 스프레드시트 시트 구조 생성 및 초기 데이터 삽입 스크립트
    ========================================================================= */
 
-function setupSpreadsheet_() {
+/**
+ * Apps Script 에디터 드롭다운에서 선택하여 직접 실행하는 공개 함수
+ */
+function setupSpreadsheet() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
 
   // 1. Evaluations 시트 생성
@@ -41,4 +44,6 @@ function setupSpreadsheet_() {
       '테스트현장', 'TEST001', '최난새', 'nschoi@sebangtec.com', '800101', '안전관리자', '010-0000-0000'
     ]);
   }
+
+  Logger.log("✅ 시트 구축 및 초기 데이터 삽입이 성공적으로 완료되었습니다!");
 }
