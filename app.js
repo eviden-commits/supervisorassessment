@@ -1,6 +1,6 @@
 /* =========================================================================
    app.js
-   7개 정규 직종 카테고리 20명 샘플 DB 및 업로드 양식 엑셀 적용
+   7개 정규 직종 카테고리 10명 + 자동 파싱 실무 직종 10명 (총 20명) 완전 개편
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -8,51 +8,60 @@ const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euG
 // 7개 정규 직종 카테고리 맵핑 테이블 (1-indexed)
 // 안전(19문항), 보건(11문항), 품질(5문항), 공무(3문항), 설계(5문항), 팀리더(20문항), 공사관리자(20문항)
 const JOB_APPLIED_QUESTIONS = {
-  "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20],
-  "보건": [1, 2, 7, 9, 11, 12, 15, 16, 18, 19, 20],
-  "품질": [1, 2, 18, 19, 20],
-  "공사관리자": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-  "공무": [1, 2, 20],
-  "팀리더": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
-  "설계": [1, 2, 18, 19, 20]
+  "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20], // 19문항
+  "보건": [1, 2, 7, 9, 11, 12, 15, 16, 18, 19, 20],                           // 11문항
+  "품질": [1, 2, 18, 19, 20],                                                 // 5문항
+  "공사관리자": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], // 20문항
+  "공무": [1, 2, 20],                                                         // 3문항
+  "팀리더": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],    // 20문항
+  "설계": [1, 2, 18, 19, 20]                                                  // 5문항
 };
 
-function getAppliedQuestionsForJob(jobName) {
-  if (!jobName) return JOB_APPLIED_QUESTIONS["공사관리자"];
-
+// 🔥 입력된 자유 텍스트 직종명을 7개 표준 카테고리로 100% 정제 파싱하는 정밀 함수
+function parseCleanJob(jobName) {
+  if (!jobName) return "공사관리자";
   const j = jobName.trim();
-  if (j.includes("안전")) return JOB_APPLIED_QUESTIONS["안전"];
-  if (j.includes("보건")) return JOB_APPLIED_QUESTIONS["보건"];
-  if (j.includes("품질")) return JOB_APPLIED_QUESTIONS["품질"];
-  if (j.includes("공무")) return JOB_APPLIED_QUESTIONS["공무"];
-  if (j.includes("설계")) return JOB_APPLIED_QUESTIONS["설계"];
-  if (j.includes("팀리더") || j.includes("소장") || j.includes("팀장")) return JOB_APPLIED_QUESTIONS["팀리더"];
-  
-  return JOB_APPLIED_QUESTIONS["공사관리자"];
+
+  if (j.includes("안전")) return "안전";
+  if (j.includes("보건")) return "보건";
+  if (j.includes("품질")) return "품질";
+  if (j.includes("공무")) return "공무";
+  if (j.includes("설계")) return "설계";
+  if (j.includes("소장") || j.includes("팀장") || j.includes("리더") || j.includes("팀리더")) return "팀리더";
+
+  return "공사관리자";
 }
 
-// 🔥 7개 정규 직종 카테고리로 통합된 20명 샘플 DB 데이터
+function getAppliedQuestionsForJob(jobName) {
+  const cleanJob = parseCleanJob(jobName);
+  return JOB_APPLIED_QUESTIONS[cleanJob] || JOB_APPLIED_QUESTIONS["공사관리자"];
+}
+
+// 🔥 20명 전면 개편 데이터 (정규 직종 10명 + 자동 파싱용 텍스트 직종 10명)
 let WORKER_DB = [
+  // [정규 카테고리 지정 10명]
   { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전", email: "nschoi@sebangtec.com" },
   { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "팀리더", email: "gildong@example.com" },
   { id: "EMP003", name: "김철수", site: "테스트현장", term: "상반기", birth: "900320", job: "공사관리자", email: "chulsoo@example.com" },
   { id: "EMP004", name: "이영희", site: "테스트현장", term: "상반기", birth: "921110", job: "공사관리자", email: "younghee@example.com" },
   { id: "EMP005", name: "박지성", site: "테스트현장", term: "상반기", birth: "880225", job: "공사관리자", email: "jisung@example.com" },
-  { id: "EMP006", name: "손흥민", site: "테스트현장", term: "상반기", birth: "920708", job: "공사관리자", email: "sonny@example.com" },
+  { id: "EMP006", name: "손흥민", site: "테스트현장", term: "상반기", birth: "920708", job: "팀리더", email: "sonny@example.com" },
   { id: "EMP007", name: "황희찬", site: "테스트현장", term: "상반기", birth: "960126", job: "안전", email: "hwang@example.com" },
   { id: "EMP008", name: "김민재", site: "테스트현장", term: "상반기", birth: "961115", job: "설계", email: "minjae@example.com" },
   { id: "EMP009", name: "이강인", site: "테스트현장", term: "상반기", birth: "010219", job: "공사관리자", email: "kangin@example.com" },
   { id: "EMP010", name: "기성용", site: "테스트현장", term: "상반기", birth: "890124", job: "공무", email: "sungyueng@example.com" },
-  { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "품질", email: "jacheol@example.com" },
-  { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "공무", email: "juyoung@example.com" },
-  { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "보건", email: "hyunwoo@example.com" },
-  { id: "EMP014", name: "황의조", site: "테스트현장", term: "상반기", birth: "920828", job: "공사관리자", email: "uijo@example.com" },
-  { id: "EMP015", name: "정우영", site: "테스트현장", term: "상반기", birth: "990920", job: "공사관리자", email: "wooyoung@example.com" },
-  { id: "EMP016", name: "백승호", site: "테스트현장", term: "상반기", birth: "970317", job: "공사관리자", email: "seungho@example.com" },
-  { id: "EMP017", name: "설영우", site: "테스트현장", term: "상반기", birth: "981205", job: "공사관리자", email: "youngwoo@example.com" },
-  { id: "EMP018", name: "김영권", site: "테스트현장", term: "상반기", birth: "900227", job: "공사관리자", email: "younggwon@example.com" },
-  { id: "EMP019", name: "조규성", site: "테스트현장", term: "상반기", birth: "980125", job: "공사관리자", email: "gyuesung@example.com" },
-  { id: "EMP020", name: "송민규", site: "테스트현장", term: "상반기", birth: "990912", job: "공사관리자", email: "mingyu@example.com" }
+
+  // [자동 파싱 검증용 실무 텍스트 데이터 10명] (자동으로 7개 카테고리로 매핑됨)
+  { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "품질관리자", email: "jacheol@example.com" },
+  { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "공무담당자", email: "juyoung@example.com" },
+  { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "보건관리자", email: "hyunwoo@example.com" },
+  { id: "EMP014", name: "황의조", site: "테스트현장", term: "상반기", birth: "920828", job: "건축공사관리자", email: "uijo@example.com" },
+  { id: "EMP015", name: "정우영", site: "테스트현장", term: "상반기", birth: "990920", job: "토목공사관리자", email: "wooyoung@example.com" },
+  { id: "EMP016", name: "백승호", site: "테스트현장", term: "상반기", birth: "970317", job: "설비공사관리자", email: "seungho@example.com" },
+  { id: "EMP017", name: "설영우", site: "테스트현장", term: "상반기", birth: "981205", job: "전기공사관리자", email: "youngwoo@example.com" },
+  { id: "EMP018", name: "김영권", site: "테스트현장", term: "상반기", birth: "900227", job: "현장소장(팀리더)", email: "younggwon@example.com" },
+  { id: "EMP019", name: "조규성", site: "테스트현장", term: "상반기", birth: "980125", job: "안전보건담당자", email: "gyuesung@example.com" },
+  { id: "EMP020", name: "송민규", site: "테스트현장", term: "상반기", birth: "990912", job: "설계기획담당", email: "mingyu@example.com" }
 ];
 
 const QUESTIONS = [
@@ -189,10 +198,10 @@ function checkRegisteredWorkersForTerm() {
     resultBox.style.border = "1px solid #a7f3d0";
     resultBox.innerHTML = `
       <div style="font-weight:800; color:#059669; font-size:0.95rem; margin-bottom:0.4rem;">
-        ✅ [${site} - ${term}] 등록 인원 검증 완료: 총 ${activeTargetWorkers.length}명의 관리감독자 명단 확인됨
+        ✅ [${site} - ${term}] 등록 인원 검증 완료: 총 ${activeTargetWorkers.length}명의 관리감독자 명단 확인됨 (규격 10명 + 자동파싱 10명)
       </div>
       <p style="font-size:0.85rem; color:#065f46;">
-        아래 [평가 시작하기] 버튼을 누르시면 7개 규격 직종별 적용 문항(N/A 제외)에 대해 백분율 환산(%) 정밀 평가가 진행됩니다.
+        아래 [평가 시작하기] 버튼을 누르시면 7개 정규 직종별 적용 문항(N/A 제외)에 대해 백분율 환산(%) 정밀 평가가 진행됩니다.
       </p>
     `;
     btnStart.disabled = false;
@@ -261,7 +270,8 @@ function renderMicroWorkerTable(qIdx, qObj) {
   const qKey = `q_${qIdx}`;
 
   activeTargetWorkers.forEach(w => {
-    const appliedQs = getAppliedQuestionsForJob(w.job);
+    const cleanJob = parseCleanJob(w.job);
+    const appliedQs = getAppliedQuestionsForJob(cleanJob);
     const isApplied = appliedQs.includes(qIdx);
 
     const tr = document.createElement("tr");
@@ -271,7 +281,7 @@ function renderMicroWorkerTable(qIdx, qObj) {
       tr.innerHTML = `
         <td>
           <span style="font-weight:700; color:#475569;">${w.name}</span>
-          <span class="job-badge" style="background:#e2e8f0;">${w.job}</span>
+          <span class="job-badge" style="background:#e2e8f0;">${cleanJob}</span>
         </td>
         <td style="text-align: right;">
           <span style="font-size:0.78rem; font-weight:700; color:#64748b; background:#f1f5f9; padding:3px 8px; border-radius:4px; border:1px solid #cbd5e1;">
@@ -285,7 +295,7 @@ function renderMicroWorkerTable(qIdx, qObj) {
       tr.innerHTML = `
         <td>
           <span style="font-weight:700; color:#0f172a;">${w.name}</span>
-          <span class="job-badge">${w.job}</span>
+          <span class="job-badge">${cleanJob}</span>
         </td>
         <td style="text-align: right;">
           <div class="score-segment-control">
@@ -326,7 +336,7 @@ function updateStickyActionBar(qIdx) {
   const textProgress = document.getElementById("stickyProgressText");
 
   btnPrev.style.visibility = qIdx > 1 ? "visible" : "hidden";
-  textProgress.textContent = `직종별 N/A 자동 감지 · 원클릭 점수 반영`;
+  textProgress.textContent = `7개 규격 직종 자동 파싱 & N/A 제외 반영`;
 
   if (qIdx === 20) {
     btnNext.textContent = "최종 서명 단계로 이동 ➔";
@@ -414,36 +424,38 @@ function handleVerifyOtp() {
   }
 }
 
-// 🔥 7개 정규 직종 카테고리 입력을 강제 가이드하는 20명 업로드용 샘플 엑셀 생성
+// 🔥 규격 직종 10명 + 파싱 검증용 실무 직종 10명 = 총 20명 업로드용 샘플 엑셀
 function downloadExcelTemplateIndex() {
   const data = [
-    ["[필독] 직종 입력 시 아래 7개 카테고리 중 하나를 입력하세요: 안전, 보건, 품질, 공무, 설계, 팀리더, 공사관리자"],
+    ["[필독] 직종 입력 시 7개 카테고리(안전, 보건, 품질, 공무, 설계, 팀리더, 공사관리자) 또는 실무직종명(예: 보건관리자, 공무담당자)을 입력하면 자동 파싱됩니다."],
     ["현장명", "사번", "성명", "이메일주소", "생년월일", "직종", "반기"],
+    // 규격 직종 10명
     ["테스트현장", "TEST001", "최난새", "nschoi@sebangtec.com", "800101", "안전", "상반기"],
     ["테스트현장", "EMP002", "홍길동", "gildong@example.com", "850515", "팀리더", "상반기"],
     ["테스트현장", "EMP003", "김철수", "chulsoo@example.com", "900320", "공사관리자", "상반기"],
     ["테스트현장", "EMP004", "이영희", "younghee@example.com", "921110", "공사관리자", "상반기"],
     ["테스트현장", "EMP005", "박지성", "jisung@example.com", "880225", "공사관리자", "상반기"],
-    ["테스트현장", "EMP006", "손흥민", "sonny@example.com", "920708", "공사관리자", "상반기"],
+    ["테스트현장", "EMP006", "손흥민", "sonny@example.com", "920708", "팀리더", "상반기"],
     ["테스트현장", "EMP007", "황희찬", "hwang@example.com", "960126", "안전", "상반기"],
     ["테스트현장", "EMP008", "김민재", "minjae@example.com", "961115", "설계", "상반기"],
     ["테스트현장", "EMP009", "이강인", "kangin@example.com", "010219", "공사관리자", "상반기"],
     ["테스트현장", "EMP010", "기성용", "sungyueng@example.com", "890124", "공무", "상반기"],
-    ["테스트현장", "EMP011", "구자철", "jacheol@example.com", "890227", "품질", "상반기"],
-    ["테스트현장", "EMP012", "박주영", "juyoung@example.com", "850710", "공무", "상반기"],
-    ["테스트현장", "EMP013", "조현우", "hyunwoo@example.com", "910925", "보건", "상반기"],
-    ["테스트현장", "EMP014", "황의조", "uijo@example.com", "920828", "공사관리자", "상반기"],
-    ["테스트현장", "EMP015", "정우영", "wooyoung@example.com", "990920", "공사관리자", "상반기"],
-    ["테스트현장", "EMP016", "백승호", "seungho@example.com", "970317", "공사관리자", "상반기"],
-    ["테스트현장", "EMP017", "설영우", "youngwoo@example.com", "981205", "공사관리자", "상반기"],
-    ["테스트현장", "EMP018", "김영권", "younggwon@example.com", "900227", "공사관리자", "상반기"],
-    ["테스트현장", "EMP019", "조규성", "gyuesung@example.com", "980125", "공사관리자", "상반기"],
-    ["테스트현장", "EMP020", "송민규", "mingyu@example.com", "990912", "공사관리자", "상반기"]
+    // 자동 파싱 검증용 10명
+    ["테스트현장", "EMP011", "구자철", "jacheol@example.com", "890227", "품질관리자", "상반기"],
+    ["테스트현장", "EMP012", "박주영", "juyoung@example.com", "850710", "공무담당자", "상반기"],
+    ["테스트현장", "EMP013", "조현우", "hyunwoo@example.com", "910925", "보건관리자", "상반기"],
+    ["테스트현장", "EMP014", "황의조", "uijo@example.com", "920828", "건축공사관리자", "상반기"],
+    ["테스트현장", "EMP015", "정우영", "wooyoung@example.com", "990920", "토목공사관리자", "상반기"],
+    ["테스트현장", "EMP016", "백승호", "seungho@example.com", "970317", "설비공사관리자", "상반기"],
+    ["테스트현장", "EMP017", "설영우", "youngwoo@example.com", "981205", "전기공사관리자", "상반기"],
+    ["테스트현장", "EMP018", "김영권", "younggwon@example.com", "900227", "현장소장(팀리더)", "상반기"],
+    ["테스트현장", "EMP019", "조규성", "gyuesung@example.com", "980125", "안전보건담당자", "상반기"],
+    ["테스트현장", "EMP020", "송민규", "mingyu@example.com", "990912", "설계기획담당", "상반기"]
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "평가대상자명단_20명");
-  XLSX.writeFile(wb, "관리감독자_7개직종_규격_20명_명단.xlsx");
+  XLSX.writeFile(wb, "관리감독자_규격10명_파싱10명_명단.xlsx");
 }
 
 function handleIndexExcelUpload(e) {
@@ -460,7 +472,6 @@ function handleIndexExcelUpload(e) {
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
 
-    // 첫 번째 행동 가인드 문구일 수 있으므로 json 로드
     const rawRows = XLSX.utils.sheet_to_json(sheet);
     if (rawRows.length === 0) {
       alert("엑셀 파일에 데이터가 없습니다.");
@@ -470,14 +481,7 @@ function handleIndexExcelUpload(e) {
     const newWorkers = [];
     rawRows.forEach((r, idx) => {
       const jobRaw = r["직종"] || r["직종카테고리"] || "공사관리자";
-      // 직종 정제
-      let cleanJob = "공사관리자";
-      if (jobRaw.includes("안전")) cleanJob = "안전";
-      else if (jobRaw.includes("보건")) cleanJob = "보건";
-      else if (jobRaw.includes("품질")) cleanJob = "품질";
-      else if (jobRaw.includes("공무")) cleanJob = "공무";
-      else if (jobRaw.includes("설계")) cleanJob = "설계";
-      else if (jobRaw.includes("팀리더") || jobRaw.includes("소장") || jobRaw.includes("팀장")) cleanJob = "팀리더";
+      const cleanJob = parseCleanJob(jobRaw);
 
       if (r["성명"]) {
         newWorkers.push({
@@ -494,7 +498,7 @@ function handleIndexExcelUpload(e) {
 
     WORKER_DB = [...WORKER_DB.filter(w => w.site !== currentSite || w.term !== currentTerm), ...newWorkers];
 
-    alert(`🎉 성공: [${currentSite} - ${currentTerm}] ${newWorkers.length}명의 규격 직종 관리감독자 명단이 새로 등록되었습니다!`);
+    alert(`🎉 성공: [${currentSite} - ${currentTerm}] ${newWorkers.length}명의 관리감독자 명단이 7개 규격 직종으로 파싱되어 업로드되었습니다!`);
     closeModal("otpUploadModal");
     checkRegisteredWorkersForTerm();
   };
