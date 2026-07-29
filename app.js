@@ -1,6 +1,6 @@
 /* =========================================================================
    app.js
-   가독성 극대화 및 미세 점수 체크 표 고급화 로직
+   클로드 8가지 스펙 리디자인 & 원클릭 3|2|1 세그먼트 연동 로직
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -29,23 +29,23 @@ let WORKER_DB = [
 ];
 
 const QUESTIONS = [
-  { id: 1, partTitle: "[Part 1] 관리감독자 업무수행 지원 (2문항)", title: "1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?", lawRef: null, score3: "적정 권한 부여 및 업무수행", score2: "관리감독자 지정만 함", score1: "관리감독자 미지정" },
-  { id: 2, partTitle: "[Part 1] 관리감독자 업무수행 지원 (2문항)", title: "2. 시설·장비·예산 등 업무수행에 필요한 지원을 하는가?", lawRef: null, score3: "시설·예산 등 책정 지원", score2: "필요시 예산 등 책정", score1: "예산 지원 없음" },
-  { id: 3, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "3. 기계·기구 또는 설비의 안전·보건점검을 실시하는가?", lawRef: null, score3: "연단위 계획 실시", score2: "그때 그때 한다", score1: "잘모르겠다, 안한다" },
-  { id: 4, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "4. 작업종류별로 관리감독자의 유해·위험 방지 업무*를 적정 수행하는가", lawRef: "별표2", score3: "체크리스트 작성하여 수행", score2: "그때 그때 작성", score1: "안한다" },
-  { id: 5, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "5. 작업종류별로 관리감독자의 작업 시작 전 점검사항*을 적정 수행하는가", lawRef: "별표3", score3: "체크리스트 작성하여 수행", score2: "그때 그때 작성", score1: "안한다" },
-  { id: 6, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "6. 점검결과 이상이 발견되면 즉시 수리하는 등 필요한 조치를 하는가?", lawRef: null, score3: "즉시 작업중지 후 조치", score2: "작업중지 후 추후 수리", score1: "즉시 작업중지 안함" },
-  { id: 7, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "7. 도급사업 시의 순회점검 및 안전·보건점검에 참여하는가?", lawRef: null, score3: "주기적으로 참여", score2: "가끔 참여", score1: "참여 안함" },
-  { id: 8, partTitle: "[Part 3] 근로자 보호구 및 방호장치 교육 (3문항)", title: "8. 작업복의 점검과 착용에 관한 교육·지도를 하는가?", lawRef: null, score3: "작업시작 전과 정기교육시 모두", score2: "정기교육 시만 실시", score1: "안한다" },
-  { id: 9, partTitle: "[Part 3] 근로자 보호구 및 방호장치 교육 (3문항)", title: "9. 보호구의 점검과 착용·사용에 관한 교육·지도를 하는가?", lawRef: null, score3: "작업시작 전과 정기교육시 모두", score2: "정기교육 시만 실시", score1: "안한다" },
-  { id: 10, partTitle: "[Part 3] 근로자 보호구 및 방호장치 교육 (3문항)", title: "10. 방호장치의 점검과 사용에 관한 교육·지도를 하는가?", lawRef: null, score3: "작업시작 전과 정기교육시 모두", score2: "정기교육 시만 실시", score1: "안한다" },
-  { id: 11, partTitle: "[Part 4] 산업재해 보고 및 응급조치 (2문항)", title: "11. 산업재해에 관한 발생 보고가 적정하게 이뤄지고 있는가?", lawRef: null, score3: "재해 발생 즉시 보고", score2: "발생 후 3일 이내 보고", score1: "1주일 이상 소요" },
-  { id: 12, partTitle: "[Part 4] 산업재해 보고 및 응급조치 (2문항)", title: "12. 산업재해에 따른 응급조치가 적정하게 이뤄지고 있는가 (※ MSDS 숙지 등)", lawRef: null, score3: "정기 및 수시 모두 교육", score2: "정기교육 시만 교육", score1: "안한다" },
-  { id: 13, partTitle: "[Part 5] 작업장 정리정돈 및 통로확보 (2문항)", title: "13. 작업장 정리·정돈에 대한 확인·감독을 하고 있는가?", lawRef: null, score3: "매일 3회 이상 실시", score2: "매일 1회 실시", score1: "안한다" },
-  { id: 14, partTitle: "[Part 5] 작업장 정리정돈 및 통로확보 (2문항)", title: "14. 통로 확보에 대한 확인·감독을 하고 있는가?", lawRef: null, score3: "매일 3회 이상 확인", score2: "매일 1회 확인", score1: "안한다" },
-  { id: 15, partTitle: "[Part 6] 안전/보건관리자 지도조언 협조 (3문항)", title: "15. 산업보건의의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극적으로 협조", score2: "필요시 협조", score1: "협조 안함" },
-  { id: 16, partTitle: "[Part 6] 안전/보건관리자 지도조언 협조 (3문항)", title: "16. 안전관리자(또는 전문기관)의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극적으로 협조", score2: "필요시 협조", score1: "협조 안함" },
-  { id: 17, partTitle: "[Part 6] 안전/보건관리자 지도조언 협조 (3문항)", title: "17. 보건관리자(또는 전문기관)의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극적으로 협조", score2: "필요시 협조", score1: "협조 안함" },
+  { id: 1, partTitle: "[Part 1] 관리감독자 업무수행 지원 (2문항)", title: "1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?", lawRef: null, score3: "적정 권한 부여", score2: "지정만 함", score1: "미지정" },
+  { id: 2, partTitle: "[Part 1] 관리감독자 업무수행 지원 (2문항)", title: "2. 시설·장비·예산 등 업무수행에 필요한 지원을 하는가?", lawRef: null, score3: "시설·예산 지원", score2: "필요시 책정", score1: "지원 없음" },
+  { id: 3, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "3. 기계·기구 또는 설비의 안전·보건점검을 실시하는가?", lawRef: null, score3: "연단위 계획 실시", score2: "수시 실시", score1: "안함" },
+  { id: 4, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "4. 작업종류별로 관리감독자의 유해·위험 방지 업무*를 적정 수행하는가", lawRef: "별표2", score3: "체크리스트 작성", score2: "수시 작성", score1: "안함" },
+  { id: 5, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "5. 작업종류별로 관리감독자의 작업 시작 전 점검사항*을 적정 수행하는가", lawRef: "별표3", score3: "체크리스트 작성", score2: "수시 작성", score1: "안함" },
+  { id: 6, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "6. 점검결과 이상이 발견되면 즉시 수리하는 등 필요한 조치를 하는가?", lawRef: null, score3: "즉시 작업중지 조치", score2: "추후 수리", score1: "조치 안함" },
+  { id: 7, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "7. 도급사업 시의 순회점검 및 안전·보건점검에 참여하는가?", lawRef: null, score3: "주기적 참여", score2: "가끔 참여", score1: "참여 안함" },
+  { id: 8, partTitle: "[Part 3] 근로자 보호구 및 방호장치 교육 (3문항)", title: "8. 작업복의 점검과 착용에 관한 교육·지도를 하는가?", lawRef: null, score3: "작업전/정기교육", score2: "정기교육만", score1: "안함" },
+  { id: 9, partTitle: "[Part 3] 근로자 보호구 및 방호장치 교육 (3문항)", title: "9. 보호구의 점검과 착용·사용에 관한 교육·지도를 하는가?", lawRef: null, score3: "작업전/정기교육", score2: "정기교육만", score1: "안함" },
+  { id: 10, partTitle: "[Part 3] 근로자 보호구 및 방호장치 교육 (3문항)", title: "10. 방호장치의 점검과 사용에 관한 교육·지도를 하는가?", lawRef: null, score3: "작업전/정기교육", score2: "정기교육만", score1: "안함" },
+  { id: 11, partTitle: "[Part 4] 산업재해 보고 및 응급조치 (2문항)", title: "11. 산업재해에 관한 발생 보고가 적정하게 이뤄지고 있는가?", lawRef: null, score3: "즉시 보고", score2: "3일이내 보고", score1: "1주일소요" },
+  { id: 12, partTitle: "[Part 4] 산업재해 보고 및 응급조치 (2문항)", title: "12. 산업재해에 따른 응급조치가 적정하게 이뤄지고 있는가 (※ MSDS 숙지 등)", lawRef: null, score3: "정기/수시 교육", score2: "정기교육만", score1: "안함" },
+  { id: 13, partTitle: "[Part 5] 작업장 정리정돈 및 통로확보 (2문항)", title: "13. 작업장 정리·정돈에 대한 확인·감독을 하고 있는가?", lawRef: null, score3: "매일 3회이상", score2: "매일 1회", score1: "안함" },
+  { id: 14, partTitle: "[Part 5] 작업장 정리정돈 및 통로확보 (2문항)", title: "14. 통로 확보에 대한 확인·감독을 하고 있는가?", lawRef: null, score3: "매일 3회이상", score2: "매일 1회", score1: "안함" },
+  { id: 15, partTitle: "[Part 6] 안전/보건관리자 지도조언 협조 (3문항)", title: "15. 산업보건의의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극 협조", score2: "필요시 협조", score1: "협조 안함" },
+  { id: 16, partTitle: "[Part 6] 안전/보건관리자 지도조언 협조 (3문항)", title: "16. 안전관리자(또는 전문기관)의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극 협조", score2: "필요시 협조", score1: "협조 안함" },
+  { id: 17, partTitle: "[Part 6] 안전/보건관리자 지도조언 협조 (3문항)", title: "17. 보건관리자(또는 전문기관)의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극 협조", score2: "필요시 협조", score1: "협조 안함" },
   { id: 18, partTitle: "[Part 7] 위험성평가 및 기타 이행 (3문항)", title: "18. 위험성평가 유해·위험요인 파악에 대한 참여를 하고 있는가?", lawRef: null, score3: "반드시 참여", score2: "필요시 참여", score1: "참여 안함" },
   { id: 19, partTitle: "[Part 7] 위험성평가 및 기타 이행 (3문항)", title: "19. 개선조치의 시행에 참여를 하고 있는가?", lawRef: null, score3: "반드시 참여", score2: "필요시 참여", score1: "참여 안함" },
   { id: 20, partTitle: "[Part 7] 위험성평가 및 기타 이행 (3문항)", title: "20. 그 밖에 안전 및 보건에 관한 사항을 적정하게 이행하고 있는가", lawRef: "기타", score3: "반드시 이행", score2: "필요시 이행", score1: "이행 안함" }
@@ -184,6 +184,7 @@ function startAssessmentWizard() {
 
   document.getElementById("stepIntroCard").style.display = "none";
   document.getElementById("stepFloatingQuestionsSection").style.display = "block";
+  document.getElementById("stickyBottomNavBar").style.display = "block"; // 하단 스티키 바 활성화
 
   document.getElementById("wizStep1").classList.remove("active");
   document.getElementById("wizStep1").classList.add("completed");
@@ -193,7 +194,7 @@ function startAssessmentWizard() {
   renderSingleFloatingQuestion(currentQIndex);
 }
 
-// 🔥 문항 카드 동적 렌더링 (가독성 개편)
+// 🔥 [3] 문항 카드 / 평가지침 가로 칩 3개 압축 렌더링
 function renderSingleFloatingQuestion(qIdx) {
   const q = QUESTIONS.find(item => item.id === qIdx);
   if (!q) return;
@@ -204,77 +205,66 @@ function renderSingleFloatingQuestion(qIdx) {
   const pct = (qIdx / 20) * 100;
   document.getElementById("qProgressBar").style.width = `${pct}%`;
 
-  document.getElementById("cardQNum").textContent = `문항 ${qIdx} / 20`;
-  document.getElementById("cardQCategory").textContent = q.partTitle;
-  document.getElementById("cardQTitle").textContent = q.title;
-  document.getElementById("cardWorkerCountSpan").textContent = `${activeTargetWorkers.length}명`;
-
+  document.getElementById("cardQTitle").textContent = `${qIdx}. ${q.title.replace(/^\d+\.\s*/, '')}`;
+  
   const lawContainer = document.getElementById("cardLawRefContainer");
   if (q.lawRef) {
-    lawContainer.innerHTML = `<button class="btn btn-outline" style="font-size:0.78rem; padding:4px 8px; color:var(--accent-color);" onclick="openLawModal('${q.lawRef}', ${q.id})">⚖️ ${q.lawRef} 관련 법률 및 점검 지침 보기</button>`;
+    lawContainer.innerHTML = `<button class="btn btn-outline" style="font-size:0.75rem; padding:3px 8px; color:var(--accent-color);" onclick="openLawModal('${q.lawRef}', ${q.id})">⚖️ ${q.lawRef} 법률지침 보기</button>`;
   } else {
     lawContainer.innerHTML = "";
   }
 
-  // 문항 세부 지침 박스
+  // 가로 칩 3개 압축 지침 박스
   const guideBox = document.getElementById("cardQGuideBox");
   guideBox.innerHTML = `
-    <div class="q-guide-title">
-      📋 <strong>문항 ${qIdx} 평가 세부 판단 기준:</strong>
-    </div>
-    <div class="q-guide-grid">
-      <div class="q-guide-item score-3">🟢 <strong>3점 (우수/적정):</strong> ${q.score3}</div>
-      <div class="q-guide-item score-2">🟡 <strong>2점 (보통/필요시):</strong> ${q.score2}</div>
-      <div class="q-guide-item score-1">🔴 <strong>1점 (미흡/안함):</strong> ${q.score1}</div>
-    </div>
+    <span class="q-chip score-3">● 3점 · ${q.score3}</span>
+    <span class="q-chip score-2">● 2점 · ${q.score2}</span>
+    <span class="q-chip score-1">● 1점 · ${q.score1}</span>
   `;
 
-  // 전원 일괄 적용 3컬럼 그리드 버튼 문구
-  document.getElementById("btnFillQScore3").innerHTML = `🟢 전원 3점 적용<br><span style="font-size:0.75rem; font-weight:normal;">(${q.score3})</span>`;
-  document.getElementById("btnFillQScore2").innerHTML = `🟡 전원 2점 적용<br><span style="font-size:0.75rem; font-weight:normal;">(${q.score2})</span>`;
-  document.getElementById("btnFillQScore1").innerHTML = `🔴 전원 1점 적용<br><span style="font-size:0.75rem; font-weight:normal;">(${q.score1})</span>`;
+  // [4] 일괄 적용 등폭 세그먼트 라벨
+  document.getElementById("batchLabelText").textContent = `전체 ${activeTargetWorkers.length}명 일괄 적용`;
 
   renderMicroWorkerTable(qIdx, q);
-
-  const btnPrev = document.getElementById("btnPrevQuestion");
-  const btnNext = document.getElementById("btnNextQuestion");
-
-  btnPrev.style.visibility = qIdx > 1 ? "visible" : "hidden";
-  if (qIdx === 20) {
-    btnNext.textContent = "최종 서명 단계로 이동 ➔";
-    btnNext.className = "btn btn-success";
-  } else {
-    btnNext.textContent = `다음 문항 (${qIdx + 1} / 20) 이동 ▶`;
-    btnNext.className = "btn btn-primary";
-  }
+  updateStickyActionBar(qIdx);
 }
 
-// 🔥 개별 미세 점수 체크 표 렌더링 (가독성 개편 & 직종 태그 뱃지화)
+// 🔥 [1] & [2] 3|2|1 세그먼트 버튼 및 컴팩트 표 Zebra Striping 렌더링
 function renderMicroWorkerTable(qIdx, qObj) {
-  const q = qObj || QUESTIONS.find(item => item.id === qIdx);
   const tbody = document.getElementById("microWorkerTableBody");
+  if (!tbody) return;
   tbody.innerHTML = "";
 
   const qKey = `q_${qIdx}`;
 
   activeTargetWorkers.forEach(w => {
     const curVal = (workerScoresMap[w.id] && workerScoresMap[w.id][qKey]) ? workerScoresMap[w.id][qKey] : 3;
-    const scoreClass = curVal === 3 ? 'score-3' : (curVal === 2 ? 'score-2' : 'score-1');
 
     const tr = document.createElement("tr");
     tr.innerHTML = `
-      <td style="font-weight:800; color:#0f172a;">${w.name}</td>
-      <td><span class="job-tag-badge">${w.job}</span></td>
       <td>
-        <select class="micro-score-select ${scoreClass}" onchange="onSingleQWorkerScoreChange('${w.id}', ${qIdx}, this)">
-          <option value="3" ${curVal === 3 ? 'selected' : ''}>🟢 3점 - ${q.score3}</option>
-          <option value="2" ${curVal === 2 ? 'selected' : ''}>🟡 2점 - ${q.score2}</option>
-          <option value="1" ${curVal === 1 ? 'selected' : ''}>🔴 1점 - ${q.score1}</option>
-        </select>
+        <span style="font-weight:700; color:#0f172a;">${w.name}</span>
+        <span class="job-badge">${w.job}</span>
+      </td>
+      <td style="text-align: right;">
+        <div class="score-segment-control">
+          <button class="seg-btn ${curVal === 3 ? 'active-3' : ''}" onclick="setSingleWorkerScore('${w.id}', ${qIdx}, 3)">3</button>
+          <button class="seg-btn ${curVal === 2 ? 'active-2' : ''}" onclick="setSingleWorkerScore('${w.id}', ${qIdx}, 2)">2</button>
+          <button class="seg-btn ${curVal === 1 ? 'active-1' : ''}" onclick="setSingleWorkerScore('${w.id}', ${qIdx}, 1)">1</button>
+        </div>
       </td>
     `;
     tbody.appendChild(tr);
   });
+}
+
+// 🔥 원클릭 1회 즉시 반영 함수
+function setSingleWorkerScore(workerId, qIdx, scoreVal) {
+  const qKey = `q_${qIdx}`;
+  if (!workerScoresMap[workerId]) workerScoresMap[workerId] = {};
+  workerScoresMap[workerId][qKey] = scoreVal;
+
+  renderMicroWorkerTable(qIdx);
 }
 
 function fillSingleQAllScores(score) {
@@ -286,13 +276,52 @@ function fillSingleQAllScores(score) {
   renderMicroWorkerTable(currentQIndex);
 }
 
-function onSingleQWorkerScoreChange(workerId, qIdx, selectEl) {
-  const val = Number(selectEl.value);
-  const qKey = `q_${qIdx}`;
-  if (!workerScoresMap[workerId]) workerScoresMap[workerId] = {};
-  workerScoresMap[workerId][qKey] = val;
+// 🔥 [6] 하단 고정 액션 바 상태 업데이트
+function updateStickyActionBar(qIdx) {
+  const btnPrev = document.getElementById("btnPrevQuestion");
+  const btnNext = document.getElementById("btnNextQuestion");
+  const textProgress = document.getElementById("stickyProgressText");
 
-  selectEl.className = `micro-score-select ${val === 3 ? 'score-3' : (val === 2 ? 'score-2' : 'score-1')}`;
+  btnPrev.style.visibility = qIdx > 1 ? "visible" : "hidden";
+  textProgress.textContent = `전체 ${activeTargetWorkers.length}명 원클릭 점수 체크 가능`;
+
+  if (qIdx === 20) {
+    btnNext.textContent = "최종 서명 단계로 이동 ➔";
+    btnNext.className = "btn btn-success";
+  } else {
+    btnNext.textContent = `다음 문항 (${qIdx + 1} / 20) 이동 ▶`;
+    btnNext.className = "btn btn-primary";
+  }
+}
+
+function movePrevQuestion() {
+  if (currentQIndex > 1) {
+    currentQIndex--;
+    renderSingleFloatingQuestion(currentQIndex);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  }
+}
+
+function moveNextQuestion() {
+  if (currentQIndex < 20) {
+    currentQIndex++;
+    renderSingleFloatingQuestion(currentQIndex);
+    window.scrollTo({ top: 0, behavior: 'smooth' });
+  } else {
+    goToSignatureStep();
+  }
+}
+
+function goToSignatureStep() {
+  document.getElementById("stepFloatingQuestionsSection").style.display = "none";
+  document.getElementById("stickyBottomNavBar").style.display = "none";
+  document.getElementById("stepSignatureSection").style.display = "block";
+
+  document.getElementById("wizStep2").classList.remove("active");
+  document.getElementById("wizStep2").classList.add("completed");
+  document.getElementById("wizStep3").classList.add("active");
+
+  setTimeout(initCanvasFix, 100);
 }
 
 function handleSendOtp() {
@@ -409,33 +438,6 @@ function handleIndexExcelUpload(e) {
     checkRegisteredWorkersForTerm();
   };
   reader.readAsArrayBuffer(file);
-}
-
-function movePrevQuestion() {
-  if (currentQIndex > 1) {
-    currentQIndex--;
-    renderSingleFloatingQuestion(currentQIndex);
-  }
-}
-
-function moveNextQuestion() {
-  if (currentQIndex < 20) {
-    currentQIndex++;
-    renderSingleFloatingQuestion(currentQIndex);
-  } else {
-    goToSignatureStep();
-  }
-}
-
-function goToSignatureStep() {
-  document.getElementById("stepFloatingQuestionsSection").style.display = "none";
-  document.getElementById("stepSignatureSection").style.display = "block";
-
-  document.getElementById("wizStep2").classList.remove("active");
-  document.getElementById("wizStep2").classList.add("completed");
-  document.getElementById("wizStep3").classList.add("active");
-
-  setTimeout(initCanvasFix, 100);
 }
 
 function bindEvents() {

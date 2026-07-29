@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>관리감독자 업무수행 평가표 (스마트 순차 평가 시스템)</title>
+  <title>관리감독자 업무수행 평가표 (스마트 평가 시스템)</title>
   <link rel="stylesheet" href="style.css" />
   <!-- SheetJS for Excel Upload & Download -->
   <script src="https://cdn.jsdelivr.net/npm/xlsx@0.18.5/dist/xlsx.full.min.js"></script>
@@ -15,7 +15,7 @@
     <div class="header-container">
       <div class="header-title">
         <h1>📋 관리감독자 업무수행 평가표</h1>
-        <p>현장/반기 인원 자동 검증 및 문항별 플로팅 스마트 평가 시스템</p>
+        <p>현장/반기 인원 자동 검증 및 순차 평가 시스템</p>
       </div>
       <div style="display: flex; gap: 0.5rem; flex-wrap: wrap;">
         <button class="btn btn-outline" id="btnOpenOtpUploadModal" style="font-size:0.8rem; background:#2563eb; color:#ffffff; border-color:#2563eb;">
@@ -55,15 +55,15 @@
   <!-- Main Container -->
   <main class="main-container" id="indexMainContent" style="display: none;">
     
-    <!-- 위저드 진행바 -->
+    <!-- [5] 진행 상태 / 스텝 표시 압축 -->
     <div class="wizard-bar">
       <div class="wizard-step active" id="wizStep1">
         <div class="wizard-step-num">1</div>
-        <span>안내 및 현장/인원 검증</span>
+        <span>안내 및 인원 검증</span>
       </div>
       <div class="wizard-step" id="wizStep2">
         <div class="wizard-step-num">2</div>
-        <span>문항별 순차 평가 (1~20)</span>
+        <span>문항별 평가 (1~20)</span>
       </div>
       <div class="wizard-step" id="wizStep3">
         <div class="wizard-step-num">3</div>
@@ -99,7 +99,7 @@
 
       <div class="form-grid" style="margin-bottom: 1.5rem;">
         <div class="form-group">
-          <label for="siteSelect" style="font-weight: 700;">평가 현장명 선택</label>
+          <label for="siteSelect">평가 현장명 선택</label>
           <select id="siteSelect" class="form-control">
             <option value="테스트현장" selected>테스트현장</option>
             <option value="서울01현장">서울01현장</option>
@@ -107,18 +107,18 @@
         </div>
 
         <div class="form-group">
-          <label for="evaluatorName" style="font-weight: 700;">평가 작성자 (현장소장 성명)</label>
+          <label for="evaluatorName">평가 작성자 (현장소장 성명)</label>
           <input type="text" id="evaluatorName" class="form-control" placeholder="소장 성명 입력" value="최난새" />
         </div>
 
         <div class="form-group">
-          <label style="font-weight: 700;">평가 대상 구분 (반기)</label>
+          <label>평가 대상 구분 (반기)</label>
           <div style="display: flex; gap: 1rem; margin-top: 0.4rem;">
-            <label class="option-label" style="flex:1;">
+            <label class="option-label" style="flex:1; font-size:0.85rem;">
               <input type="radio" name="term" value="상반기" id="termFirst" checked onchange="checkRegisteredWorkersForTerm()" />
               <span>상반기 (1월~6월)</span>
             </label>
-            <label class="option-label" style="flex:1;">
+            <label class="option-label" style="flex:1; font-size:0.85rem;">
               <input type="radio" name="term" value="하반기" id="termSecond" onchange="checkRegisteredWorkersForTerm()" />
               <span>하반기 (7월~12월)</span>
             </label>
@@ -131,80 +131,63 @@
 
       <div style="text-align: right;">
         <button class="btn btn-primary" id="btnStartAssessment" style="font-size: 1.05rem; padding: 0.75rem 2rem;" disabled>
-          🚀 평가 시작하기 (20문항 플로팅 진행) ▶
+          🚀 평가 시작하기 (20문항 순차 진행) ▶
         </button>
       </div>
     </section>
 
-    <!-- 3. 🎯 STEP 2: 문항 1개씩 진행하는 플로팅 스마트 카드 섹션 (가독성 개편) -->
+    <!-- 3. 🎯 STEP 2: 문항 1개씩 진행하는 플로팅 스마트 카드 섹션 (클로드 8가지 리디자인 반영) -->
     <section id="stepFloatingQuestionsSection" style="display: none;">
       
-      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem; font-size: 0.9rem; font-weight: 800; color: var(--text-muted);">
-        <span>진행 문항: <span id="currentQIndexLabel" style="color:var(--accent-color); font-size:1.2rem;">1</span> / 20</span>
-        <span id="currentQCategoryLabel" style="background:#e2e8f0; padding:4px 12px; border-radius:12px; color:#334155;">Part 1. 업무수행 지원</span>
+      <!-- [5] 진행 상태 / 슬림 진행률 바 -->
+      <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.88rem; font-weight: 700; color: var(--text-muted);">
+        <span id="currentQCategoryLabel">Part 1. 업무수행 지원</span>
+        <span>문항 <span id="currentQIndexLabel" style="color:var(--accent-color); font-size:1.1rem; font-weight:800;">1</span> / 20</span>
       </div>
-      <div style="width: 100%; height: 10px; background: #e2e8f0; border-radius: 6px; overflow: hidden; margin-bottom: 1.75rem;">
+      
+      <div style="width: 100%; height: 6px; background: #e2e8f0; border-radius: 3px; overflow: hidden; margin-bottom: 1.25rem;">
         <div id="qProgressBar" style="width: 5%; height: 100%; background: var(--accent-color); transition: width 0.3s ease;"></div>
       </div>
 
+      <!-- [3] 문항 카드 / 평가지침 가로 칩 3개 압축 -->
       <div class="floating-q-card" id="floatingQuestionCard">
         
-        <div class="q-badge-row">
-          <span class="q-badge-num" id="cardQNum">문항 1</span>
-          <span class="q-part-title" id="cardQCategory">[Part 1] 관리감독자 업무수행 지원</span>
-        </div>
-
         <div class="q-main-title" id="cardQTitle">
           1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?
         </div>
 
-        <div id="cardLawRefContainer" style="margin-bottom: 1.25rem;"></div>
+        <div id="cardLawRefContainer" style="margin-bottom: 0.75rem;"></div>
 
-        <!-- 📋 문항 세부 평가 지침 박스 -->
-        <div class="q-guide-box" id="cardQGuideBox"></div>
+        <!-- 가로 칩 3개 압축 지침 박스 -->
+        <div class="q-chips-container" id="cardQGuideBox"></div>
 
-        <!-- ⚡ 전원 점수 일괄 적용 영역 (시원한 3컬럼 그리드) -->
-        <div class="q-quick-fill-bar">
-          <div class="q-quick-title">
-            ⚡ <strong>등록된 전체 관리감독자 점수 1클릭 일괄 부여:</strong>
-          </div>
-          <div class="q-quick-grid">
-            <button class="btn-score-fill btn-score-3" id="btnFillQScore3" onclick="fillSingleQAllScores(3)">
-              🟢 전원 3점 적용
+        <!-- [4] 일괄 적용 등폭 세그먼트 그룹 -->
+        <div class="batch-segment-wrapper">
+          <div class="batch-label" id="batchLabelText">전체 20명 일괄 적용</div>
+          <div class="batch-segment-group">
+            <button class="btn-batch-seg seg-3" id="btnFillQScore3" onclick="fillSingleQAllScores(3)">
+              3점 전원
             </button>
-            <button class="btn-score-fill btn-score-2" id="btnFillQScore2" onclick="fillSingleQAllScores(2)">
-              🟡 전원 2점 적용
+            <button class="btn-batch-seg seg-2" id="btnFillQScore2" onclick="fillSingleQAllScores(2)">
+              2점 전원
             </button>
-            <button class="btn-score-fill btn-score-1" id="btnFillQScore1" onclick="fillSingleQAllScores(1)">
-              🔴 전원 1점 적용
+            <button class="btn-batch-seg seg-1" id="btnFillQScore1" onclick="fillSingleQAllScores(1)">
+              1점 전원
             </button>
           </div>
         </div>
 
-        <!-- 👥 인원별 미세 점수 확인 및 변경 표 -->
-        <div class="micro-worker-section-title">
-          <span>👥 등록된 인원별 점수 개별 미세 확인 및 변경</span>
-          <span style="color:var(--accent-color); font-weight:800;" id="cardWorkerCountSpan">20명</span>
-        </div>
-
-        <div class="micro-worker-table-container">
-          <table class="micro-worker-table">
+        <!-- [2] 인원 리스트 컴팩트 표 & 스티키 헤더 & [1] 3|2|1 세그먼트 버튼 -->
+        <div class="compact-table-container">
+          <table class="compact-table">
             <thead>
               <tr>
-                <th style="width: 140px;">성명</th>
-                <th style="width: 140px;">직종</th>
-                <th>이 문항 점수 선택 (세부 지침)</th>
+                <th style="width: 50%;">성명 / 직종</th>
+                <th style="width: 50%; text-align: right; padding-right: 1.5rem;">점수 선택 (3 | 2 | 1)</th>
               </tr>
             </thead>
             <tbody id="microWorkerTableBody"></tbody>
           </table>
-        </div>
-
-        <div class="q-nav-bar">
-          <button class="btn btn-secondary" id="btnPrevQuestion" style="visibility: hidden;">◀ 이전 문항</button>
-          <button class="btn btn-primary" id="btnNextQuestion" style="padding: 0.85rem 2rem; font-size: 1.05rem;">
-            다음 문항 이동 ▶
-          </button>
         </div>
 
       </div>
@@ -242,14 +225,29 @@
 
   </main>
 
+  <!-- 🔥 [6] 하단 고정 액션 바 (Sticky/Fixed) -->
+  <div class="sticky-bottom-action-bar" id="stickyBottomNavBar" style="display: none;">
+    <div class="sticky-action-inner">
+      <div class="sticky-progress-text" id="stickyProgressText">
+        개별 클릭 1회로 점수 즉시 변경 가능
+      </div>
+      <div style="display: flex; gap: 0.5rem;">
+        <button class="btn btn-secondary" id="btnPrevQuestion" style="visibility: hidden; font-size: 0.85rem;">◀ 이전 문항</button>
+        <button class="btn btn-primary" id="btnNextQuestion" style="font-size: 0.9rem; padding: 0.65rem 1.5rem;">
+          다음 문항 이동 ▶
+        </button>
+      </div>
+    </div>
+  </div>
+
   <!-- 이메일 OTP 인증 & 명단 엑셀 업로드 Modal -->
   <div class="modal-backdrop" id="otpUploadModal">
-    <div class="modal-content" style="max-width: 480px;">
+    <div class="modal-content">
       <div class="modal-header">
         <h3>📁 현장 관리감독자 엑셀 명단 등록 (OTP 인증)</h3>
         <button class="modal-close" onclick="closeModal('otpUploadModal')">&times;</button>
       </div>
-      <div class="modal-body" style="padding: 1.5rem;">
+      <div class="modal-body">
         
         <div id="otpStep1Panel">
           <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
