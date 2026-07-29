@@ -55,7 +55,7 @@
   <!-- Main Container -->
   <main class="main-container" id="indexMainContent" style="display: none;">
     
-    <!-- [5] 진행 상태 / 스텝 표시 압축 -->
+    <!-- 스텝 진행바 -->
     <div class="wizard-bar">
       <div class="wizard-step active" id="wizStep1">
         <div class="wizard-step-num">1</div>
@@ -97,6 +97,7 @@
         </ul>
       </div>
 
+      <!-- 🔥 3개 폼 요소 칼같은 수평 정렬 그리드 -->
       <div class="form-grid" style="margin-bottom: 1.5rem;">
         <div class="form-group">
           <label for="siteSelect">평가 현장명 선택</label>
@@ -113,12 +114,12 @@
 
         <div class="form-group">
           <label>평가 대상 구분 (반기)</label>
-          <div style="display: flex; gap: 1rem; margin-top: 0.4rem;">
-            <label class="option-label" style="flex:1; font-size:0.85rem;">
+          <div class="radio-group-container">
+            <label class="option-label">
               <input type="radio" name="term" value="상반기" id="termFirst" checked onchange="checkRegisteredWorkersForTerm()" />
               <span>상반기 (1월~6월)</span>
             </label>
-            <label class="option-label" style="flex:1; font-size:0.85rem;">
+            <label class="option-label">
               <input type="radio" name="term" value="하반기" id="termSecond" onchange="checkRegisteredWorkersForTerm()" />
               <span>하반기 (7월~12월)</span>
             </label>
@@ -136,10 +137,9 @@
       </div>
     </section>
 
-    <!-- 3. 🎯 STEP 2: 문항 1개씩 진행하는 플로팅 스마트 카드 섹션 (클로드 8가지 리디자인 반영) -->
+    <!-- 3. 🎯 STEP 2: 문항 1개씩 진행하는 플로팅 스마트 카드 섹션 -->
     <section id="stepFloatingQuestionsSection" style="display: none;">
       
-      <!-- [5] 진행 상태 / 슬림 진행률 바 -->
       <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; font-size: 0.88rem; font-weight: 700; color: var(--text-muted);">
         <span id="currentQCategoryLabel">Part 1. 업무수행 지원</span>
         <span>문항 <span id="currentQIndexLabel" style="color:var(--accent-color); font-size:1.1rem; font-weight:800;">1</span> / 20</span>
@@ -149,7 +149,7 @@
         <div id="qProgressBar" style="width: 5%; height: 100%; background: var(--accent-color); transition: width 0.3s ease;"></div>
       </div>
 
-      <!-- [3] 문항 카드 / 평가지침 가로 칩 3개 압축 -->
+      <!-- 문항 카드 -->
       <div class="floating-q-card" id="floatingQuestionCard">
         
         <div class="q-main-title" id="cardQTitle">
@@ -161,7 +161,7 @@
         <!-- 가로 칩 3개 압축 지침 박스 -->
         <div class="q-chips-container" id="cardQGuideBox"></div>
 
-        <!-- [4] 일괄 적용 등폭 세그먼트 그룹 -->
+        <!-- 일괄 적용 등폭 세그먼트 그룹 -->
         <div class="batch-segment-wrapper">
           <div class="batch-label" id="batchLabelText">전체 20명 일괄 적용</div>
           <div class="batch-segment-group">
@@ -177,7 +177,7 @@
           </div>
         </div>
 
-        <!-- [2] 인원 리스트 컴팩트 표 & 스티키 헤더 & [1] 3|2|1 세그먼트 버튼 -->
+        <!-- 인원 리스트 컴팩트 표 & 스티키 헤더 -->
         <div class="compact-table-container">
           <table class="compact-table">
             <thead>
@@ -225,7 +225,7 @@
 
   </main>
 
-  <!-- 🔥 [6] 하단 고정 액션 바 (Sticky/Fixed) -->
+  <!-- 하단 고정 액션 바 -->
   <div class="sticky-bottom-action-bar" id="stickyBottomNavBar" style="display: none;">
     <div class="sticky-action-inner">
       <div class="sticky-progress-text" id="stickyProgressText">
