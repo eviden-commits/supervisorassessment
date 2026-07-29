@@ -27,22 +27,22 @@
 
   <!-- 1. 🔑 접속 비밀번호 인증 게이트 (Step 1) -->
   <div class="modal-backdrop active" id="indexLoginGateModal">
-    <div class="modal-content" style="max-width: 420px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
+    <div class="modal-content" style="max-width: 400px; box-shadow: 0 20px 40px rgba(0,0,0,0.3);">
       <div class="modal-header">
         <h3>🔑 평가 시스템 접속 인증</h3>
       </div>
       <div class="modal-body" style="padding: 1.75rem 1.5rem;">
-        <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-          구글 스크립트 속성에 설정된 <strong>접속 비밀번호(Login_Index)</strong>를 입력하여 입장하세요.
+        <p style="font-size: 0.9rem; color: var(--text-muted); margin-bottom: 1.25rem;">
+          평가 시스템 접속을 위해 비밀번호를 입력해 주세요.
         </p>
         <div class="form-group">
-          <label for="indexPassInput" style="font-weight: 700;">접속 비밀번호 (Login_Index)</label>
-          <input type="password" id="indexPassInput" class="form-control" placeholder="비밀번호 입력" autofocus />
+          <label for="indexPassInput" style="font-weight: 700;">접속 비밀번호</label>
+          <input type="password" id="indexPassInput" class="form-control" placeholder="접속 비밀번호 입력" autofocus />
         </div>
       </div>
       <div class="modal-footer" style="background: #f8fafc; padding: 1rem 1.5rem;">
         <button class="btn btn-primary" id="btnIndexLogin" style="width: 100%; font-size: 1rem; padding: 0.75rem;">
-          🔒 비밀번호 확인 및 입장하기
+          입장하기
         </button>
       </div>
     </div>
@@ -111,7 +111,7 @@
 
       <!-- DB 인원 등록 현황 검증 알림 박스 -->
       <div id="workerCheckResultBox" style="padding: 1.25rem; border-radius: var(--radius-sm); margin-bottom: 1.5rem; transition: all 0.2s;">
-        <!-- JS 동적 생성: 등록 완료 (초록) 또는 등록 필요 (빨강/경고) -->
+        <!-- JS 동적 생성 -->
       </div>
 
       <div style="text-align: right;">
