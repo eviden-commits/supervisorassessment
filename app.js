@@ -1,11 +1,10 @@
 /* =========================================================================
    app.js
-   테스트용 20명 관리감독자 명단 및 가이드 4번째 문구 반영 로직
+   가이드 박스 내 직접 명단 양식 다운로드 버튼 이벤트 연결 로직
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 🔥 20명 관리감독자 테스트 명단 DB
 let WORKER_DB = [
   { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전관리자", email: "nschoi@sebangtec.com" },
   { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "현장소장", email: "gildong@example.com" },
@@ -339,7 +338,6 @@ function handleVerifyOtp() {
   }
 }
 
-// 🔥 20명 양식 엑셀 다운로드 기능
 function downloadExcelTemplateIndex() {
   const data = [
     ["현장명", "사번", "성명", "이메일주소", "생년월일", "직종", "반기"],
@@ -445,7 +443,10 @@ function bindEvents() {
   document.getElementById("btnSendOtpMail")?.addEventListener("click", handleSendOtp);
   document.getElementById("btnVerifyOtp")?.addEventListener("click", handleVerifyOtp);
 
+  // 🔥 가이드 박스 내 직접 명단 양식 다운로드 버튼 이벤트 연결
+  document.getElementById("btnDirectDownloadTemplate")?.addEventListener("click", downloadExcelTemplateIndex);
   document.getElementById("btnDownloadTemplateIndex")?.addEventListener("click", downloadExcelTemplateIndex);
+  
   document.getElementById("btnSelectExcelFileIndex")?.addEventListener("click", () => document.getElementById("indexExcelFileInput").click());
   document.getElementById("indexExcelFileInput")?.addEventListener("change", handleIndexExcelUpload);
 
