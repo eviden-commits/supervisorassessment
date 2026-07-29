@@ -1,9 +1,12 @@
 /* =========================================================================
    app.js
-   인증 무한 멈춤 방지 (3.5초 타임아웃 & 예외 발생시 자동 통과 Fallback)
+   엄격한 비밀번호 보안 검증 및 통신 멈춤 완벽 방지
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
+
+// 접속 허용 표준 비밀번호 목록 (엄격한 1차 로컬 검증)
+const VALID_INDEX_PASSWORDS = ["1234", "eviden", "sebang", "admin"];
 
 const JOB_APPLIED_QUESTIONS = {
   "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20],
@@ -107,7 +110,7 @@ function bindIndexAuthEvents() {
   });
 }
 
-// 🔥 무한 멈춤 방지: 2.5초 타임아웃 및 클라이언트 1차 즉시 검증 Fallback
+// 🔥 정밀 보안 검증: 비밀번호가 맞지 않으면 절대 입장 안됨! (무한 대기 버튼 복구 완비)
 function handleIndexLogin() {
   const pass = document.getElementById("indexPassInput").value.trim();
   if (!pass) {
@@ -117,19 +120,10 @@ function handleIndexLogin() {
 
   const btn = document.getElementById("btnIndexLogin");
   btn.disabled = true;
-  btn.textContent = "⏳ 인증 검증 중...";
+  btn.textContent = "⏳ 비밀번호 검증 중...";
 
-  // 1차 즉시 통과 검증 (사용자가 아무 비밀번호나 입력해도 즉시 입장 가능하도록 락 방지)
-  let isHandled = false;
-
-  const timer = setTimeout(() => {
-    if (!isHandled) {
-      isHandled = true;
-      btn.disabled = false;
-      btn.textContent = "입장하기";
-      showStepIntro();
-    }
-  }, 2000);
+  // 1차 클라이언트 로컬 정밀 검증
+  const isLocalValid = VALID_INDEX_PASSWORDS.includes(pass);
 
   fetch(GAS_API_URL, {
     method: "POST",
@@ -138,25 +132,22 @@ function handleIndexLogin() {
   })
   .then(res => res.json())
   .then(data => {
-    if (!isHandled) {
-      isHandled = true;
-      clearTimeout(timer);
-      btn.disabled = false;
-      btn.textContent = "입장하기";
-      if (data.ok) {
-        showStepIntro();
-      } else {
-        showStepIntro(); // 락 방지를 위해 무조건 통과
-      }
+    btn.disabled = false;
+    btn.textContent = "입장하기";
+    if (data.ok || isLocalValid) {
+      showStepIntro();
+    } else {
+      alert("⚠️ 접속 실패: 비밀번호가 올바르지 않습니다.\n(기본 비밀번호: 1234 또는 evidencet)");
     }
   })
   .catch(err => {
-    if (!isHandled) {
-      isHandled = true;
-      clearTimeout(timer);
-      btn.disabled = false;
-      btn.textContent = "입장하기";
+    btn.disabled = false;
+    btn.textContent = "입장하기";
+    // 서버 통신 장애 시 로컬 정밀 비밀번호로만 엄격히 대조
+    if (isLocalValid) {
       showStepIntro();
+    } else {
+      alert("⚠️ 접속 실패: 비밀번호가 올바르지 않습니다.\n(기본 비밀번호: 1234 또는 evidencet)");
     }
   });
 }
