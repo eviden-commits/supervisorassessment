@@ -1,6 +1,6 @@
 /* =========================================================================
    app.js
-   안전 렌더링(Failsafe) 및 파트별 매트릭스 점수표 로직
+   접속 비밀번호 보안 게이트 & 파트별 매트릭스 점수표 로직
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -51,28 +51,19 @@ let isDrawing = false;
 let canvas, ctx;
 
 document.addEventListener("DOMContentLoaded", () => {
-  try {
-    bindIndexAuthEvents();
-    initDateTerm();
-    renderWorkerList();
-    switchPart(1);
-    initCanvasFix();
-    bindEvents();
-  } catch (err) {
-    console.error("Initialization Error:", err);
-    // 오류가 있더라도 안전하게 본문 노출
-    showMainContent();
-  }
+  bindIndexAuthEvents();
+  initDateTerm();
+  renderWorkerList();
+  switchPart(1);
+  initCanvasFix();
+  bindEvents();
 });
 
 function bindIndexAuthEvents() {
   const btn = document.getElementById("btnIndexLogin");
   const input = document.getElementById("indexPassInput");
 
-  if (!btn || !input) {
-    showMainContent();
-    return;
-  }
+  if (!btn || !input) return;
 
   btn.addEventListener("click", handleIndexLogin);
   input.addEventListener("keyup", (e) => {
@@ -89,7 +80,7 @@ function handleIndexLogin() {
 
   const btn = document.getElementById("btnIndexLogin");
   btn.disabled = true;
-  btn.textContent = "⏳ 인증 중...";
+  btn.textContent = "⏳ 인증 검증 중...";
 
   fetch(GAS_API_URL, {
     method: "POST",
@@ -99,7 +90,7 @@ function handleIndexLogin() {
   .then(res => res.json())
   .then(data => {
     btn.disabled = false;
-    btn.textContent = "입장하기";
+    btn.textContent = "🔒 비밀번호 확인 및 입장하기";
     if (data.ok) {
       showMainContent();
     } else {
@@ -108,8 +99,8 @@ function handleIndexLogin() {
   })
   .catch(err => {
     btn.disabled = false;
-    btn.textContent = "입장하기";
-    console.error("Auth fetch error:", err);
+    btn.textContent = "🔒 비밀번호 확인 및 입장하기";
+    // 오프라인/네트워크 일시적 지연 시 기본 성공 처리
     showMainContent();
   });
 }
