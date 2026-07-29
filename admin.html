@@ -179,7 +179,7 @@
       </div>
     </section>
 
-    <!-- 🔥 4. A4 보고서 출력 제어 바 & 갑지/을지 인쇄 영역 (한자 전면 제거 -> 순수 한글 적용) -->
+    <!-- 4. A4 보고서 출력 제어 바 & 갑지/을지 인쇄 영역 -->
     <section class="card" id="reportControlCard">
       <div class="card-title">
         <span>📄 4. 관리감독자 평가 종합 보고서 인쇄 (갑지 / 을지 선택 출력)</span>
@@ -233,9 +233,7 @@
       <!-- 오직 이 영역만 A4로 완벽하게 출력됨 (#printableReportArea) -->
       <div id="printableReportArea">
         
-        <!-- ===================================================================
-             갑지 (종합 보고서 & 결재선 & 8개 평가 항목 전체 표)
-             =================================================================== -->
+        <!-- 갑지 (종합 보고서 & 결재선 & 8개 평가 항목 전체 표) -->
         <div id="gabJiSection" style="padding: 1.5rem; background: #ffffff; margin-bottom: 2rem;">
           
           <div style="text-align: center; margin-bottom: 1.5rem;">
@@ -247,9 +245,9 @@
             </p>
           </div>
 
-          <!-- 결재선 -->
+          <!-- 🔥 결재선 표 (클래스 approval-table 지정 및 310px 고정) -->
           <div style="display: flex; justify-content: flex-end; margin-bottom: 1.5rem;">
-            <table style="border-collapse: collapse; font-size: 0.8rem; text-align: center;">
+            <table class="approval-table" style="border-collapse: collapse; font-size: 0.8rem; text-align: center; width: 310px; margin-left: auto;">
               <tr>
                 <th rowspan="2" style="border: 1px solid #000; width: 26px; background: #f1f5f9; font-weight: 700;">결<br>재</th>
                 <th style="border: 1px solid #000; width: 95px; padding: 4px; font-weight: 700;">작 성</th>
@@ -272,7 +270,7 @@
           </div>
 
           <!-- PDF 원본 매칭 8개 항목 전체 분야 표 -->
-          <table style="width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 1.5rem;">
+          <table class="main-report-table" style="width: 100%; border-collapse: collapse; font-size: 0.82rem; margin-bottom: 1.5rem;">
             <thead>
               <tr style="background: #f1f5f9; text-align: center;">
                 <th style="border: 1px solid #000; padding: 8px; width: 45%;">평가 항목 분야 (8개 영역)</th>
@@ -346,9 +344,7 @@
 
         </div>
 
-        <!-- ===================================================================
-             을지 (인원별 20문항 세부 평가 내역표 - 페이지 구분)
-             =================================================================== -->
+        <!-- 을지 (인원별 20문항 세부 평가 내역표 - 페이지 구분) -->
         <div id="eulJiSection" class="report-page-break" style="padding: 1.5rem; background: #ffffff;">
           
           <div style="text-align: center; margin-bottom: 1.5rem;">
@@ -361,7 +357,7 @@
           </div>
 
           <div style="overflow-x: auto;">
-            <table style="width: 100%; border-collapse: collapse; font-size: 0.75rem; text-align: center;">
+            <table class="main-report-table" style="width: 100%; border-collapse: collapse; font-size: 0.75rem; text-align: center;">
               <thead>
                 <tr style="background: #f1f5f9;">
                   <th style="border: 1px solid #000; padding: 6px; width: 70px;">성명</th>
