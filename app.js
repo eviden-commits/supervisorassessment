@@ -1,9 +1,43 @@
 /* =========================================================================
    app.js
-   클로드 8가지 스펙 리디자인 & 원클릭 3|2|1 세그먼트 연동 로직
+   문항 수정, 직종별 N/A 맵핑 및 백분율 환산(%) 정밀 평가 로직
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
+
+// 직종별 적용 문항 맵핑 테이블 (1-indexed)
+// 1. 안전: 16번 제외 (19문항)
+// 2. 보건: 3,4,5,6,8,10,13,14,17 제외 (11문항)
+// 3. 품질: 1, 2, 18, 19, 20 (5문항)
+// 4. 공사관리자 (건축, 토목, 설비, 전기, 용접, 비계 등 공정): 1~20 전체 (20문항)
+// 5. 공무: 1, 2, 20 (3문항)
+// 6. 팀리더 (현장소장, 팀장 등): 1~20 전체 (20문항)
+// 7. 설계: 1, 2, 18, 19, 20 (5문항)
+const JOB_APPLIED_QUESTIONS = {
+  "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20],
+  "보건": [1, 2, 7, 9, 11, 12, 15, 16, 18, 19, 20],
+  "품질": [1, 2, 18, 19, 20],
+  "공사관리자": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  "공무": [1, 2, 20],
+  "팀리더": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],
+  "설계": [1, 2, 18, 19, 20]
+};
+
+// 직종명 키워드 매칭 함수 (예: "안전관리자" -> "안전", "건축팀장" -> "공사관리자" 또는 "팀리더")
+function getAppliedQuestionsForJob(jobName) {
+  if (!jobName) return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
+  const j = jobName.trim();
+  if (j.includes("안전담당") || j.includes("안전관리")) return JOB_APPLIED_QUESTIONS["안전"];
+  if (j.includes("보건관리") || j.includes("보건")) return JOB_APPLIED_QUESTIONS["보건"];
+  if (j.includes("품질관리") || j.includes("품질")) return JOB_APPLIED_QUESTIONS["품질"];
+  if (j.includes("공무")) return JOB_APPLIED_QUESTIONS["공무"];
+  if (j.includes("설계")) return JOB_APPLIED_QUESTIONS["설계"];
+  if (j.includes("소장") || j.includes("팀장") || j.includes("리더") || j.includes("반장")) return JOB_APPLIED_QUESTIONS["팀리더"];
+  
+  // 기본 공사관리자 (20문항 전체)
+  return JOB_APPLIED_QUESTIONS["공사관리자"];
+}
 
 let WORKER_DB = [
   { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전관리자", email: "nschoi@sebangtec.com" },
@@ -28,12 +62,13 @@ let WORKER_DB = [
   { id: "EMP020", name: "송민규", site: "테스트현장", term: "상반기", birth: "990912", job: "마감팀장", email: "mingyu@example.com" }
 ];
 
+// 🔥 수정된 20개 평가 문항 목록 (요구사항 100% 반영)
 const QUESTIONS = [
-  { id: 1, partTitle: "[Part 1] 관리감독자 업무수행 지원 (2문항)", title: "1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?", lawRef: null, score3: "적정 권한 부여", score2: "지정만 함", score1: "미지정" },
-  { id: 2, partTitle: "[Part 1] 관리감독자 업무수행 지원 (2문항)", title: "2. 시설·장비·예산 등 업무수행에 필요한 지원을 하는가?", lawRef: null, score3: "시설·예산 지원", score2: "필요시 책정", score1: "지원 없음" },
+  { id: 1, partTitle: "[Part 1] 관리감독자 업무수행 지원 (2문항)", title: "1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?(R&R 확인)", lawRef: null, score3: "적정 권한 부여", score2: "지정만 함", score1: "미지정" },
+  { id: 2, partTitle: "[Part 1] 관리감독자 업무수행 지원 (2문항)", title: "2. 시설·장비·예산 등 업무수행에 필요한 지원을 하는가?(R&R 확인)", lawRef: null, score3: "시설·예산 지원", score2: "필요시 책정", score1: "지원 없음" },
   { id: 3, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "3. 기계·기구 또는 설비의 안전·보건점검을 실시하는가?", lawRef: null, score3: "연단위 계획 실시", score2: "수시 실시", score1: "안함" },
-  { id: 4, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "4. 작업종류별로 관리감독자의 유해·위험 방지 업무*를 적정 수행하는가", lawRef: "별표2", score3: "체크리스트 작성", score2: "수시 작성", score1: "안함" },
-  { id: 5, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "5. 작업종류별로 관리감독자의 작업 시작 전 점검사항*을 적정 수행하는가", lawRef: "별표3", score3: "체크리스트 작성", score2: "수시 작성", score1: "안함" },
+  { id: 4, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "4. 작업종류별로 관리감독자의 유해·위험 방지 업무를 적정 수행하는가?", lawRef: null, score3: "유해방지 적정수행", score2: "수시 수행", score1: "안함" },
+  { id: 5, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "5. 작업종류별로 관리감독자의 작업 시작 전 점검사항을 적정 수행하는가?", lawRef: null, score3: "시작전 점검 적정", score2: "수시 점검", score1: "안함" },
   { id: 6, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "6. 점검결과 이상이 발견되면 즉시 수리하는 등 필요한 조치를 하는가?", lawRef: null, score3: "즉시 작업중지 조치", score2: "추후 수리", score1: "조치 안함" },
   { id: 7, partTitle: "[Part 2] 기계·기구/설비 안전보건점검 (5문항)", title: "7. 도급사업 시의 순회점검 및 안전·보건점검에 참여하는가?", lawRef: null, score3: "주기적 참여", score2: "가끔 참여", score1: "참여 안함" },
   { id: 8, partTitle: "[Part 3] 근로자 보호구 및 방호장치 교육 (3문항)", title: "8. 작업복의 점검과 착용에 관한 교육·지도를 하는가?", lawRef: null, score3: "작업전/정기교육", score2: "정기교육만", score1: "안함" },
@@ -43,7 +78,7 @@ const QUESTIONS = [
   { id: 12, partTitle: "[Part 4] 산업재해 보고 및 응급조치 (2문항)", title: "12. 산업재해에 따른 응급조치가 적정하게 이뤄지고 있는가 (※ MSDS 숙지 등)", lawRef: null, score3: "정기/수시 교육", score2: "정기교육만", score1: "안함" },
   { id: 13, partTitle: "[Part 5] 작업장 정리정돈 및 통로확보 (2문항)", title: "13. 작업장 정리·정돈에 대한 확인·감독을 하고 있는가?", lawRef: null, score3: "매일 3회이상", score2: "매일 1회", score1: "안함" },
   { id: 14, partTitle: "[Part 5] 작업장 정리정돈 및 통로확보 (2문항)", title: "14. 통로 확보에 대한 확인·감독을 하고 있는가?", lawRef: null, score3: "매일 3회이상", score2: "매일 1회", score1: "안함" },
-  { id: 15, partTitle: "[Part 6] 안전/보건관리자 지도조언 협조 (3문항)", title: "15. 산업보건의의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극 협조", score2: "필요시 협조", score1: "협조 안함" },
+  { id: 15, partTitle: "[Part 6] 안전/보건관리자 지도조언 협조 (3문항)", title: "15. 산업보건의의 지도·조언에 대한 협조를 하고 있는가?(작업환경측정 결과 이행)", lawRef: null, score3: "적극 협조", score2: "필요시 협조", score1: "협조 안함" },
   { id: 16, partTitle: "[Part 6] 안전/보건관리자 지도조언 협조 (3문항)", title: "16. 안전관리자(또는 전문기관)의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극 협조", score2: "필요시 협조", score1: "협조 안함" },
   { id: 17, partTitle: "[Part 6] 안전/보건관리자 지도조언 협조 (3문항)", title: "17. 보건관리자(또는 전문기관)의 지도·조언에 대한 협조를 하고 있는가?", lawRef: null, score3: "적극 협조", score2: "필요시 협조", score1: "협조 안함" },
   { id: 18, partTitle: "[Part 7] 위험성평가 및 기타 이행 (3문항)", title: "18. 위험성평가 유해·위험요인 파악에 대한 참여를 하고 있는가?", lawRef: null, score3: "반드시 참여", score2: "필요시 참여", score1: "참여 안함" },
@@ -165,7 +200,7 @@ function checkRegisteredWorkersForTerm() {
         ✅ [${site} - ${term}] 등록 인원 검증 완료: 총 ${activeTargetWorkers.length}명의 관리감독자 명단 확인됨
       </div>
       <p style="font-size:0.85rem; color:#065f46;">
-        아래 [평가 시작하기] 버튼을 누르시면 20개 문항에 대해 일괄 및 개별 미세 점수 설정이 진행됩니다.
+        아래 [평가 시작하기] 버튼을 누르시면 직종별 적용 문항(N/A 제외)에 대해 백분율 환산(%) 정밀 평가가 진행됩니다.
       </p>
     `;
     btnStart.disabled = false;
@@ -184,7 +219,7 @@ function startAssessmentWizard() {
 
   document.getElementById("stepIntroCard").style.display = "none";
   document.getElementById("stepFloatingQuestionsSection").style.display = "block";
-  document.getElementById("stickyBottomNavBar").style.display = "block"; // 하단 스티키 바 활성화
+  document.getElementById("stickyBottomNavBar").style.display = "block";
 
   document.getElementById("wizStep1").classList.remove("active");
   document.getElementById("wizStep1").classList.add("completed");
@@ -194,7 +229,6 @@ function startAssessmentWizard() {
   renderSingleFloatingQuestion(currentQIndex);
 }
 
-// 🔥 [3] 문항 카드 / 평가지침 가로 칩 3개 압축 렌더링
 function renderSingleFloatingQuestion(qIdx) {
   const q = QUESTIONS.find(item => item.id === qIdx);
   if (!q) return;
@@ -205,7 +239,7 @@ function renderSingleFloatingQuestion(qIdx) {
   const pct = (qIdx / 20) * 100;
   document.getElementById("qProgressBar").style.width = `${pct}%`;
 
-  document.getElementById("cardQTitle").textContent = `${qIdx}. ${q.title.replace(/^\d+\.\s*/, '')}`;
+  document.getElementById("cardQTitle").textContent = q.title;
   
   const lawContainer = document.getElementById("cardLawRefContainer");
   if (q.lawRef) {
@@ -214,7 +248,6 @@ function renderSingleFloatingQuestion(qIdx) {
     lawContainer.innerHTML = "";
   }
 
-  // 가로 칩 3개 압축 지침 박스
   const guideBox = document.getElementById("cardQGuideBox");
   guideBox.innerHTML = `
     <span class="q-chip score-3">● 3점 · ${q.score3}</span>
@@ -222,14 +255,13 @@ function renderSingleFloatingQuestion(qIdx) {
     <span class="q-chip score-1">● 1점 · ${q.score1}</span>
   `;
 
-  // [4] 일괄 적용 등폭 세그먼트 라벨
-  document.getElementById("batchLabelText").textContent = `전체 ${activeTargetWorkers.length}명 일괄 적용`;
+  document.getElementById("batchLabelText").textContent = `전체 적용 대상자 1클릭 일괄 점수 적용`;
 
   renderMicroWorkerTable(qIdx, q);
   updateStickyActionBar(qIdx);
 }
 
-// 🔥 [1] & [2] 3|2|1 세그먼트 버튼 및 컴팩트 표 Zebra Striping 렌더링
+// 🔥 직종별 N/A 처리 포함된 스마트 인원 리스트 렌더링
 function renderMicroWorkerTable(qIdx, qObj) {
   const tbody = document.getElementById("microWorkerTableBody");
   if (!tbody) return;
@@ -238,27 +270,47 @@ function renderMicroWorkerTable(qIdx, qObj) {
   const qKey = `q_${qIdx}`;
 
   activeTargetWorkers.forEach(w => {
-    const curVal = (workerScoresMap[w.id] && workerScoresMap[w.id][qKey]) ? workerScoresMap[w.id][qKey] : 3;
+    const appliedQs = getAppliedQuestionsForJob(w.job);
+    const isApplied = appliedQs.includes(qIdx); // 해당 인원에 이 문항이 적용되는지 여부
 
     const tr = document.createElement("tr");
-    tr.innerHTML = `
-      <td>
-        <span style="font-weight:700; color:#0f172a;">${w.name}</span>
-        <span class="job-badge">${w.job}</span>
-      </td>
-      <td style="text-align: right;">
-        <div class="score-segment-control">
-          <button class="seg-btn ${curVal === 3 ? 'active-3' : ''}" onclick="setSingleWorkerScore('${w.id}', ${qIdx}, 3)">3</button>
-          <button class="seg-btn ${curVal === 2 ? 'active-2' : ''}" onclick="setSingleWorkerScore('${w.id}', ${qIdx}, 2)">2</button>
-          <button class="seg-btn ${curVal === 1 ? 'active-1' : ''}" onclick="setSingleWorkerScore('${w.id}', ${qIdx}, 1)">1</button>
-        </div>
-      </td>
-    `;
+
+    if (!isApplied) {
+      // 🚫 N/A 제외 대상인 인원
+      tr.style.opacity = "0.65";
+      tr.innerHTML = `
+        <td>
+          <span style="font-weight:700; color:#475569;">${w.name}</span>
+          <span class="job-badge" style="background:#e2e8f0;">${w.job}</span>
+        </td>
+        <td style="text-align: right;">
+          <span style="font-size:0.78rem; font-weight:700; color:#64748b; background:#f1f5f9; padding:3px 8px; border-radius:4px; border:1px solid #cbd5e1;">
+            N/A (해당 직종 미적용)
+          </span>
+        </td>
+      `;
+    } else {
+      // ✅ 평가 적용 대상 인원
+      const curVal = (workerScoresMap[w.id] && workerScoresMap[w.id][qKey]) ? workerScoresMap[w.id][qKey] : 3;
+
+      tr.innerHTML = `
+        <td>
+          <span style="font-weight:700; color:#0f172a;">${w.name}</span>
+          <span class="job-badge">${w.job}</span>
+        </td>
+        <td style="text-align: right;">
+          <div class="score-segment-control">
+            <button class="seg-btn ${curVal === 3 ? 'active-3' : ''}" onclick="setSingleWorkerScore('${w.id}', ${qIdx}, 3)">3</button>
+            <button class="seg-btn ${curVal === 2 ? 'active-2' : ''}" onclick="setSingleWorkerScore('${w.id}', ${qIdx}, 2)">2</button>
+            <button class="seg-btn ${curVal === 1 ? 'active-1' : ''}" onclick="setSingleWorkerScore('${w.id}', ${qIdx}, 1)">1</button>
+          </div>
+        </td>
+      `;
+    }
     tbody.appendChild(tr);
   });
 }
 
-// 🔥 원클릭 1회 즉시 반영 함수
 function setSingleWorkerScore(workerId, qIdx, scoreVal) {
   const qKey = `q_${qIdx}`;
   if (!workerScoresMap[workerId]) workerScoresMap[workerId] = {};
@@ -267,23 +319,26 @@ function setSingleWorkerScore(workerId, qIdx, scoreVal) {
   renderMicroWorkerTable(qIdx);
 }
 
+// 일괄 적용 시 N/A 대상자는 제외하고 적용 대상자만 일괄 변경
 function fillSingleQAllScores(score) {
   const qKey = `q_${currentQIndex}`;
   activeTargetWorkers.forEach(w => {
-    if (!workerScoresMap[w.id]) workerScoresMap[w.id] = {};
-    workerScoresMap[w.id][qKey] = Number(score);
+    const appliedQs = getAppliedQuestionsForJob(w.job);
+    if (appliedQs.includes(currentQIndex)) {
+      if (!workerScoresMap[w.id]) workerScoresMap[w.id] = {};
+      workerScoresMap[w.id][qKey] = Number(score);
+    }
   });
   renderMicroWorkerTable(currentQIndex);
 }
 
-// 🔥 [6] 하단 고정 액션 바 상태 업데이트
 function updateStickyActionBar(qIdx) {
   const btnPrev = document.getElementById("btnPrevQuestion");
   const btnNext = document.getElementById("btnNextQuestion");
   const textProgress = document.getElementById("stickyProgressText");
 
   btnPrev.style.visibility = qIdx > 1 ? "visible" : "hidden";
-  textProgress.textContent = `전체 ${activeTargetWorkers.length}명 원클릭 점수 체크 가능`;
+  textProgress.textContent = `직종별 N/A 자동 감지 · 원클릭 점수 반영`;
 
   if (qIdx === 20) {
     btnNext.textContent = "최종 서명 단계로 이동 ➔";

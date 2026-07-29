@@ -1,40 +1,65 @@
 /* =========================================================================
    admin.js
-   등록된 실제 직종(Job)별 동적 그룹핑(Group by) 및 을지(인원별 세부내역) 렌더링
+   직종별 N/A 제외, 백분율 환산(%) 평가 점수 산출 및 보고서 규격 작성
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 20명 관리감독자 테스트 DB (현장에서 실제 입력되는 직종명 표기)
+// 직종별 적용 문항 맵핑 테이블 (1-indexed)
+const JOB_APPLIED_QUESTIONS = {
+  "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20], // 19문항
+  "보건": [1, 2, 7, 9, 11, 12, 15, 16, 18, 19, 20],                           // 11문항
+  "품질": [1, 2, 18, 19, 20],                                                 // 5문항
+  "공사관리자": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20], // 20문항
+  "공무": [1, 2, 20],                                                         // 3문항
+  "팀리더": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20],    // 20문항
+  "설계": [1, 2, 18, 19, 20]                                                  // 5문항
+};
+
+function getAppliedQuestionsForJob(jobName) {
+  if (!jobName) return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+
+  const j = jobName.trim();
+  if (j.includes("안전담당") || j.includes("안전관리") || j === "안전") return JOB_APPLIED_QUESTIONS["안전"];
+  if (j.includes("보건관리") || j.includes("보건") || j === "보건") return JOB_APPLIED_QUESTIONS["보건"];
+  if (j.includes("품질관리") || j.includes("품질") || j === "품질") return JOB_APPLIED_QUESTIONS["품질"];
+  if (j.includes("공무") || j === "공무") return JOB_APPLIED_QUESTIONS["공무"];
+  if (j.includes("설계") || j === "설계") return JOB_APPLIED_QUESTIONS["설계"];
+  if (j.includes("소장") || j.includes("팀장") || j.includes("리더") || j.includes("반장") || j === "팀리더") return JOB_APPLIED_QUESTIONS["팀리더"];
+  
+  return JOB_APPLIED_QUESTIONS["공사관리자"];
+}
+
+// 20명 관리감독자 테스트 DB (다양한 직종 테스트 구성)
 let ADMIN_WORKERS = [
-  { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전", email: "nschoi@sebangtec.com", status: "제출완료" },
-  { id: "EMP007", name: "황희찬", site: "테스트현장", term: "상반기", birth: "960126", job: "안전", email: "hwang@example.com", status: "제출완료" },
-  { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "안전", email: "jacheol@example.com", status: "제출완료" },
-  { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "안전", email: "hyunwoo@example.com", status: "제출완료" },
+  { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전관리자", email: "nschoi@sebangtec.com", status: "제출완료" },
+  { id: "EMP007", name: "황희찬", site: "테스트현장", term: "상반기", birth: "960126", job: "안전담당자", email: "hwang@example.com", status: "제출완료" },
+  { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "품질관리자", email: "jacheol@example.com", status: "제출완료" },
+  { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "보건관리자", email: "hyunwoo@example.com", status: "제출완료" },
 
-  { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "공무/관리", email: "gildong@example.com", status: "제출완료" },
-  { id: "EMP010", name: "기성용", site: "테스트현장", term: "상반기", birth: "890124", job: "공무/관리", email: "sungyueng@example.com", status: "제출완료" },
-  { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "공무/관리", email: "juyoung@example.com", status: "제출완료" },
+  { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "현장소장", email: "gildong@example.com", status: "제출완료" },
+  { id: "EMP010", name: "기성용", site: "테스트현장", term: "상반기", birth: "890124", job: "공무팀장", email: "sungyueng@example.com", status: "제출완료" },
+  { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "공무", email: "juyoung@example.com", status: "제출완료" },
 
-  { id: "EMP003", name: "김철수", site: "테스트현장", term: "상반기", birth: "900320", job: "토목", email: "chulsoo@example.com", status: "제출완료" },
-  { id: "EMP004", name: "이영희", site: "테스트현장", term: "상반기", birth: "921110", job: "건축", email: "younghee@example.com", status: "제출완료" },
-  { id: "EMP008", name: "김민재", site: "테스트현장", term: "상반기", birth: "961115", job: "건축", email: "minjae@example.com", status: "제출완료" },
-  { id: "EMP018", name: "김영권", site: "테스트현장", term: "상반기", birth: "900227", job: "건축", email: "younggwon@example.com", status: "제출완료" },
-  { id: "EMP019", name: "조규성", site: "테스트현장", term: "상반기", birth: "980125", job: "토목", email: "gyuesung@example.com", status: "제출완료" },
+  { id: "EMP003", name: "김철수", site: "테스트현장", term: "상반기", birth: "900320", job: "토목팀장", email: "chulsoo@example.com", status: "제출완료" },
+  { id: "EMP004", name: "이영희", site: "테스트현장", term: "상반기", birth: "921110", job: "건축팀장", email: "younghee@example.com", status: "제출완료" },
+  { id: "EMP008", name: "김민재", site: "테스트현장", term: "상반기", birth: "961115", job: "설계", email: "minjae@example.com", status: "제출완료" },
+  { id: "EMP018", name: "김영권", site: "테스트현장", term: "상반기", birth: "900227", job: "형틀팀장", email: "younggwon@example.com", status: "제출완료" },
+  { id: "EMP019", name: "조규성", site: "테스트현장", term: "상반기", birth: "980125", job: "철근팀장", email: "gyuesung@example.com", status: "제출완료" },
 
-  { id: "EMP005", name: "박지성", site: "테스트현장", term: "상반기", birth: "880225", job: "설비", email: "jisung@example.com", status: "제출완료" },
-  { id: "EMP006", name: "손흥민", site: "테스트현장", term: "상반기", birth: "920708", job: "전기", email: "sonny@example.com", status: "제출완료" },
-  { id: "EMP009", name: "이강인", site: "테스트현장", term: "상반기", birth: "010219", job: "설비", email: "kangin@example.com", status: "제출완료" },
-  { id: "EMP016", name: "백승호", site: "테스트현장", term: "상반기", birth: "970317", job: "전기", email: "seungho@example.com", status: "제출완료" },
-  { id: "EMP017", name: "설영우", site: "테스트현장", term: "상반기", birth: "981205", job: "설비", email: "youngwoo@example.com", status: "제출완료" },
-  { id: "EMP020", name: "송민규", site: "테스트현장", term: "상반기", birth: "990912", job: "전기", email: "mingyu@example.com", status: "제출완료" },
+  { id: "EMP005", name: "박지성", site: "테스트현장", term: "상반기", birth: "880225", job: "설비팀장", email: "jisung@example.com", status: "제출완료" },
+  { id: "EMP006", name: "손흥민", site: "테스트현장", term: "상반기", birth: "920708", job: "전기팀장", email: "sonny@example.com", status: "제출완료" },
+  { id: "EMP009", name: "이강인", site: "테스트현장", term: "상반기", birth: "010219", job: "배관팀장", email: "kangin@example.com", status: "제출완료" },
+  { id: "EMP016", name: "백승호", site: "테스트현장", term: "상반기", birth: "970317", job: "용접팀장", email: "seungho@example.com", status: "제출완료" },
+  { id: "EMP017", name: "설영우", site: "테스트현장", term: "상반기", birth: "981205", job: "비계팀장", email: "youngwoo@example.com", status: "제출완료" },
+  { id: "EMP020", name: "송민규", site: "테스트현장", term: "상반기", birth: "990912", job: "마감팀장", email: "mingyu@example.com", status: "제출완료" },
 
-  { id: "EMP014", name: "황의조", site: "테스트현장", term: "상반기", birth: "920828", job: "장비/안전지원", email: "uijo@example.com", status: "제출완료" },
-  { id: "EMP015", name: "정우영", site: "테스트현장", term: "상반기", birth: "990920", job: "장비/안전지원", email: "wooyoung@example.com", status: "제출완료" }
+  { id: "EMP014", name: "황의조", site: "테스트현장", term: "상반기", birth: "920828", job: "중장비반장", email: "uijo@example.com", status: "제출완료" },
+  { id: "EMP015", name: "정우영", site: "테스트현장", term: "상반기", birth: "990920", job: "신호수반장", email: "wooyoung@example.com", status: "제출완료" }
 ];
 
 let AUDIT_LOGS = [
-  { timestamp: "2026-07-30 06:15:10", action: "평가제출", site: "테스트현장/상반기", user: "최난새", details: "선택된 관리감독자 20명(최난새 외 19명) 20문항 파트별 일괄 서명 평가표 제출 완료", status: "성공" },
+  { timestamp: "2026-07-30 06:15:10", action: "평가제출", site: "테스트현장/상반기", user: "최난새", details: "직종별 N/A 제외 및 백분율 환산(%) 기준 20명 일괄 서명 평가표 제출 완료", status: "성공" },
   { timestamp: "2026-07-30 06:10:30", action: "명단업로드", site: "테스트현장/상반기", user: "nschoi@sebangtec.com", details: "이메일 OTP 인증 통과 후 엑셀 파일을 통한 관리감독자 20명 명단 일괄 등록", status: "성공" }
 ];
 
@@ -106,6 +131,9 @@ function renderUserTable() {
   if (countSpan) countSpan.textContent = ADMIN_WORKERS.length;
 
   ADMIN_WORKERS.forEach(w => {
+    const appliedQs = getAppliedQuestionsForJob(w.job);
+    const maxScore = appliedQs.length * 3;
+
     const tr = document.createElement("tr");
     tr.style.borderBottom = "1px solid #e2e8f0";
     tr.innerHTML = `
@@ -114,7 +142,7 @@ function renderUserTable() {
       <td style="padding: 8px; font-weight:700;">${w.name}</td>
       <td style="padding: 8px; color: var(--accent-color);">${w.email || '-'}</td>
       <td style="padding: 8px;">${w.birth}</td>
-      <td style="padding: 8px; font-weight:700; color:var(--primary-color);">${w.job}</td>
+      <td style="padding: 8px; font-weight:700; color:var(--primary-color);">${w.job} <span style="font-size:0.75rem; color:#64748b;">(적용 ${appliedQs.length}문항/${maxScore}점 만점)</span></td>
       <td style="padding: 8px;"><span class="score-badge score-3">${w.status || '등록완료'}</span></td>
     `;
     tbody.appendChild(tr);
@@ -164,12 +192,12 @@ function updateReportView() {
   const site = document.getElementById("reportSiteSelect")?.value || "전체현장";
   const type = document.getElementById("reportTypeSelect")?.value || "all";
 
-  const subTitleText = `${year} ${term} 안전보건 이행 실적 및 항목별 평균 평가`;
+  const subTitleText = `${year} ${term} 안전보건 이행 실적 및 백분율 환산(%) 평가`;
   const gabSubTitle = document.getElementById("reportSubTitle");
   const eulSubTitle = document.getElementById("eulJiSubTitle");
 
   if (gabSubTitle) gabSubTitle.textContent = subTitleText;
-  if (eulSubTitle) eulSubTitle.textContent = `${year} ${term} 등록 직종별 개별 점수 및 세부 평가 결과`;
+  if (eulSubTitle) eulSubTitle.textContent = `${year} ${term} 직종별 N/A 제외 개별 환산 점수 및 세부 평가 결과`;
 
   document.getElementById("repSiteLabel").textContent = site;
   document.getElementById("repWorkerCountLabel").textContent = `${ADMIN_WORKERS.length}명`;
@@ -193,7 +221,7 @@ function updateReportView() {
   renderDynamicGroupedEulJiTable();
 }
 
-// 🔥 완벽한 해결: DB에 등록된 실제 '직종(Job)'명을 추출하여 100% 동적으로 그룹핑(Group by) 렌더링!
+// 🔥 핵심 구현: N/A 제외 + 백분율 환산(%) + 규격표기 [획득점수 / 만점 (환산%)] + %기준 등급 매핑
 function renderDynamicGroupedEulJiTable() {
   const tbody = document.getElementById("eulJiTableBody");
   if (!tbody) return;
@@ -211,67 +239,93 @@ function renderDynamicGroupedEulJiTable() {
     const groupWorkers = ADMIN_WORKERS.filter(w => (w.job || "미지정 직종") === jobName);
     if (groupWorkers.length === 0) return;
 
-    // 2. 직종별 그룹 헤더 행 생성 (예: 📁 [직종: 토목] (총 5명))
+    const appliedQs = getAppliedQuestionsForJob(jobName);
+    const maxPossibleScore = appliedQs.length * 3; // 해당 직종의 만점
+
+    // 직종별 그룹 헤더 행 생성 (예: 📁 [직종: 보건관리자] (적용 11문항 / 33점 만점 기준))
     const jobHeaderTr = document.createElement("tr");
     jobHeaderTr.style.background = "#e2e8f0";
     jobHeaderTr.style.fontWeight = "800";
     jobHeaderTr.innerHTML = `
       <td colspan="25" style="border: 1px solid #000; padding: 6px 10px; text-align: left; background: #e2e8f0; color: #0f172a; font-size: 0.8rem;">
-        📁 <strong>[직종] ${jobName}</strong> (총 ${groupWorkers.length}명)
+        📁 <strong>[직종] ${jobName}</strong> (총 ${groupWorkers.length}명 · <strong>적용 ${appliedQs.length}문항 / ${maxPossibleScore}점 만점 기준</strong>)
       </td>
     `;
     tbody.appendChild(jobHeaderTr);
 
-    let groupSumTotal = 0;
-    let groupCount = 0;
+    let groupPctSum = 0;
 
-    // 3. 해당 직종 소속 인원들 렌더링
+    // 해당 직종 소속 인원들 렌더링
     groupWorkers.forEach(w => {
-      const scores = [];
-      for (let i = 1; i <= 20; i++) {
-        scores.push(i % 7 === 0 ? 2 : 3);
-      }
-      const sum = scores.reduce((a, b) => a + b, 0);
-      const avg = (sum / 20).toFixed(2);
-      const grade = avg >= 2.7 ? "우수" : (avg >= 2.0 ? "보통" : "미흡");
+      let earnedSum = 0;
+      let scoreCellsHtml = "";
 
-      groupSumTotal += Number(avg);
-      groupCount++;
+      // 1~20 문항 순회하며 N/A 여부 검사
+      for (let i = 1; i <= 20; i++) {
+        if (appliedQs.includes(i)) {
+          const score = (i % 7 === 0) ? 2 : 3;
+          earnedSum += score;
+          scoreCellsHtml += `<td style="border: 1px solid #000; padding: 4px;">${score}</td>`;
+        } else {
+          // N/A 항목 (분모/분자 모두에서 완벽 제외!)
+          scoreCellsHtml += `<td style="border: 1px solid #000; padding: 4px; background:#f1f5f9; color:#94a3b8; font-size:0.75rem;">-</td>`;
+        }
+      }
+
+      // 🔥 백분율 환산(%) 계산 공식: (획득 점수 ÷ 만점) * 100
+      const pct = ((earnedSum / maxPossibleScore) * 100).toFixed(1);
+      groupPctSum += Number(pct);
+
+      // 등급 매핑 (% 기준): 90% 이상 우수, 70~89% 보통, 70% 미만 미흡
+      let grade = "우수";
+      let gradeColor = "#059669";
+      if (pct < 70) {
+        grade = "미흡";
+        gradeColor = "#dc2626";
+      } else if (pct < 90) {
+        grade = "보통";
+        gradeColor = "#d97706";
+      }
 
       const tr = document.createElement("tr");
       tr.style.borderBottom = "1px solid #000";
-
-      let scoreCellsHtml = "";
-      scores.forEach(s => {
-        scoreCellsHtml += `<td style="border: 1px solid #000; padding: 4px;">${s}</td>`;
-      });
 
       tr.innerHTML = `
         <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${w.name}</td>
         <td style="border: 1px solid #000; padding: 6px;">${w.job}</td>
         ${scoreCellsHtml}
-        <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${sum}</td>
-        <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${avg}</td>
-        <td style="border: 1px solid #000; padding: 6px; font-weight:700; color:#059669;">${grade}</td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${earnedSum}점 / ${maxPossibleScore}점</td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">${pct}%</td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight:800; color:${gradeColor};">${grade}</td>
       `;
       tbody.appendChild(tr);
     });
 
-    // 4. 직종별 소계 및 평균 행 생성
-    const groupAvg = (groupSumTotal / groupCount).toFixed(2);
+    // 직종별 백분율 환산 평균 소계 행 생성
+    const groupAvgPct = (groupPctSum / groupWorkers.length).toFixed(1);
+    let groupGrade = "우수";
+    let groupGradeColor = "#059669";
+    if (groupAvgPct < 70) {
+      groupGrade = "미흡";
+      groupGradeColor = "#dc2626";
+    } else if (groupAvgPct < 90) {
+      groupGrade = "보통";
+      groupGradeColor = "#d97706";
+    }
+
     const jobSubTotalTr = document.createElement("tr");
     jobSubTotalTr.style.background = "#f8fafc";
     jobSubTotalTr.style.fontWeight = "700";
     jobSubTotalTr.innerHTML = `
       <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: center; background: #f1f5f9; color: #1e293b;">
-        └ [${jobName}] 직종 평균 소계
+        └ [${jobName}] 환산 평균 소계
       </td>
-      <td colspan="20" style="border: 1px solid #000; padding: 5px; text-align: center; color: #64748b;">
-        소속 인원 ${groupCount}명 평가 완료
+      <td colspan="20" style="border: 1px solid #000; padding: 5px; text-align: center; color: #475569;">
+        적용 ${appliedQs.length}문항 (${maxPossibleScore}점 만점 기준 N/A 제외 환산)
       </td>
       <td style="border: 1px solid #000; padding: 5px; text-align: center;">-</td>
-      <td style="border: 1px solid #000; padding: 5px; text-align: center; color: #2563eb; font-weight:800;">${groupAvg}</td>
-      <td style="border: 1px solid #000; padding: 5px; text-align: center; color: #059669; font-weight:800;">우수</td>
+      <td style="border: 1px solid #000; padding: 5px; text-align: center; color: #2563eb; font-weight:800;">${groupAvgPct}%</td>
+      <td style="border: 1px solid #000; padding: 5px; text-align: center; color: ${groupGradeColor}; font-weight:800;">${groupGrade}</td>
     `;
     tbody.appendChild(jobSubTotalTr);
   });
