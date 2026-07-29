@@ -1,6 +1,6 @@
 /* =========================================================================
    app.js
-   7개 파트별 인원 매트릭스 점수표 기본 노출 및 파트별 일괄 점수 적용 로직
+   안전 렌더링(Failsafe) 및 파트별 매트릭스 점수표 로직
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -44,28 +44,35 @@ const QUESTIONS = [
   { id: 20, part: 7, partTitle: "Part 7. 위험성평가 및 기타 이행 (3)", title: "그 밖에 안전 및 보건에 관한 사항을 적정하게 이행하고 있는가", lawRef: "기타" }
 ];
 
-// 현재 활성화된 파트 (1 ~ 7)
 let currentPart = 1;
-// 인원별 20개 문항 점수 저장소 { workerId: { q_1: 3, q_2: 3, ... } }
 let workerOverrideScores = {};
 let currentSignatureDataUrl = "";
 let isDrawing = false;
 let canvas, ctx;
 
 document.addEventListener("DOMContentLoaded", () => {
-  bindIndexAuthEvents();
-  initDateTerm();
-  renderWorkerList();
-  switchPart(1); // 기본 Part 1 표시
-  initCanvasFix();
-  bindEvents();
+  try {
+    bindIndexAuthEvents();
+    initDateTerm();
+    renderWorkerList();
+    switchPart(1);
+    initCanvasFix();
+    bindEvents();
+  } catch (err) {
+    console.error("Initialization Error:", err);
+    // 오류가 있더라도 안전하게 본문 노출
+    showMainContent();
+  }
 });
 
 function bindIndexAuthEvents() {
   const btn = document.getElementById("btnIndexLogin");
   const input = document.getElementById("indexPassInput");
 
-  if (!btn || !input) return;
+  if (!btn || !input) {
+    showMainContent();
+    return;
+  }
 
   btn.addEventListener("click", handleIndexLogin);
   input.addEventListener("keyup", (e) => {
@@ -94,8 +101,7 @@ function handleIndexLogin() {
     btn.disabled = false;
     btn.textContent = "입장하기";
     if (data.ok) {
-      document.getElementById("indexLoginGateModal").classList.remove("active");
-      document.getElementById("indexMainContent").style.display = "block";
+      showMainContent();
     } else {
       alert(`⚠️ 인증 실패: ${data.error || '접속 비밀번호가 올바르지 않습니다.'}`);
     }
@@ -103,23 +109,34 @@ function handleIndexLogin() {
   .catch(err => {
     btn.disabled = false;
     btn.textContent = "입장하기";
-    document.getElementById("indexLoginGateModal").classList.remove("active");
-    document.getElementById("indexMainContent").style.display = "block";
+    console.error("Auth fetch error:", err);
+    showMainContent();
   });
+}
+
+function showMainContent() {
+  const modal = document.getElementById("indexLoginGateModal");
+  const main = document.getElementById("indexMainContent");
+  if (modal) modal.classList.remove("active");
+  if (main) main.style.display = "block";
 }
 
 function initDateTerm() {
   const month = new Date().getMonth() + 1;
+  const termFirst = document.getElementById("termFirst");
+  const termSecond = document.getElementById("termSecond");
   if (month <= 6) {
-    document.getElementById("termFirst").checked = true;
+    if (termFirst) termFirst.checked = true;
   } else {
-    document.getElementById("termSecond").checked = true;
+    if (termSecond) termSecond.checked = true;
   }
 }
 
 function renderWorkerList() {
   const container = document.getElementById("workerListContainer");
-  const currentSite = document.getElementById("siteSelect").value;
+  if (!container) return;
+
+  const currentSite = document.getElementById("siteSelect")?.value || "테스트현장";
   const keyword = (document.getElementById("workerSearchInput")?.value || "").toLowerCase().trim();
 
   const filtered = WORKER_DB.filter(w => {
@@ -151,20 +168,24 @@ function renderWorkerList() {
 
 function onWorkerSelectionChange() {
   updateSelectedCount();
-  renderPartMatrix(); // 선택 인원 변경 시 파트 매트릭스 재렌더링
+  renderPartMatrix();
 }
 
 function updateSelectedCount() {
   const checked = document.querySelectorAll(".worker-chk:checked");
   const count = checked.length;
-  document.getElementById("selectedWorkerCount").textContent = count;
-  document.getElementById("submitCountLabel").textContent = count;
+  
+  const countEl = document.getElementById("selectedWorkerCount");
+  const submitCountEl = document.getElementById("submitCountLabel");
+  if (countEl) countEl.textContent = count;
+  if (submitCountEl) submitCountEl.textContent = count;
 
   renderSelectedTags(checked);
 }
 
 function renderSelectedTags(checkedNodeList) {
   const container = document.getElementById("selectedTagsContainer");
+  if (!container) return;
   container.innerHTML = "";
 
   if (checkedNodeList.length === 0) {
@@ -188,18 +209,17 @@ function uncheckWorker(id) {
   }
 }
 
-// 파트 탭 전환 함수
 function switchPart(partNum) {
   currentPart = partNum;
 
-  // 파트 탭 활성화 클래스 변경
   document.querySelectorAll(".part-tab").forEach(tab => {
     tab.classList.toggle("active", Number(tab.dataset.part) === partNum);
   });
 
-  // 파트 문항 정보 카드 렌더링
   const partQuestions = QUESTIONS.filter(q => q.part === partNum);
   const infoCard = document.getElementById("partInfoCard");
+  if (!infoCard || partQuestions.length === 0) return;
+
   const partTitle = partQuestions[0].partTitle;
 
   let qListHtml = "";
@@ -221,32 +241,32 @@ function switchPart(partNum) {
     <div class="part-q-list">${qListHtml}</div>
   `;
 
-  document.getElementById("partQuickTitle").textContent = `⚡ [${partTitle}] 선택 인원 점수 일괄 적용:`;
+  const quickTitle = document.getElementById("partQuickTitle");
+  if (quickTitle) quickTitle.textContent = `⚡ [${partTitle}] 선택 인원 점수 일괄 적용:`;
 
-  // 파트별 인원 매트릭스 테이블 기본 렌더링
   renderPartMatrix();
 
-  // 이전 / 다음 파트 버튼 제어
   const btnPrev = document.getElementById("btnPrevPart");
   const btnNext = document.getElementById("btnNextPart");
 
-  btnPrev.style.display = partNum > 1 ? "inline-flex" : "none";
-  if (partNum === 7) {
-    btnNext.textContent = "최종 서명 및 제출 단계로 이동 ➔";
-  } else {
-    btnNext.textContent = `다음 파트 (${partNum + 1} / 7) 이동 ▶`;
+  if (btnPrev) btnPrev.style.display = partNum > 1 ? "inline-flex" : "none";
+  if (btnNext) {
+    if (partNum === 7) {
+      btnNext.textContent = "최종 서명 및 제출 단계로 이동 ➔";
+    } else {
+      btnNext.textContent = `다음 파트 (${partNum + 1} / 7) 이동 ▶`;
+    }
   }
 }
 
-// 🔥 핵심 메인 기능: 파트별 선택 인원 매트릭스 표 렌더링 (기본 노출)
 function renderPartMatrix() {
   const selectedChks = document.querySelectorAll(".worker-chk:checked");
   const headerRow = document.getElementById("partMatrixHeaderRow");
   const tbody = document.getElementById("partMatrixTableBody");
+  if (!headerRow || !tbody) return;
 
   const partQuestions = QUESTIONS.filter(q => q.part === currentPart);
 
-  // 1. 테이블 헤더 생성: 성명 | 직종 | 문X | 문Y | ... | 파트평균
   let headerHtml = `
     <th style="width:100px; text-align:center;">성명</th>
     <th style="width:110px; text-align:center;">직종</th>
@@ -257,7 +277,6 @@ function renderPartMatrix() {
   headerHtml += `<th style="width:90px; text-align:center;">파트 평균</th>`;
   headerRow.innerHTML = headerHtml;
 
-  // 2. 테이블 바디 생성 (선택된 인원별 1행)
   tbody.innerHTML = "";
 
   if (selectedChks.length === 0) {
@@ -270,7 +289,6 @@ function renderPartMatrix() {
     const workerName = chk.dataset.name;
     const workerJob = chk.dataset.job || "관리감독자";
 
-    // 인원별 점수 맵 초기화 (기본 3점)
     if (!workerOverrideScores[workerId]) {
       workerOverrideScores[workerId] = {};
       QUESTIONS.forEach(q => workerOverrideScores[workerId][`q_${q.id}`] = 3);
@@ -312,7 +330,6 @@ function renderPartMatrix() {
   updateTotalProgressBadge();
 }
 
-// 매트릭스 드롭다운 점수 변경 시 실시간 업데이트
 function onPartScoreChange(workerId, qKey, selectEl) {
   const val = Number(selectEl.value);
   if (!workerOverrideScores[workerId]) workerOverrideScores[workerId] = {};
@@ -320,7 +337,6 @@ function onPartScoreChange(workerId, qKey, selectEl) {
 
   selectEl.className = `part-score-select ${val === 3 ? 'score-3' : (val === 2 ? 'score-2' : 'score-1')}`;
 
-  // 파트 평균 재계산
   const partQuestions = QUESTIONS.filter(q => q.part === currentPart);
   let partTotal = 0;
   partQuestions.forEach(q => {
@@ -334,7 +350,6 @@ function onPartScoreChange(workerId, qKey, selectEl) {
   updateTotalProgressBadge();
 }
 
-// 현재 파트 전체 3점/2점/1점 일괄 적용
 function fillCurrentPartAll(score) {
   const selectedChks = document.querySelectorAll(".worker-chk:checked");
   const partQuestions = QUESTIONS.filter(q => q.part === currentPart);
@@ -367,19 +382,18 @@ function updateTotalProgressBadge() {
 }
 
 function bindEvents() {
-  document.getElementById("siteSelect").addEventListener("change", renderWorkerList);
-  document.getElementById("workerSearchInput").addEventListener("input", renderWorkerList);
+  document.getElementById("siteSelect")?.addEventListener("change", renderWorkerList);
+  document.getElementById("workerSearchInput")?.addEventListener("input", renderWorkerList);
 
-  document.getElementById("btnSelectAllWorkers").addEventListener("click", () => {
+  document.getElementById("btnSelectAllWorkers")?.addEventListener("click", () => {
     document.querySelectorAll(".worker-chk").forEach(c => c.checked = true);
     onWorkerSelectionChange();
   });
-  document.getElementById("btnDeselectAllWorkers").addEventListener("click", () => {
+  document.getElementById("btnDeselectAllWorkers")?.addEventListener("click", () => {
     document.querySelectorAll(".worker-chk").forEach(c => c.checked = false);
     onWorkerSelectionChange();
   });
 
-  // 파트 탭 클릭 이벤트
   document.querySelectorAll(".part-tab").forEach(tab => {
     tab.addEventListener("click", (e) => {
       const p = Number(e.target.dataset.part);
@@ -387,16 +401,14 @@ function bindEvents() {
     });
   });
 
-  // 파트 일괄 적용 버튼
-  document.getElementById("btnPartFill3").addEventListener("click", () => fillCurrentPartAll(3));
-  document.getElementById("btnPartFill2").addEventListener("click", () => fillCurrentPartAll(2));
-  document.getElementById("btnPartFill1").addEventListener("click", () => fillCurrentPartAll(1));
+  document.getElementById("btnPartFill3")?.addEventListener("click", () => fillCurrentPartAll(3));
+  document.getElementById("btnPartFill2")?.addEventListener("click", () => fillCurrentPartAll(2));
+  document.getElementById("btnPartFill1")?.addEventListener("click", () => fillCurrentPartAll(1));
 
-  // 파트 이동 버튼
-  document.getElementById("btnPrevPart").addEventListener("click", () => {
+  document.getElementById("btnPrevPart")?.addEventListener("click", () => {
     if (currentPart > 1) switchPart(currentPart - 1);
   });
-  document.getElementById("btnNextPart").addEventListener("click", () => {
+  document.getElementById("btnNextPart")?.addEventListener("click", () => {
     if (currentPart < 7) {
       switchPart(currentPart + 1);
     } else {
@@ -404,13 +416,13 @@ function bindEvents() {
     }
   });
 
-  document.getElementById("btnOpenSignatureModal").addEventListener("click", validateAndOpenSignature);
-  document.getElementById("btnTabDraw").addEventListener("click", () => showSigTab('draw'));
-  document.getElementById("btnTabUpload").addEventListener("click", () => showSigTab('upload'));
-  document.getElementById("btnClearCanvas").addEventListener("click", clearCanvas);
-  document.getElementById("sigFileInput").addEventListener("change", handleSigFileUpload);
+  document.getElementById("btnOpenSignatureModal")?.addEventListener("click", validateAndOpenSignature);
+  document.getElementById("btnTabDraw")?.addEventListener("click", () => showSigTab('draw'));
+  document.getElementById("btnTabUpload")?.addEventListener("click", () => showSigTab('upload'));
+  document.getElementById("btnClearCanvas")?.addEventListener("click", clearCanvas);
+  document.getElementById("sigFileInput")?.addEventListener("change", handleSigFileUpload);
 
-  document.getElementById("btnFinalSubmit").addEventListener("click", submitBatchAssessment);
+  document.getElementById("btnFinalSubmit")?.addEventListener("click", submitBatchAssessment);
 }
 
 function initCanvasFix() {

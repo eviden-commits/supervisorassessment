@@ -255,7 +255,7 @@ body {
   border: 1px solid #dbeafe;
 }
 
-/* Part Matrix Table Styling (Default Base Table) */
+/* Part Matrix Table Styling */
 .part-matrix-container {
   overflow-x: auto;
   border: 1px solid var(--border-color);
@@ -432,24 +432,24 @@ body {
   background: #dbeafe;
 }
 
-/* Modals */
+/* Modals Fix for Full Visibility */
 .modal-backdrop {
   position: fixed;
   top: 0;
   left: 0;
   width: 100vw;
   height: 100vh;
-  background: rgba(15, 23, 42, 0.6);
+  background: rgba(15, 23, 42, 0.75);
   backdrop-filter: blur(4px);
   display: none;
   justify-content: center;
   align-items: center;
-  z-index: 1000;
+  z-index: 2000 !important;
   padding: 1rem;
 }
 
 .modal-backdrop.active {
-  display: flex;
+  display: flex !important;
 }
 
 .modal-content {
@@ -463,6 +463,7 @@ body {
   box-shadow: var(--shadow-lg);
   overflow: hidden;
   animation: modalFadeIn 0.25s ease-out;
+  z-index: 2001 !important;
 }
 
 @keyframes modalFadeIn {
