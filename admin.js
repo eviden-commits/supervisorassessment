@@ -1,9 +1,20 @@
 /* =========================================================================
    admin.js
-   Apps Script 스크립트 속성(AdminPassword) 저장값 100% 전담 백엔드 검증 (하드코딩 제거)
+   전체 보안 점검 및 XSS 취약점 원천 봉쇄 (escapeHTML 헬퍼 적용)
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
+
+// 🔥 XSS 방지를 위한 정밀 HTML 이스케이프 함수
+function escapeHTML(str) {
+  if (!str) return "";
+  return String(str)
+    .replace(/&/g, "&amp;")
+    .replace(/</g, "&lt;")
+    .replace(/>/g, "&gt;")
+    .replace(/"/g, "&quot;")
+    .replace(/'/g, "&#039;");
+}
 
 const JOB_APPLIED_QUESTIONS = {
   "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20],
@@ -82,7 +93,6 @@ function bindLoginEvents() {
   });
 }
 
-// 🔥 앱스크립트 스크립트 속성(AdminPassword) 저장값과 100% 백엔드 실시간 대조 (하드코딩 제거)
 function handleAdminLogin() {
   const pass = document.getElementById("adminPass").value.trim();
   if (!pass) {
@@ -134,13 +144,13 @@ function renderUserTable() {
     const tr = document.createElement("tr");
     tr.style.borderBottom = "1px solid #e2e8f0";
     tr.innerHTML = `
-      <td style="padding: 8px; font-weight: 700;">${w.site}</td>
-      <td style="padding: 8px;">${w.id}</td>
-      <td style="padding: 8px; font-weight:700;">${w.name}</td>
-      <td style="padding: 8px; color: var(--accent-color);">${w.email || '-'}</td>
-      <td style="padding: 8px;">${w.birth}</td>
-      <td style="padding: 8px; font-weight:700; color:var(--primary-color);">${cleanJob} <span style="font-size:0.75rem; color:#64748b;">(적용 ${appliedQs.length}문항)</span></td>
-      <td style="padding: 8px;"><span class="score-badge score-3">${w.status || '등록완료'}</span></td>
+      <td style="padding: 8px; font-weight: 700;">${escapeHTML(w.site)}</td>
+      <td style="padding: 8px;">${escapeHTML(w.id)}</td>
+      <td style="padding: 8px; font-weight:700;">${escapeHTML(w.name)}</td>
+      <td style="padding: 8px; color: var(--accent-color);">${escapeHTML(w.email || '-')}</td>
+      <td style="padding: 8px;">${escapeHTML(w.birth)}</td>
+      <td style="padding: 8px; font-weight:700; color:var(--primary-color);">${escapeHTML(cleanJob)} <span style="font-size:0.75rem; color:#64748b;">(적용 ${appliedQs.length}문항)</span></td>
+      <td style="padding: 8px;"><span class="score-badge score-3">${escapeHTML(w.status || '등록완료')}</span></td>
     `;
     tbody.appendChild(tr);
   });
@@ -174,11 +184,11 @@ function handleChangePassword() {
   })
   .then(res => res.json())
   .then(data => {
-    alert(`🎉 성공: [${targetKey}] 비밀번호가 변경되었습니다!`);
+    alert(`🎉 성공: [${escapeHTML(targetKey)}] 비밀번호가 변경되었습니다!`);
     closeModal("changePassModal");
   })
   .catch(err => {
-    alert(`🎉 [완료] [${targetKey}] 비밀번호 변경 적용이 완료되었습니다!`);
+    alert(`🎉 [완료] [${escapeHTML(targetKey)}] 비밀번호 변경 적용이 완료되었습니다!`);
     closeModal("changePassModal");
   });
 }
@@ -248,7 +258,7 @@ function renderDynamicGroupedEulJiTable() {
     jobHeaderTr.style.fontWeight = "800";
     jobHeaderTr.innerHTML = `
       <td colspan="25" style="border: 1px solid #000; padding: 6px 10px; text-align: left; background: #e2e8f0; color: #0f172a; font-size: 0.8rem;">
-        📁 <strong>[직종] ${jobName}</strong> (총 ${groupWorkers.length}명 · <strong>적용 ${appliedQs.length}문항 / ${maxPossibleScore}점 만점 기준</strong>)
+        📁 <strong>[직종] ${escapeHTML(jobName)}</strong> (총 ${groupWorkers.length}명 · <strong>적용 ${appliedQs.length}문항 / ${maxPossibleScore}점 만점 기준</strong>)
       </td>
     `;
     tbody.appendChild(jobHeaderTr);
@@ -286,8 +296,8 @@ function renderDynamicGroupedEulJiTable() {
       tr.style.borderBottom = "1px solid #000";
 
       tr.innerHTML = `
-        <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${w.name}</td>
-        <td style="border: 1px solid #000; padding: 6px;">${jobName}</td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${escapeHTML(w.name)}</td>
+        <td style="border: 1px solid #000; padding: 6px;">${escapeHTML(jobName)}</td>
         ${scoreCellsHtml}
         <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${earnedSum}점 / ${maxPossibleScore}점</td>
         <td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">${pct}%</td>
@@ -312,7 +322,7 @@ function renderDynamicGroupedEulJiTable() {
     jobSubTotalTr.style.fontWeight = "700";
     jobSubTotalTr.innerHTML = `
       <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: center; background: #f1f5f9; color: #1e293b;">
-        └ [${jobName}] 환산 평균 소계
+        └ [${escapeHTML(jobName)}] 환산 평균 소계
       </td>
       <td colspan="20" style="border: 1px solid #000; padding: 5px; text-align: center; color: #475569;">
         적용 ${appliedQs.length}문항 (${maxPossibleScore}점 만점 기준 N/A 제외 환산)
@@ -370,12 +380,12 @@ function renderAuditLogs(logs) {
     const tr = document.createElement("tr");
     tr.style.borderBottom = "1px solid #e2e8f0";
     tr.innerHTML = `
-      <td style="padding: 8px; color: #475569; font-family: monospace;">${log.timestamp}</td>
-      <td style="padding: 8px;"><span class="score-badge score-3">${log.action}</span></td>
-      <td style="padding: 8px; font-weight: 700;">${log.site}</td>
-      <td style="padding: 8px; color: var(--accent-color);">${log.user}</td>
-      <td style="padding: 8px;">${log.details}</td>
-      <td style="padding: 8px; text-align: center;"><span style="color:#059669; font-weight:800;">✅ ${log.status}</span></td>
+      <td style="padding: 8px; color: #475569; font-family: monospace;">${escapeHTML(log.timestamp)}</td>
+      <td style="padding: 8px;"><span class="score-badge score-3">${escapeHTML(log.action)}</span></td>
+      <td style="padding: 8px; font-weight: 700;">${escapeHTML(log.site)}</td>
+      <td style="padding: 8px; color: var(--accent-color);">${escapeHTML(log.user)}</td>
+      <td style="padding: 8px;">${escapeHTML(log.details)}</td>
+      <td style="padding: 8px; text-align: center;"><span style="color:#059669; font-weight:800;">✅ ${escapeHTML(log.status)}</span></td>
     `;
     tbody.appendChild(tr);
   });
