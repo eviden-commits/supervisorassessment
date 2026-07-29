@@ -1,18 +1,12 @@
 /* =========================================================================
    app.js
-   문항 수정, 직종별 N/A 맵핑 및 백분율 환산(%) 정밀 평가 로직
+   7개 정규 직종 카테고리 20명 샘플 DB 및 업로드 양식 엑셀 적용
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 직종별 적용 문항 맵핑 테이블 (1-indexed)
-// 1. 안전: 16번 제외 (19문항)
-// 2. 보건: 3,4,5,6,8,10,13,14,17 제외 (11문항)
-// 3. 품질: 1, 2, 18, 19, 20 (5문항)
-// 4. 공사관리자 (건축, 토목, 설비, 전기, 용접, 비계 등 공정): 1~20 전체 (20문항)
-// 5. 공무: 1, 2, 20 (3문항)
-// 6. 팀리더 (현장소장, 팀장 등): 1~20 전체 (20문항)
-// 7. 설계: 1, 2, 18, 19, 20 (5문항)
+// 7개 정규 직종 카테고리 맵핑 테이블 (1-indexed)
+// 안전(19문항), 보건(11문항), 품질(5문항), 공무(3문항), 설계(5문항), 팀리더(20문항), 공사관리자(20문항)
 const JOB_APPLIED_QUESTIONS = {
   "안전": [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 17, 18, 19, 20],
   "보건": [1, 2, 7, 9, 11, 12, 15, 16, 18, 19, 20],
@@ -23,46 +17,44 @@ const JOB_APPLIED_QUESTIONS = {
   "설계": [1, 2, 18, 19, 20]
 };
 
-// 직종명 키워드 매칭 함수 (예: "안전관리자" -> "안전", "건축팀장" -> "공사관리자" 또는 "팀리더")
 function getAppliedQuestionsForJob(jobName) {
-  if (!jobName) return [1, 2, 3, 4, 5, 6, 7, 8, 9, 10, 11, 12, 13, 14, 15, 16, 17, 18, 19, 20];
+  if (!jobName) return JOB_APPLIED_QUESTIONS["공사관리자"];
 
   const j = jobName.trim();
-  if (j.includes("안전담당") || j.includes("안전관리")) return JOB_APPLIED_QUESTIONS["안전"];
-  if (j.includes("보건관리") || j.includes("보건")) return JOB_APPLIED_QUESTIONS["보건"];
-  if (j.includes("품질관리") || j.includes("품질")) return JOB_APPLIED_QUESTIONS["품질"];
+  if (j.includes("안전")) return JOB_APPLIED_QUESTIONS["안전"];
+  if (j.includes("보건")) return JOB_APPLIED_QUESTIONS["보건"];
+  if (j.includes("품질")) return JOB_APPLIED_QUESTIONS["품질"];
   if (j.includes("공무")) return JOB_APPLIED_QUESTIONS["공무"];
   if (j.includes("설계")) return JOB_APPLIED_QUESTIONS["설계"];
-  if (j.includes("소장") || j.includes("팀장") || j.includes("리더") || j.includes("반장")) return JOB_APPLIED_QUESTIONS["팀리더"];
+  if (j.includes("팀리더") || j.includes("소장") || j.includes("팀장")) return JOB_APPLIED_QUESTIONS["팀리더"];
   
-  // 기본 공사관리자 (20문항 전체)
   return JOB_APPLIED_QUESTIONS["공사관리자"];
 }
 
+// 🔥 7개 정규 직종 카테고리로 통합된 20명 샘플 DB 데이터
 let WORKER_DB = [
-  { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전관리자", email: "nschoi@sebangtec.com" },
-  { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "현장소장", email: "gildong@example.com" },
-  { id: "EMP003", name: "김철수", site: "테스트현장", term: "상반기", birth: "900320", job: "토목팀장", email: "chulsoo@example.com" },
-  { id: "EMP004", name: "이영희", site: "테스트현장", term: "상반기", birth: "921110", job: "건축팀장", email: "younghee@example.com" },
-  { id: "EMP005", name: "박지성", site: "테스트현장", term: "상반기", birth: "880225", job: "설비팀장", email: "jisung@example.com" },
-  { id: "EMP006", name: "손흥민", site: "테스트현장", term: "상반기", birth: "920708", job: "전기팀장", email: "sonny@example.com" },
-  { id: "EMP007", name: "황희찬", site: "테스트현장", term: "상반기", birth: "960126", job: "안전담당자", email: "hwang@example.com" },
-  { id: "EMP008", name: "김민재", site: "테스트현장", term: "상반기", birth: "961115", job: "구조팀장", email: "minjae@example.com" },
-  { id: "EMP009", name: "이강인", site: "테스트현장", term: "상반기", birth: "010219", job: "배관팀장", email: "kangin@example.com" },
-  { id: "EMP010", name: "기성용", site: "테스트현장", term: "상반기", birth: "890124", job: "공무팀장", email: "sungyueng@example.com" },
-  { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "품질관리자", email: "jacheol@example.com" },
-  { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "자재팀장", email: "juyoung@example.com" },
-  { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "환경관리자", email: "hyunwoo@example.com" },
-  { id: "EMP014", name: "황의조", site: "테스트현장", term: "상반기", birth: "920828", job: "중장비반장", email: "uijo@example.com" },
-  { id: "EMP015", name: "정우영", site: "테스트현장", term: "상반기", birth: "990920", job: "신호수반장", email: "wooyoung@example.com" },
-  { id: "EMP016", name: "백승호", site: "테스트현장", term: "상반기", birth: "970317", job: "용접팀장", email: "seungho@example.com" },
-  { id: "EMP017", name: "설영우", site: "테스트현장", term: "상반기", birth: "981205", job: "비계팀장", email: "youngwoo@example.com" },
-  { id: "EMP018", name: "김영권", site: "테스트현장", term: "상반기", birth: "900227", job: "형틀팀장", email: "younggwon@example.com" },
-  { id: "EMP019", name: "조규성", site: "테스트현장", term: "상반기", birth: "980125", job: "철근팀장", email: "gyuesung@example.com" },
-  { id: "EMP020", name: "송민규", site: "테스트현장", term: "상반기", birth: "990912", job: "마감팀장", email: "mingyu@example.com" }
+  { id: "TEST001", name: "최난새", site: "테스트현장", term: "상반기", birth: "800101", job: "안전", email: "nschoi@sebangtec.com" },
+  { id: "EMP002", name: "홍길동", site: "테스트현장", term: "상반기", birth: "850515", job: "팀리더", email: "gildong@example.com" },
+  { id: "EMP003", name: "김철수", site: "테스트현장", term: "상반기", birth: "900320", job: "공사관리자", email: "chulsoo@example.com" },
+  { id: "EMP004", name: "이영희", site: "테스트현장", term: "상반기", birth: "921110", job: "공사관리자", email: "younghee@example.com" },
+  { id: "EMP005", name: "박지성", site: "테스트현장", term: "상반기", birth: "880225", job: "공사관리자", email: "jisung@example.com" },
+  { id: "EMP006", name: "손흥민", site: "테스트현장", term: "상반기", birth: "920708", job: "공사관리자", email: "sonny@example.com" },
+  { id: "EMP007", name: "황희찬", site: "테스트현장", term: "상반기", birth: "960126", job: "안전", email: "hwang@example.com" },
+  { id: "EMP008", name: "김민재", site: "테스트현장", term: "상반기", birth: "961115", job: "설계", email: "minjae@example.com" },
+  { id: "EMP009", name: "이강인", site: "테스트현장", term: "상반기", birth: "010219", job: "공사관리자", email: "kangin@example.com" },
+  { id: "EMP010", name: "기성용", site: "테스트현장", term: "상반기", birth: "890124", job: "공무", email: "sungyueng@example.com" },
+  { id: "EMP011", name: "구자철", site: "테스트현장", term: "상반기", birth: "890227", job: "품질", email: "jacheol@example.com" },
+  { id: "EMP012", name: "박주영", site: "테스트현장", term: "상반기", birth: "850710", job: "공무", email: "juyoung@example.com" },
+  { id: "EMP013", name: "조현우", site: "테스트현장", term: "상반기", birth: "910925", job: "보건", email: "hyunwoo@example.com" },
+  { id: "EMP014", name: "황의조", site: "테스트현장", term: "상반기", birth: "920828", job: "공사관리자", email: "uijo@example.com" },
+  { id: "EMP015", name: "정우영", site: "테스트현장", term: "상반기", birth: "990920", job: "공사관리자", email: "wooyoung@example.com" },
+  { id: "EMP016", name: "백승호", site: "테스트현장", term: "상반기", birth: "970317", job: "공사관리자", email: "seungho@example.com" },
+  { id: "EMP017", name: "설영우", site: "테스트현장", term: "상반기", birth: "981205", job: "공사관리자", email: "youngwoo@example.com" },
+  { id: "EMP018", name: "김영권", site: "테스트현장", term: "상반기", birth: "900227", job: "공사관리자", email: "younggwon@example.com" },
+  { id: "EMP019", name: "조규성", site: "테스트현장", term: "상반기", birth: "980125", job: "공사관리자", email: "gyuesung@example.com" },
+  { id: "EMP020", name: "송민규", site: "테스트현장", term: "상반기", birth: "990912", job: "공사관리자", email: "mingyu@example.com" }
 ];
 
-// 🔥 수정된 20개 평가 문항 목록 (요구사항 100% 반영)
 const QUESTIONS = [
   { id: 1, partTitle: "[Part 1] 관리감독자 업무수행 지원 (2문항)", title: "1. 관리감독자를 지정하여 업무수행에 필요한 권한을 부여하는가?(R&R 확인)", lawRef: null, score3: "적정 권한 부여", score2: "지정만 함", score1: "미지정" },
   { id: 2, partTitle: "[Part 1] 관리감독자 업무수행 지원 (2문항)", title: "2. 시설·장비·예산 등 업무수행에 필요한 지원을 하는가?(R&R 확인)", lawRef: null, score3: "시설·예산 지원", score2: "필요시 책정", score1: "지원 없음" },
@@ -200,7 +192,7 @@ function checkRegisteredWorkersForTerm() {
         ✅ [${site} - ${term}] 등록 인원 검증 완료: 총 ${activeTargetWorkers.length}명의 관리감독자 명단 확인됨
       </div>
       <p style="font-size:0.85rem; color:#065f46;">
-        아래 [평가 시작하기] 버튼을 누르시면 직종별 적용 문항(N/A 제외)에 대해 백분율 환산(%) 정밀 평가가 진행됩니다.
+        아래 [평가 시작하기] 버튼을 누르시면 7개 규격 직종별 적용 문항(N/A 제외)에 대해 백분율 환산(%) 정밀 평가가 진행됩니다.
       </p>
     `;
     btnStart.disabled = false;
@@ -261,7 +253,6 @@ function renderSingleFloatingQuestion(qIdx) {
   updateStickyActionBar(qIdx);
 }
 
-// 🔥 직종별 N/A 처리 포함된 스마트 인원 리스트 렌더링
 function renderMicroWorkerTable(qIdx, qObj) {
   const tbody = document.getElementById("microWorkerTableBody");
   if (!tbody) return;
@@ -271,12 +262,11 @@ function renderMicroWorkerTable(qIdx, qObj) {
 
   activeTargetWorkers.forEach(w => {
     const appliedQs = getAppliedQuestionsForJob(w.job);
-    const isApplied = appliedQs.includes(qIdx); // 해당 인원에 이 문항이 적용되는지 여부
+    const isApplied = appliedQs.includes(qIdx);
 
     const tr = document.createElement("tr");
 
     if (!isApplied) {
-      // 🚫 N/A 제외 대상인 인원
       tr.style.opacity = "0.65";
       tr.innerHTML = `
         <td>
@@ -290,7 +280,6 @@ function renderMicroWorkerTable(qIdx, qObj) {
         </td>
       `;
     } else {
-      // ✅ 평가 적용 대상 인원
       const curVal = (workerScoresMap[w.id] && workerScoresMap[w.id][qKey]) ? workerScoresMap[w.id][qKey] : 3;
 
       tr.innerHTML = `
@@ -319,7 +308,6 @@ function setSingleWorkerScore(workerId, qIdx, scoreVal) {
   renderMicroWorkerTable(qIdx);
 }
 
-// 일괄 적용 시 N/A 대상자는 제외하고 적용 대상자만 일괄 변경
 function fillSingleQAllScores(score) {
   const qKey = `q_${currentQIndex}`;
   activeTargetWorkers.forEach(w => {
@@ -426,34 +414,36 @@ function handleVerifyOtp() {
   }
 }
 
+// 🔥 7개 정규 직종 카테고리 입력을 강제 가이드하는 20명 업로드용 샘플 엑셀 생성
 function downloadExcelTemplateIndex() {
   const data = [
+    ["[필독] 직종 입력 시 아래 7개 카테고리 중 하나를 입력하세요: 안전, 보건, 품질, 공무, 설계, 팀리더, 공사관리자"],
     ["현장명", "사번", "성명", "이메일주소", "생년월일", "직종", "반기"],
-    ["테스트현장", "TEST001", "최난새", "nschoi@sebangtec.com", "800101", "안전관리자", "상반기"],
-    ["테스트현장", "EMP002", "홍길동", "gildong@example.com", "850515", "현장소장", "상반기"],
-    ["테스트현장", "EMP003", "김철수", "chulsoo@example.com", "900320", "토목팀장", "상반기"],
-    ["테스트현장", "EMP004", "이영희", "younghee@example.com", "921110", "건축팀장", "상반기"],
-    ["테스트현장", "EMP005", "박지성", "jisung@example.com", "880225", "설비팀장", "상반기"],
-    ["테스트현장", "EMP006", "손흥민", "sonny@example.com", "920708", "전기팀장", "상반기"],
-    ["테스트현장", "EMP007", "황희찬", "hwang@example.com", "960126", "안전담당자", "상반기"],
-    ["테스트현장", "EMP008", "김민재", "minjae@example.com", "961115", "구조팀장", "상반기"],
-    ["테스트현장", "EMP009", "이강인", "kangin@example.com", "010219", "배관팀장", "상반기"],
-    ["테스트현장", "EMP010", "기성용", "sungyueng@example.com", "890124", "공무팀장", "상반기"],
-    ["테스트현장", "EMP011", "구자철", "jacheol@example.com", "890227", "품질관리자", "상반기"],
-    ["테스트현장", "EMP012", "박주영", "juyoung@example.com", "850710", "자재팀장", "상반기"],
-    ["테스트현장", "EMP013", "조현우", "hyunwoo@example.com", "910925", "환경관리자", "상반기"],
-    ["테스트현장", "EMP014", "황의조", "uijo@example.com", "920828", "중장비반장", "상반기"],
-    ["테스트현장", "EMP015", "정우영", "wooyoung@example.com", "990920", "신호수반장", "상반기"],
-    ["테스트현장", "EMP016", "백승호", "seungho@example.com", "970317", "용접팀장", "상반기"],
-    ["테스트현장", "EMP017", "설영우", "youngwoo@example.com", "981205", "비계팀장", "상반기"],
-    ["테스트현장", "EMP018", "김영권", "younggwon@example.com", "900227", "형틀팀장", "상반기"],
-    ["테스트현장", "EMP019", "조규성", "gyuesung@example.com", "980125", "철근팀장", "상반기"],
-    ["테스트현장", "EMP020", "송민규", "mingyu@example.com", "990912", "마감팀장", "상반기"]
+    ["테스트현장", "TEST001", "최난새", "nschoi@sebangtec.com", "800101", "안전", "상반기"],
+    ["테스트현장", "EMP002", "홍길동", "gildong@example.com", "850515", "팀리더", "상반기"],
+    ["테스트현장", "EMP003", "김철수", "chulsoo@example.com", "900320", "공사관리자", "상반기"],
+    ["테스트현장", "EMP004", "이영희", "younghee@example.com", "921110", "공사관리자", "상반기"],
+    ["테스트현장", "EMP005", "박지성", "jisung@example.com", "880225", "공사관리자", "상반기"],
+    ["테스트현장", "EMP006", "손흥민", "sonny@example.com", "920708", "공사관리자", "상반기"],
+    ["테스트현장", "EMP007", "황희찬", "hwang@example.com", "960126", "안전", "상반기"],
+    ["테스트현장", "EMP008", "김민재", "minjae@example.com", "961115", "설계", "상반기"],
+    ["테스트현장", "EMP009", "이강인", "kangin@example.com", "010219", "공사관리자", "상반기"],
+    ["테스트현장", "EMP010", "기성용", "sungyueng@example.com", "890124", "공무", "상반기"],
+    ["테스트현장", "EMP011", "구자철", "jacheol@example.com", "890227", "품질", "상반기"],
+    ["테스트현장", "EMP012", "박주영", "juyoung@example.com", "850710", "공무", "상반기"],
+    ["테스트현장", "EMP013", "조현우", "hyunwoo@example.com", "910925", "보건", "상반기"],
+    ["테스트현장", "EMP014", "황의조", "uijo@example.com", "920828", "공사관리자", "상반기"],
+    ["테스트현장", "EMP015", "정우영", "wooyoung@example.com", "990920", "공사관리자", "상반기"],
+    ["테스트현장", "EMP016", "백승호", "seungho@example.com", "970317", "공사관리자", "상반기"],
+    ["테스트현장", "EMP017", "설영우", "youngwoo@example.com", "981205", "공사관리자", "상반기"],
+    ["테스트현장", "EMP018", "김영권", "younggwon@example.com", "900227", "공사관리자", "상반기"],
+    ["테스트현장", "EMP019", "조규성", "gyuesung@example.com", "980125", "공사관리자", "상반기"],
+    ["테스트현장", "EMP020", "송민규", "mingyu@example.com", "990912", "공사관리자", "상반기"]
   ];
   const ws = XLSX.utils.aoa_to_sheet(data);
   const wb = XLSX.utils.book_new();
   XLSX.utils.book_append_sheet(wb, ws, "평가대상자명단_20명");
-  XLSX.writeFile(wb, "관리감독자_20명_테스트명단.xlsx");
+  XLSX.writeFile(wb, "관리감독자_7개직종_규격_20명_명단.xlsx");
 }
 
 function handleIndexExcelUpload(e) {
@@ -469,26 +459,42 @@ function handleIndexExcelUpload(e) {
     const workbook = XLSX.read(data, { type: 'array' });
     const sheetName = workbook.SheetNames[0];
     const sheet = workbook.Sheets[sheetName];
-    const rows = XLSX.utils.sheet_to_json(sheet);
 
-    if (rows.length === 0) {
+    // 첫 번째 행동 가인드 문구일 수 있으므로 json 로드
+    const rawRows = XLSX.utils.sheet_to_json(sheet);
+    if (rawRows.length === 0) {
       alert("엑셀 파일에 데이터가 없습니다.");
       return;
     }
 
-    const newWorkers = rows.map((r, idx) => ({
-      id: r["사번"] || `EMP_${Date.now()}_${idx}`,
-      name: r["성명"] || `미지정_${idx}`,
-      site: r["현장명"] || currentSite,
-      term: r["반기"] || currentTerm,
-      email: r["이메일주소"] || r["이메일"] || "",
-      birth: r["생년월일"] || "800101",
-      job: r["직종"] || "관리감독자"
-    }));
+    const newWorkers = [];
+    rawRows.forEach((r, idx) => {
+      const jobRaw = r["직종"] || r["직종카테고리"] || "공사관리자";
+      // 직종 정제
+      let cleanJob = "공사관리자";
+      if (jobRaw.includes("안전")) cleanJob = "안전";
+      else if (jobRaw.includes("보건")) cleanJob = "보건";
+      else if (jobRaw.includes("품질")) cleanJob = "품질";
+      else if (jobRaw.includes("공무")) cleanJob = "공무";
+      else if (jobRaw.includes("설계")) cleanJob = "설계";
+      else if (jobRaw.includes("팀리더") || jobRaw.includes("소장") || jobRaw.includes("팀장")) cleanJob = "팀리더";
+
+      if (r["성명"]) {
+        newWorkers.push({
+          id: r["사번"] || `EMP_${Date.now()}_${idx}`,
+          name: r["성명"],
+          site: r["현장명"] || currentSite,
+          term: r["반기"] || currentTerm,
+          email: r["이메일주소"] || r["이메일"] || "",
+          birth: r["생년월일"] || "800101",
+          job: cleanJob
+        });
+      }
+    });
 
     WORKER_DB = [...WORKER_DB.filter(w => w.site !== currentSite || w.term !== currentTerm), ...newWorkers];
 
-    alert(`🎉 성공: [${currentSite} - ${currentTerm}] ${newWorkers.length}명의 관리감독자 명단이 새로 등록되었습니다!`);
+    alert(`🎉 성공: [${currentSite} - ${currentTerm}] ${newWorkers.length}명의 규격 직종 관리감독자 명단이 새로 등록되었습니다!`);
     closeModal("otpUploadModal");
     checkRegisteredWorkersForTerm();
   };
