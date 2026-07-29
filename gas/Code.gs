@@ -32,6 +32,8 @@ function doPost(e) {
 
     if (action === 'checkAdminPassword') {
       result = checkAdminPassword_(data.password);
+    } else if (action === 'checkIndexPassword') {
+      result = checkIndexPassword_(data.password);
     } else if (action === 'sendOTP') {
       result = sendEmailOTP_(data.email);
     } else if (action === 'verifyOTP') {
@@ -53,9 +55,6 @@ function doPost(e) {
     .setMimeType(ContentService.MimeType.JSON);
 }
 
-/**
- * 초기 현장 및 소장 목록 반환
- */
 function getInitialData_() {
   var ss = SpreadsheetApp.getActiveSpreadsheet();
   var sheet = ss.getSheetByName('Users');

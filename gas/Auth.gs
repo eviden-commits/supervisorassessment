@@ -1,24 +1,42 @@
 /* =========================================================================
    Auth.gs
-   관리자 비밀번호 (Addpassword) 검증 및 이메일 OTP 인증 모듈
+   관리자 비밀번호 (Addpassword) 및 메인 작성 비밀번호 (loginindex) 검증
    ========================================================================= */
 
 /**
- * ScriptProperties의 'Addpassword' 속성과 입력된 비밀번호 검증
+ * ScriptProperties의 'Addpassword' (관리자 비밀번호) 검증
  */
 function checkAdminPassword_(password) {
   var props = PropertiesService.getScriptProperties();
   var realPwd = props.getProperty('Addpassword');
 
-  // 비밀번호 미설정 시 기본 설정 안내 또는 통과
   if (!realPwd) {
-    return { ok: true, isDefault: true, message: 'Addpassword 속성이 설정되지 않았습니다. (개발 모드 통과)' };
+    return { ok: true, isDefault: true, message: 'Addpassword 속성이 미설정되어 개발 모드로 통과합니다.' };
   }
 
   if (String(password || '').trim() === String(realPwd).trim()) {
     return { ok: true };
   } else {
-    return { ok: false, error: '관리자 비밀번호가 일치하지 않습니다.' };
+    return { ok: false, error: '관리자 비밀번호가 올바르지 않습니다.' };
+  }
+}
+
+/**
+ * ScriptProperties의 'loginindex' (메인 작성 접속 비밀번호) 검증
+ */
+function checkIndexPassword_(password) {
+  var props = PropertiesService.getScriptProperties();
+  var realPwd = props.getProperty('loginindex');
+
+  // loginindex 미설정 시 개발 편의를 위해 통과
+  if (!realPwd) {
+    return { ok: true, isDefault: true, message: 'loginindex 속성이 미설정되어 접속을 허용합니다.' };
+  }
+
+  if (String(password || '').trim() === String(realPwd).trim()) {
+    return { ok: true };
+  } else {
+    return { ok: false, error: '접속 비밀번호가 올바르지 않습니다.' };
   }
 }
 
@@ -31,10 +49,7 @@ function sendEmailOTP_(email) {
     return { ok: false, error: '유효한 이메일 주소를 입력해 주세요.' };
   }
 
-  // 6자리 난수 생성
   var otpCode = Math.floor(100000 + Math.random() * 900000).toString();
-
-  // CacheService에 5분(300초)간 OTP 저장
   var cache = CacheService.getScriptCache();
   cache.put('OTP_' + emailStr, otpCode, 300);
 
@@ -53,9 +68,6 @@ function sendEmailOTP_(email) {
   return { ok: true, message: '이메일로 인증번호가 발송되었습니다.' };
 }
 
-/**
- * 입력된 OTP 검증
- */
 function verifyEmailOTP_(email, otpCode) {
   var emailStr = String(email || '').trim();
   var inputOtp = String(otpCode || '').trim();
@@ -64,11 +76,11 @@ function verifyEmailOTP_(email, otpCode) {
   var cachedOtp = cache.get('OTP_' + emailStr);
 
   if (!cachedOtp) {
-    return { ok: false, error: '인증번호가 만료되었거나 발송 내역이 없습니다. 다시 발송해 주세요.' };
+    return { ok: false, error: '인증번호가 만료되었거나 발송 내역이 없습니다.' };
   }
 
   if (cachedOtp === inputOtp) {
-    cache.remove('OTP_' + emailStr); // 일회용 검증 후 삭제
+    cache.remove('OTP_' + emailStr);
     return { ok: true, message: '이메일 본인 인증이 성공하였습니다.' };
   } else {
     return { ok: false, error: '인증번호가 일치하지 않습니다.' };

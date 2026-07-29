@@ -21,8 +21,26 @@
     </div>
   </header>
 
+  <!-- Index Access Password Modal Gate -->
+  <div class="modal-backdrop active" id="indexLoginGateModal">
+    <div class="modal-content" style="max-width: 400px;">
+      <div class="modal-header">
+        <h3>🔑 평가 시스템 접속 인증</h3>
+      </div>
+      <div class="modal-body" style="padding: 1.5rem;">
+        <div class="form-group">
+          <label for="indexPassInput">접속 비밀번호 입력</label>
+          <input type="password" id="indexPassInput" class="form-control" placeholder="접속 비밀번호를 입력하세요" />
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" id="btnIndexLogin">입장하기</button>
+      </div>
+    </div>
+  </div>
+
   <!-- Main Content -->
-  <main class="main-container">
+  <main class="main-container" id="indexMainContent" style="display: none;">
     
     <!-- 1. 기본 정보 & 다수 평가 대상자 선택 -->
     <section class="card">
@@ -69,9 +87,7 @@
           </div>
         </div>
 
-        <div class="worker-grid" id="workerListContainer">
-          <!-- JS 동적 생성 -->
-        </div>
+        <div class="worker-grid" id="workerListContainer"></div>
       </div>
     </section>
 
@@ -91,12 +107,10 @@
       </div>
 
       <!-- Questions List Container -->
-      <div id="questionsContainer">
-        <!-- JS 동적 생성 -->
-      </div>
+      <div id="questionsContainer"></div>
     </section>
 
-    <!-- 3. 특정 대상자 세부 점수 개별 조정 (옵션) -->
+    <!-- 3. 특정 대상자 세부 점수 개별 조정 -->
     <section class="card">
       <div class="card-title">
         <span>⚙️ 3. 특정 대상자 세부점수 개별 조정 (필요 시)</span>
@@ -191,7 +205,6 @@
           </div>
         </div>
 
-        <!-- Direct Drawing Tab -->
         <div id="tabDrawContent">
           <div class="signature-container">
             <canvas id="signatureCanvas"></canvas>
@@ -202,7 +215,6 @@
           </div>
         </div>
 
-        <!-- Image Upload Tab -->
         <div id="tabUploadContent" style="display: none; text-align: center; padding: 1rem; border: 2px dashed #cbd5e1; border-radius: 6px;">
           <input type="file" id="sigFileInput" accept="image/*" style="display: none;" />
           <button class="btn btn-secondary" onclick="document.getElementById('sigFileInput').click();">📁 서명 이미지 선택 (PNG/JPG)</button>

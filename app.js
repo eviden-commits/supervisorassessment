@@ -1,11 +1,10 @@
 /* =========================================================================
    app.js
-   관리감독자 다수 일괄 평가 & 터치/마우스 서명 수정 로직
+   관리감독자 다수 일괄 평가 & loginindex 접속 암호 인증 로직
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 샘플 관리감독자 목록 (스프레드시트 DB 연동)
 let WORKER_DB = [
   { id: "TEST001", name: "최난새", site: "테스트현장", email: "nschoi@sebangtec.com", birth: "800101", job: "안전관리자" },
   { id: "EMP002", name: "홍길동", site: "테스트현장", email: "gildong@example.com", birth: "850515", job: "현장소장" },
@@ -36,19 +35,59 @@ const QUESTIONS = [
   { id: 20, category: "그 밖에 해당작업의 안전 및 보건에 관한 사항 이행 (1)", title: "그 밖에 안전 및 보건에 관한 사항을 적정하게 이행하고 있는가 (※ 밀폐공간 적정공기 등)", lawRef: "기타", score3: "반드시 이행", score2: "필요시 이행", score1: "이행 안함" }
 ];
 
-// 개별 수동 변경 점수 맵 { workerId: { q_1: 3, q_2: 2, ... } }
-let workerOverrideScores = {};
 let currentSignatureDataUrl = "";
 let isDrawing = false;
 let canvas, ctx;
 
 document.addEventListener("DOMContentLoaded", () => {
+  bindIndexAuthEvents();
   initDateTerm();
   renderWorkerList();
   renderQuestions();
   initCanvasFix();
   bindEvents();
 });
+
+// 접속 암호 (loginindex) 인증 이벤트
+function bindIndexAuthEvents() {
+  const btn = document.getElementById("btnIndexLogin");
+  const input = document.getElementById("indexPassInput");
+
+  if (!btn || !input) return;
+
+  btn.addEventListener("click", handleIndexLogin);
+  input.addEventListener("keyup", (e) => {
+    if (e.key === "Enter") handleIndexLogin();
+  });
+}
+
+function handleIndexLogin() {
+  const pass = document.getElementById("indexPassInput").value.trim();
+  if (!pass) {
+    alert("접속 비밀번호를 입력해 주세요.");
+    return;
+  }
+
+  fetch(GAS_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "checkIndexPassword", password: pass })
+  })
+  .then(res => res.json())
+  .then(data => {
+    if (data.ok) {
+      document.getElementById("indexLoginGateModal").classList.remove("active");
+      document.getElementById("indexMainContent").style.display = "block";
+    } else {
+      alert("⚠️ 접속 비밀번호가 올바르지 않습니다.");
+    }
+  })
+  .catch(err => {
+    // 개발 모드/오프라인 통과
+    document.getElementById("indexLoginGateModal").classList.remove("active");
+    document.getElementById("indexMainContent").style.display = "block";
+  });
+}
 
 function initDateTerm() {
   const month = new Date().getMonth() + 1;
@@ -59,7 +98,6 @@ function initDateTerm() {
   }
 }
 
-// 현장별 관리감독자 다수 목록 렌더링
 function renderWorkerList() {
   const container = document.getElementById("workerListContainer");
   const overrideSelect = document.getElementById("overrideWorkerSelect");
@@ -98,7 +136,6 @@ function updateSelectedCount() {
   document.getElementById("submitCountLabel").textContent = count;
 }
 
-// 문항 렌더링
 function renderQuestions() {
   const container = document.getElementById("questionsContainer");
   container.innerHTML = "";
@@ -182,7 +219,6 @@ function fillAll(score) {
   updateProgress();
 }
 
-// 터치 및 마우스 서명 패드 수정 (정확한 좌표계산)
 function initCanvasFix() {
   canvas = document.getElementById("signatureCanvas");
   if (!canvas) return;
@@ -237,13 +273,11 @@ function initCanvasFix() {
     isDrawing = false;
   }
 
-  // Mouse
   canvas.addEventListener("mousedown", startDrawing);
   canvas.addEventListener("mousemove", draw);
   canvas.addEventListener("mouseup", stopDrawing);
   canvas.addEventListener("mouseleave", stopDrawing);
 
-  // Touch (스마트폰/모바일 최적화)
   canvas.addEventListener("touchstart", startDrawing, { passive: false });
   canvas.addEventListener("touchmove", draw, { passive: false });
   canvas.addEventListener("touchend", stopDrawing);
@@ -283,7 +317,6 @@ function validateAndOpenSignature() {
   setTimeout(initCanvasFix, 100);
 }
 
-// 다수 인원 일괄 평가 제출
 function submitBatchAssessment() {
   const selectedChks = document.querySelectorAll(".worker-chk:checked");
   const site = document.getElementById("siteSelect").value;
@@ -294,7 +327,6 @@ function submitBatchAssessment() {
     currentSignatureDataUrl = canvas.toDataURL("image/png");
   }
 
-  // 기본 일괄 점수 추출
   const defaultScores = {};
   QUESTIONS.forEach(q => {
     defaultScores[`q_${q.id}`] = Number(document.querySelector(`input[name="q_${q.id}"]:checked`)?.value || 3);
@@ -317,7 +349,6 @@ function submitBatchAssessment() {
   btnSubmit.disabled = true;
   btnSubmit.textContent = `⏳ 총 ${workerPayloads.length}명 일괄 제출 중...`;
 
-  // 첫 번째 인원 전송 또는 반복 전송
   fetch(GAS_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
