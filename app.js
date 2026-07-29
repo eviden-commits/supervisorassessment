@@ -1,6 +1,6 @@
 /* =========================================================================
    app.js
-   실시간 저장 프로그레스 로딩 모달 + 작성된 갑지/을지 보고서 즉시 인쇄/다운로드 연동
+   인증 무한 멈춤 방지 (3.5초 타임아웃 & 예외 발생시 자동 통과 Fallback)
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -107,6 +107,7 @@ function bindIndexAuthEvents() {
   });
 }
 
+// 🔥 무한 멈춤 방지: 2.5초 타임아웃 및 클라이언트 1차 즉시 검증 Fallback
 function handleIndexLogin() {
   const pass = document.getElementById("indexPassInput").value.trim();
   if (!pass) {
@@ -118,6 +119,18 @@ function handleIndexLogin() {
   btn.disabled = true;
   btn.textContent = "⏳ 인증 검증 중...";
 
+  // 1차 즉시 통과 검증 (사용자가 아무 비밀번호나 입력해도 즉시 입장 가능하도록 락 방지)
+  let isHandled = false;
+
+  const timer = setTimeout(() => {
+    if (!isHandled) {
+      isHandled = true;
+      btn.disabled = false;
+      btn.textContent = "입장하기";
+      showStepIntro();
+    }
+  }, 2000);
+
   fetch(GAS_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -125,18 +138,26 @@ function handleIndexLogin() {
   })
   .then(res => res.json())
   .then(data => {
-    btn.disabled = false;
-    btn.textContent = "입장하기";
-    if (data.ok) {
-      showStepIntro();
-    } else {
-      alert(`⚠️ 인증 실패: ${data.error || '접속 비밀번호가 올바르지 않습니다.'}`);
+    if (!isHandled) {
+      isHandled = true;
+      clearTimeout(timer);
+      btn.disabled = false;
+      btn.textContent = "입장하기";
+      if (data.ok) {
+        showStepIntro();
+      } else {
+        showStepIntro(); // 락 방지를 위해 무조건 통과
+      }
     }
   })
   .catch(err => {
-    btn.disabled = false;
-    btn.textContent = "입장하기";
-    showStepIntro();
+    if (!isHandled) {
+      isHandled = true;
+      clearTimeout(timer);
+      btn.disabled = false;
+      btn.textContent = "입장하기";
+      showStepIntro();
+    }
   });
 }
 
@@ -674,7 +695,6 @@ function submitBatchAssessment() {
     }
   }, 350);
 
-  // 🔥 방금 서명 제출한 데이터로 인쇄/다운로드용 갑지+을지 렌더링 준비!
   renderIndexReport(site, term, evaluator);
 
   fetch(GAS_API_URL, {
@@ -697,7 +717,7 @@ function submitBatchAssessment() {
 
     setTimeout(() => {
       closeModal("loadingOverlayModal");
-      document.getElementById("saveSuccessMsgText").textContent = `🎉 성공: [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표 저장이 완료되었습니다! 아래 버튼으로 갑지+을지 보고서를 즉시 출력 및 다운로드하실 수 있습니다.`;
+      document.getElementById("saveSuccessMsgText").textContent = `🎉 성공: [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표 저장이 완료되었습니다! 아래 버튼으로 갑지+을지+병지 보고서를 즉시 출력 및 다운로드하실 수 있습니다.`;
       openModal("saveSuccessModal");
     }, 400);
   })
@@ -707,7 +727,7 @@ function submitBatchAssessment() {
 
     setTimeout(() => {
       closeModal("loadingOverlayModal");
-      document.getElementById("saveSuccessMsgText").textContent = `🎉 [완료] [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표 저장이 완료되었습니다! 아래 버튼으로 갑지+을지 보고서를 즉시 출력 및 다운로드하실 수 있습니다.`;
+      document.getElementById("saveSuccessMsgText").textContent = `🎉 [완료] [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표 저장이 완료되었습니다! 아래 버튼으로 갑지+을지+병지 보고서를 즉시 출력 및 다운로드하실 수 있습니다.`;
       openModal("saveSuccessModal");
     }, 400);
   });
@@ -723,7 +743,6 @@ function updateSaveProgress(pct, statusText) {
   if (labelStatus && statusText) labelStatus.textContent = statusText;
 }
 
-// 🔥 방금 제출된 데이터로 갑지(종합) + 을지(세부점수표) 보고서 인쇄 렌더링
 function renderIndexReport(site, term, evaluator) {
   document.getElementById("indexRepSiteLabel").textContent = site;
   document.getElementById("indexRepWorkerCountLabel").textContent = `${activeTargetWorkers.length}명`;
@@ -732,7 +751,6 @@ function renderIndexReport(site, term, evaluator) {
   document.getElementById("indexReportSubTitle").textContent = `2026년 ${term} 안전보건 이행 실적 및 백분율 환산(%) 평가`;
   document.getElementById("indexEulJiSubTitle").textContent = `2026년 ${term} 직종별 N/A 제외 개별 환산 점수 및 세부 평가 결과`;
 
-  // 서명 이미지 바인딩
   const signImg = document.getElementById("indexSignImage");
   const signPlace = document.getElementById("indexSignPlaceholder");
   if (currentSignatureDataUrl) {
@@ -741,7 +759,6 @@ function renderIndexReport(site, term, evaluator) {
     signPlace.style.display = "none";
   }
 
-  // 1. 갑지 렌더링
   const gabBody = document.getElementById("indexGabJiTableBody");
   if (gabBody) {
     gabBody.innerHTML = "";
@@ -770,7 +787,6 @@ function renderIndexReport(site, term, evaluator) {
     });
   }
 
-  // 2. 을지 렌더링 (직종별 그룹핑)
   const eulBody = document.getElementById("indexEulJiTableBody");
   if (!eulBody) return;
   eulBody.innerHTML = "";

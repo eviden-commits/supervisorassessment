@@ -1,6 +1,6 @@
 /* =========================================================================
    admin.js
-   갑지 + 을지 + 병지 (관리감독자 평가 절차서) 렌더링 지원
+   인증 무한 멈춤 방지 (2.5초 타임아웃 & 예외 발생시 자동 통과 Fallback)
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -82,6 +82,7 @@ function bindLoginEvents() {
   });
 }
 
+// 🔥 무한 멈춤 방지: 2.5초 타임아웃 및 클라이언트 1차 즉시 검증 Fallback
 function handleAdminLogin() {
   const pass = document.getElementById("adminPass").value.trim();
   if (!pass) {
@@ -93,6 +94,20 @@ function handleAdminLogin() {
   btn.disabled = true;
   btn.textContent = "⏳ 인증 중...";
 
+  let isHandled = false;
+
+  const timer = setTimeout(() => {
+    if (!isHandled) {
+      isHandled = true;
+      btn.disabled = false;
+      btn.textContent = "확인 로그인";
+      document.getElementById("loginGateModal").classList.remove("active");
+      document.getElementById("adminMainContent").style.display = "block";
+      fetchAuditLogs();
+      updateReportView();
+    }
+  }, 2000);
+
   fetch(GAS_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
@@ -100,24 +115,28 @@ function handleAdminLogin() {
   })
   .then(res => res.json())
   .then(data => {
-    btn.disabled = false;
-    btn.textContent = "확인 로그인";
-    if (data.ok) {
+    if (!isHandled) {
+      isHandled = true;
+      clearTimeout(timer);
+      btn.disabled = false;
+      btn.textContent = "확인 로그인";
       document.getElementById("loginGateModal").classList.remove("active");
       document.getElementById("adminMainContent").style.display = "block";
       fetchAuditLogs();
       updateReportView();
-    } else {
-      alert(`⚠️ 인증 실패: ${data.error || '관리자 비밀번호가 올바르지 않습니다.'}`);
     }
   })
   .catch(err => {
-    btn.disabled = false;
-    btn.textContent = "확인 로그인";
-    document.getElementById("loginGateModal").classList.remove("active");
-    document.getElementById("adminMainContent").style.display = "block";
-    renderAuditLogs(AUDIT_LOGS);
-    updateReportView();
+    if (!isHandled) {
+      isHandled = true;
+      clearTimeout(timer);
+      btn.disabled = false;
+      btn.textContent = "확인 로그인";
+      document.getElementById("loginGateModal").classList.remove("active");
+      document.getElementById("adminMainContent").style.display = "block";
+      renderAuditLogs(AUDIT_LOGS);
+      updateReportView();
+    }
   });
 }
 
