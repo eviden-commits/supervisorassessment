@@ -1,11 +1,10 @@
 /* =========================================================================
    app.js
-   50명 이상 대규모 대응 검색 그리드, 세부 점수 개별 조정 및 스프레드시트 바로가기
+   인원별 세부 점수표 (이름, 직종, 문1~문20 매트릭스) 지원 로직
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 샘플 대규모 관리감독자 목록 (스프레드시트 DB 자동 연동)
 let WORKER_DB = [
   { id: "TEST001", name: "최난새", site: "테스트현장", email: "nschoi@sebangtec.com", birth: "800101", job: "안전관리자" },
   { id: "EMP002", name: "홍길동", site: "테스트현장", email: "gildong@example.com", birth: "850515", job: "현장소장" },
@@ -39,7 +38,6 @@ const QUESTIONS = [
   { id: 20, category: "그 밖에 해당작업의 안전 및 보건에 관한 사항 이행 (1)", title: "그 밖에 안전 및 보건에 관한 사항을 적정하게 이행하고 있는가 (※ 밀폐공간 적정공기 등)", lawRef: "기타", score3: "반드시 이행", score2: "필요시 이행", score1: "이행 안함" }
 ];
 
-// 특정 관리감독자별 개별 점수 커스텀 맵 { workerId: { q_1: 2, q_2: 1, ... } }
 let workerOverrideScores = {};
 let currentSignatureDataUrl = "";
 let isDrawing = false;
@@ -110,10 +108,8 @@ function initDateTerm() {
   }
 }
 
-// 실시간 검색 기능 포함 컴팩트 인원 목록 렌더링
 function renderWorkerList() {
   const container = document.getElementById("workerListContainer");
-  const overrideSelect = document.getElementById("overrideWorkerSelect");
   const currentSite = document.getElementById("siteSelect").value;
   const keyword = (document.getElementById("workerSearchInput")?.value || "").toLowerCase().trim();
 
@@ -124,7 +120,6 @@ function renderWorkerList() {
   });
 
   container.innerHTML = "";
-  overrideSelect.innerHTML = `<option value="">-- 기본 일괄 점수 사용 --</option>`;
 
   if (filtered.length === 0) {
     container.innerHTML = `<div style="grid-column: 1/-1; font-size: 0.8rem; color: var(--text-muted); text-align: center; padding: 1rem;">검색된 관리감독자가 없습니다.</div>`;
@@ -134,23 +129,17 @@ function renderWorkerList() {
     const item = document.createElement("label");
     item.className = "worker-item-compact";
     item.innerHTML = `
-      <input type="checkbox" class="worker-chk" value="${w.id}" data-name="${w.name}" data-birth="${w.birth}" checked onchange="updateSelectedCount()" />
+      <input type="checkbox" class="worker-chk" value="${w.id}" data-name="${w.name}" data-birth="${w.birth}" data-job="${w.job}" checked onchange="updateSelectedCount()" />
       <div>
         <strong>${w.name}</strong> <span class="worker-badge">${w.job}</span>
       </div>
     `;
     container.appendChild(item);
-
-    const opt = document.createElement("option");
-    opt.value = w.id;
-    opt.textContent = `${w.name} (${w.job})`;
-    overrideSelect.appendChild(opt);
   });
 
   updateSelectedCount();
 }
 
-// 선택 인원 카운트 및 요약 태그 렌더링
 function updateSelectedCount() {
   const checked = document.querySelectorAll(".worker-chk:checked");
   const count = checked.length;
@@ -250,9 +239,8 @@ function bindEvents() {
   document.getElementById("btnFillAll2").addEventListener("click", () => fillAll(2));
   document.getElementById("btnFillAll1").addEventListener("click", () => fillAll(1));
 
-  // 개별 대상자 점수 수동 조정 드롭다운 이벤트
-  document.getElementById("overrideWorkerSelect").addEventListener("change", handleOverrideWorkerSelect);
-  document.getElementById("btnResetWorkerOverride")?.addEventListener("click", resetWorkerOverride);
+  // 🔥 세부 현황 매트릭스 모달 열기 이벤트
+  document.getElementById("btnOpenMatrixModal").addEventListener("click", openMatrixModal);
 
   document.getElementById("btnOpenSignatureModal").addEventListener("click", validateAndOpenSignature);
   document.getElementById("btnJumpToUnread").addEventListener("click", () => closeModal("unreadModal"));
@@ -265,62 +253,108 @@ function bindEvents() {
   document.getElementById("btnFinalSubmit").addEventListener("click", submitBatchAssessment);
 }
 
-// 특정 대상자(홍길동 등) 세부 점수 수동 변경 패널 생성
-function handleOverrideWorkerSelect(e) {
-  const workerId = e.target.value;
-  const panel = document.getElementById("overrideQuestionsPanel");
-  const container = document.getElementById("overrideQuestionsContainer");
-  const title = document.getElementById("overridePanelTitle");
-
-  if (!workerId) {
-    panel.style.display = "none";
+// 🔥 핵심 신규 기능: 인원별 세부 점수표 (이름, 직종, 문1~문20 매트릭스) 동적 생성 모달
+function openMatrixModal() {
+  const selectedChks = document.querySelectorAll(".worker-chk:checked");
+  if (selectedChks.length === 0) {
+    alert("선택된 관리감독자가 없습니다! 인원을 먼저 선택해 주세요.");
     return;
   }
 
-  const worker = WORKER_DB.find(w => w.id === workerId);
-  title.textContent = `👤 [${worker ? worker.name : workerId}] 관리감독자 전용 세부 점수 개별 조정`;
+  document.getElementById("matrixWorkerCount").textContent = selectedChks.length;
+  const headerRow = document.getElementById("matrixHeaderRow");
+  const tbody = document.getElementById("matrixTableBody");
 
-  // 기존 변경 점수 또는 기본 일괄 점수 로딩
-  if (!workerOverrideScores[workerId]) {
-    workerOverrideScores[workerId] = {};
-    QUESTIONS.forEach(q => {
-      const baseVal = document.querySelector(`input[name="q_${q.id}"]:checked`)?.value || 3;
-      workerOverrideScores[workerId][`q_${q.id}`] = Number(baseVal);
-    });
+  // 1. 헤더 생성: 이름 | 직종 | 문1 | 문2 | ... | 문20 | 총점 | 평균
+  let headerHtml = `
+    <th style="min-width:75px;">성명</th>
+    <th style="min-width:85px;">직종</th>
+  `;
+  for (let i = 1; i <= 20; i++) {
+    headerHtml += `<th style="min-width:48px;" title="문항 ${i}">문${i}</th>`;
   }
+  headerHtml += `<th style="min-width:55px;">총점</th><th style="min-width:55px;">평균</th>`;
+  headerRow.innerHTML = headerHtml;
 
-  let html = `<table class="override-table"><thead><tr><th>문항</th><th>평가 지표</th><th>개별 점수 선택</th></tr></thead><tbody>`;
+  // 2. 바디 행 생성 (선택된 각 인원별 1행)
+  tbody.innerHTML = "";
+
+  // 현재 화면의 기본 공통 점수 가져오기
+  const baseScores = {};
   QUESTIONS.forEach(q => {
-    const curVal = workerOverrideScores[workerId][`q_${q.id}`];
-    html += `
-      <tr>
-        <td style="font-weight:700;">${q.id}번</td>
-        <td style="font-size:0.8rem;">${q.title}</td>
-        <td>
-          <label style="margin-right:8px;"><input type="radio" name="over_${workerId}_q_${q.id}" value="3" ${curVal === 3 ? 'checked' : ''} onchange="setOverrideScore('${workerId}', 'q_${q.id}', 3)"> 🟢 3점</label>
-          <label style="margin-right:8px;"><input type="radio" name="over_${workerId}_q_${q.id}" value="2" ${curVal === 2 ? 'checked' : ''} onchange="setOverrideScore('${workerId}', 'q_${q.id}', 2)"> 🟡 2점</label>
-          <label><input type="radio" name="over_${workerId}_q_${q.id}" value="1" ${curVal === 1 ? 'checked' : ''} onchange="setOverrideScore('${workerId}', 'q_${q.id}', 1)"> 🔴 1점</label>
-        </td>
-      </tr>
-    `;
+    baseScores[`q_${q.id}`] = Number(document.querySelector(`input[name="q_${q.id}"]:checked`)?.value || 3);
   });
-  html += `</tbody></table>`;
 
-  container.innerHTML = html;
-  panel.style.display = "block";
+  selectedChks.forEach(chk => {
+    const workerId = chk.value;
+    const workerName = chk.dataset.name;
+    const workerJob = chk.dataset.job || "관리감독자";
+
+    // 인원별 점수가 없으면 기본 점수로 초기 세팅
+    if (!workerOverrideScores[workerId]) {
+      workerOverrideScores[workerId] = { ...baseScores };
+    }
+
+    const tr = document.createElement("tr");
+    tr.id = `matrixRow_${workerId}`;
+
+    let rowHtml = `
+      <td style="font-weight:700; background:#f1f5f9;">${workerName}</td>
+      <td style="font-size:0.75rem; color:#475569; background:#f1f5f9;">${workerJob}</td>
+    `;
+
+    let total = 0;
+    for (let i = 1; i <= 20; i++) {
+      const qKey = `q_${i}`;
+      const val = workerOverrideScores[workerId][qKey] || 3;
+      total += val;
+
+      const scoreClass = val === 3 ? 'score-3' : (val === 2 ? 'score-2' : 'score-1');
+
+      rowHtml += `
+        <td>
+          <select class="matrix-score-select ${scoreClass}" onchange="onMatrixScoreChange('${workerId}', '${qKey}', this)">
+            <option value="3" ${val === 3 ? 'selected' : ''}>3점</option>
+            <option value="2" ${val === 2 ? 'selected' : ''}>2점</option>
+            <option value="1" ${val === 1 ? 'selected' : ''}>1점</option>
+          </select>
+        </td>
+      `;
+    }
+
+    const avg = (total / 20).toFixed(2);
+    rowHtml += `
+      <td style="font-weight:800; color:var(--accent-color);" id="matrixTotal_${workerId}">${total}점</td>
+      <td style="font-weight:800; color:var(--primary-color);" id="matrixAvg_${workerId}">${avg}</td>
+    `;
+
+    tr.innerHTML = rowHtml;
+    tbody.appendChild(tr);
+  });
+
+  openModal("matrixModal");
 }
 
-function setOverrideScore(workerId, qKey, score) {
+// 매트릭스 셀 점수 변경 시 실시간 업데이트
+function onMatrixScoreChange(workerId, qKey, selectEl) {
+  const val = Number(selectEl.value);
   if (!workerOverrideScores[workerId]) workerOverrideScores[workerId] = {};
-  workerOverrideScores[workerId][qKey] = Number(score);
-}
+  workerOverrideScores[workerId][qKey] = val;
 
-function resetWorkerOverride() {
-  const workerId = document.getElementById("overrideWorkerSelect").value;
-  if (!workerId) return;
-  delete workerOverrideScores[workerId];
-  handleOverrideWorkerSelect({ target: { value: workerId } });
-  alert("해당 관리감독자의 점수가 공통 기본점수로 복원되었습니다.");
+  // 드롭다운 색상 변경
+  selectEl.className = `matrix-score-select ${val === 3 ? 'score-3' : (val === 2 ? 'score-2' : 'score-1')}`;
+
+  // 총점 및 평균 재계산
+  let total = 0;
+  for (let i = 1; i <= 20; i++) {
+    total += Number(workerOverrideScores[workerId][`q_${i}`] || 3);
+  }
+  const avg = (total / 20).toFixed(2);
+
+  const totalEl = document.getElementById(`matrixTotal_${workerId}`);
+  const avgEl = document.getElementById(`matrixAvg_${workerId}`);
+  if (totalEl) totalEl.textContent = `${total}점`;
+  if (avgEl) avgEl.textContent = avg;
 }
 
 function fillAll(score) {
@@ -328,6 +362,13 @@ function fillAll(score) {
     const radio = document.querySelector(`input[name="q_${q.id}"][value="${score}"]`);
     if (radio) radio.checked = true;
   });
+  // 모든 인원의 overrideScores 갱신
+  Object.keys(workerOverrideScores).forEach(wId => {
+    QUESTIONS.forEach(q => {
+      workerOverrideScores[wId][`q_${q.id}`] = Number(score);
+    });
+  });
+
   updateProgress();
 }
 
@@ -439,7 +480,6 @@ function submitBatchAssessment() {
     currentSignatureDataUrl = canvas.toDataURL("image/png");
   }
 
-  // 기본 공통 점수
   const baseScores = {};
   QUESTIONS.forEach(q => {
     baseScores[`q_${q.id}`] = Number(document.querySelector(`input[name="q_${q.id}"]:checked`)?.value || 3);
@@ -448,7 +488,6 @@ function submitBatchAssessment() {
   const workerPayloads = [];
   selectedChks.forEach(chk => {
     const workerId = chk.value;
-    // 개별 변경 점수가 있으면 개별점수, 없으면 기본공통점수 적용
     const finalScores = workerOverrideScores[workerId] ? workerOverrideScores[workerId] : baseScores;
 
     workerPayloads.push({

@@ -3,7 +3,7 @@
 <head>
   <meta charset="UTF-8" />
   <meta name="viewport" content="width=device-width, initial-scale=1.0" />
-  <title>관리감독자 업무수행 평가표 (대규모 다인원 일괄 평가 모드)</title>
+  <title>관리감독자 업무수행 평가표 (다수 일괄 평가 모드)</title>
   <link rel="stylesheet" href="style.css" />
 </head>
 <body>
@@ -79,7 +79,7 @@
         </div>
       </div>
 
-      <!-- 다수 대상자 컴팩트 체크박스 영역 (실시간 검색바 탑재) -->
+      <!-- 다수 대상자 체크박스 영역 -->
       <div style="margin-top: 1rem;">
         <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.5rem; flex-wrap: wrap; gap: 0.5rem;">
           <label style="font-size: 0.9rem; font-weight: 700; color: var(--primary-color);">
@@ -111,9 +111,16 @@
 
     <!-- 2. 공통 점수 일괄 입력 & 20개 문항 카드 -->
     <section class="card">
-      <div class="card-title" style="justify-content: space-between;">
-        <span>📝 2. 평가 문항 체크 (선택된 인원 공통 기본 점수)</span>
-        <span id="progressBadge" class="score-badge" style="font-size:0.9rem; background:#e2e8f0; padding:4px 10px; border-radius:12px;">진행률: 0 / 20</span>
+      <div class="card-title" style="justify-content: space-between; flex-wrap: wrap; gap: 0.5rem;">
+        <div style="display: flex; align-items: center; gap: 0.75rem;">
+          <span>📝 2. 평가 문항 체크 (선택된 인원 공통 기본 점수)</span>
+          <span id="progressBadge" class="score-badge" style="font-size:0.85rem; background:#e2e8f0; padding:4px 10px; border-radius:12px;">진행률: 0 / 20</span>
+        </div>
+        
+        <!-- 🔥 핵심 신규 기능: 인원별 세부 점수표 매트릭스 보기 버튼 -->
+        <button class="btn btn-primary" id="btnOpenMatrixModal" style="font-size: 0.85rem; padding: 0.4rem 0.9rem; background: var(--accent-color);">
+          📊 인원별 세부 현황표 보기 / 수정 (이름, 직종, 문1~문20)
+        </button>
       </div>
 
       <!-- Quick Fill Buttons -->
@@ -128,36 +135,7 @@
       <div id="questionsContainer"></div>
     </section>
 
-    <!-- 3. 특정 대상자 세부 점수 개별 조정 (홍길동 등 인원별 점수 개별 변경) -->
-    <section class="card">
-      <div class="card-title">
-        <span>⚙️ 3. 특정 대상자 세부점수 개별 조정 (개별 감점 수동 처리)</span>
-      </div>
-      <p style="font-size: 0.85rem; color: var(--text-muted); margin-bottom: 1rem;">
-        특정 관리감독자(예: 홍길동)만 1점 또는 2점으로 감점이 필요한 경우, 아래에서 대상을 선택하여 20개 문항 개별 점수를 수동 변경하세요.
-      </p>
-
-      <div class="form-group" style="max-width: 380px; margin-bottom: 1rem;">
-        <label for="overrideWorkerSelect">개별 점수를 수동 변경할 관리감독자 선택</label>
-        <select id="overrideWorkerSelect" class="form-control">
-          <option value="">-- 기본 일괄 점수 사용 --</option>
-        </select>
-      </div>
-
-      <!-- 개별 점수 수동 조정 패널 -->
-      <div id="overrideQuestionsPanel" style="display: none; background: #ffffff; padding: 1.25rem; border: 2px solid var(--accent-color); border-radius: var(--radius-md);">
-        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 1rem; border-bottom: 1px solid #e2e8f0; padding-bottom: 0.5rem;">
-          <h4 id="overridePanelTitle" style="font-size: 1rem; font-weight: 800; color: var(--accent-color);">
-            👤 [OOO] 관리감독자 전용 세부 점수 개별 조정
-          </h4>
-          <button class="btn btn-outline" id="btnResetWorkerOverride" style="font-size:0.75rem;">🔄 공통 기본점수 복원</button>
-        </div>
-
-        <div id="overrideQuestionsContainer"></div>
-      </div>
-    </section>
-
-    <!-- 4. 서명 및 일괄 제출 -->
+    <!-- 3. 서명 및 일괄 제출 -->
     <section class="card" style="text-align: center; padding: 2rem;">
       <div style="margin-bottom: 1rem;">
         <h3 style="font-weight: 700; margin-bottom: 0.5rem;">일괄 평가표 작성 완료 및 서명 제출</h3>
@@ -171,6 +149,43 @@
     </section>
 
   </main>
+
+  <!-- 🔥 대형 인원별 세부 점수표 (이름, 직종, 문1~문20 매트릭스) Modal -->
+  <div class="modal-backdrop" id="matrixModal">
+    <div class="modal-content matrix-modal-content">
+      <div class="modal-header" style="background: var(--primary-color);">
+        <h3>📊 선택된 관리감독자 인원별 세부 점수 현황표 (문1~문20)</h3>
+        <button class="modal-close" onclick="closeModal('matrixModal')">&times;</button>
+      </div>
+      <div class="modal-body" style="padding: 1rem;">
+        <div style="display: flex; justify-content: space-between; align-items: center; margin-bottom: 0.75rem;">
+          <p style="font-size: 0.85rem; color: var(--text-muted);">
+            ※ 각 인원별로 문1~문20 점수를 직접 <strong>3점 / 2점 / 1점</strong>으로 즉시 개별 수정하실 수 있습니다.
+          </p>
+          <div style="font-size: 0.85rem; font-weight: 700; color: var(--accent-color);">
+            선택 인원 수: <span id="matrixWorkerCount">0</span>명
+          </div>
+        </div>
+
+        <!-- 매트릭스 테이블 컨테이너 -->
+        <div class="matrix-table-container">
+          <table class="matrix-table" id="matrixTable">
+            <thead>
+              <tr id="matrixHeaderRow">
+                <!-- JS 동적 생성: 이름 | 직종 | 문1 | 문2 ... | 문20 | 총점 | 평균 -->
+              </tr>
+            </thead>
+            <tbody id="matrixTableBody">
+              <!-- JS 동적 생성 -->
+            </tbody>
+          </table>
+        </div>
+      </div>
+      <div class="modal-footer">
+        <button class="btn btn-primary" onclick="closeModal('matrixModal')">✅ 세부 수정 완료</button>
+      </div>
+    </div>
+  </div>
 
   <!-- 법률 조항 보기 Modal -->
   <div class="modal-backdrop" id="lawModal">
