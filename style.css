@@ -74,6 +74,64 @@ body {
   padding: 0 1rem;
 }
 
+/* 🔥 위저드 진행바 (Step Navigation) 복구 및 스타일링 */
+.wizard-bar {
+  display: flex;
+  justify-content: space-between;
+  align-items: center;
+  margin-bottom: 1.75rem;
+  background: #ffffff;
+  padding: 1rem 1.5rem;
+  border-radius: var(--radius-md);
+  border: 1px solid var(--border-color);
+  box-shadow: var(--shadow-sm);
+  gap: 0.5rem;
+  flex-wrap: wrap;
+}
+
+.wizard-step {
+  display: flex;
+  align-items: center;
+  gap: 0.6rem;
+  color: var(--text-muted);
+  font-weight: 600;
+  font-size: 0.9rem;
+}
+
+.wizard-step-num {
+  width: 32px;
+  height: 32px;
+  border-radius: 50%;
+  background: #e2e8f0;
+  color: #64748b;
+  display: flex;
+  align-items: center;
+  justify-content: center;
+  font-weight: 800;
+  font-size: 0.9rem;
+  flex-shrink: 0;
+}
+
+.wizard-step.active {
+  color: var(--accent-color);
+  font-weight: 800;
+}
+
+.wizard-step.active .wizard-step-num {
+  background: var(--accent-color);
+  color: #ffffff;
+  box-shadow: 0 0 0 4px rgba(37, 99, 235, 0.2);
+}
+
+.wizard-step.completed {
+  color: var(--success-color);
+}
+
+.wizard-step.completed .wizard-step-num {
+  background: var(--success-color);
+  color: #ffffff;
+}
+
 /* Card Styling */
 .card {
   background: var(--card-bg);
@@ -205,9 +263,8 @@ body {
 .modal-body { padding: 1.25rem; overflow-y: auto; flex: 1; }
 .modal-footer { padding: 1rem 1.25rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.5rem; background: #f8fafc; }
 
-/* 🔥 백지 출력 문제 완벽 해결: A4 인쇄 전용 CSS 규칙 수정 */
+/* 🔥 A4 인쇄 전용 CSS 규칙 */
 @media print {
-  /* 1. 배경 및 페이지 기본 마진 설정 */
   body {
     background: #ffffff !important;
     color: #000000 !important;
@@ -215,7 +272,6 @@ body {
     padding: 0 !important;
   }
 
-  /* 2. 화면 전용 요소 완벽 숨김 */
   header, 
   footer, 
   .no-print, 
@@ -226,7 +282,6 @@ body {
     display: none !important;
   }
 
-  /* 3. 보고서 감싸는 섹션 카드 스타일 초기화 */
   #reportControlCard {
     border: none !important;
     box-shadow: none !important;
@@ -239,7 +294,6 @@ body {
     display: none !important;
   }
 
-  /* 4. 오직 인쇄 대상 영역만 선명히 노출 */
   #printableReportArea {
     display: block !important;
     visibility: visible !important;
@@ -257,7 +311,6 @@ body {
     width: 100% !important;
   }
 
-  /* 드롭다운에서 선택적으로 숨겨진 섹션은 지정 유지 */
   #gabJiSection[style*="display: none"],
   #gabJiSection[style*="display:none"] {
     display: none !important;
@@ -273,7 +326,6 @@ body {
     break-before: page !important;
   }
 
-  /* 표 테두리 선명화 */
   table {
     width: 100% !important;
     border-collapse: collapse !important;
