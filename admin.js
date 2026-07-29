@@ -1,7 +1,7 @@
 /* =========================================================================
    admin.js
    관리자 최고 권한 시스템
-   - 3.5초 AbortController 타임아웃 및 무한 로그인 락 원천 차단
+   - 플로팅 A4 미리보기 & GAS exportPdf 정석 PDF 다운로드 지원
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -67,35 +67,71 @@ document.addEventListener("DOMContentLoaded", () => {
   bindChangePassEvents();
   bindAuditLogEvents();
   bindReminderEvents();
-  bindDirectByeongJiEvents();
+  bindFloatingReportEvents();
 
   document.getElementById("adminSiteSelect")?.addEventListener("change", renderAccordionWorkerTable);
   document.getElementById("btnToggleAllAccordions")?.addEventListener("click", toggleAllAccordions);
 
   renderAccordionWorkerTable();
-  updateReportView();
 });
 
-function bindDirectByeongJiEvents() {
-  const btnHeader = document.getElementById("btnDirectPrintByeongJiHeader");
-  const btnBody = document.getElementById("btnDirectPrintByeongJiBody");
+function bindFloatingReportEvents() {
+  const btnOpenModal = document.getElementById("btnOpenFloatingReportModal");
+  const btnHeaderByeong = document.getElementById("btnDirectPrintByeongJiHeader");
+  const btnBodyByeong = document.getElementById("btnDirectPrintByeongJiBody");
+  const btnGasPdf = document.getElementById("btnGasExportPdf");
 
-  const handler = () => {
+  btnOpenModal?.addEventListener("click", () => {
+    updateReportView();
+    openModal("reportPrintModal");
+  });
+
+  btnHeaderByeong?.addEventListener("click", () => {
     const sel = document.getElementById("reportTypeSelect");
     if (sel) sel.value = "byeong";
     updateReportView();
+    openModal("reportPrintModal");
+  });
 
-    const byeongSec = document.getElementById("byeongJiSection");
-    if (byeongSec) {
-      byeongSec.scrollIntoView({ behavior: "smooth" });
-    }
-    setTimeout(() => {
+  btnBodyByeong?.addEventListener("click", () => {
+    const sel = document.getElementById("reportTypeSelect");
+    if (sel) sel.value = "byeong";
+    updateReportView();
+    openModal("reportPrintModal");
+  });
+
+  btnGasPdf?.addEventListener("click", handleGasExportPdf);
+}
+
+// 🔥 GAS exportPdf API 호출: 구글 드라이브/스프레드시트 정석 A4 PDF 파일 다운로드
+function handleGasExportPdf() {
+  const site = document.getElementById("adminSiteSelect")?.value || "테스트현장";
+  const btn = document.getElementById("btnGasExportPdf");
+
+  btn.disabled = true;
+  btn.textContent = "⏳ GAS PDF 생성 중...";
+
+  fetch(GAS_API_URL, {
+    method: "POST",
+    headers: { "Content-Type": "text/plain;charset=utf-8" },
+    body: JSON.stringify({ action: "exportPdf", siteName: site })
+  })
+  .then(res => res.json())
+  .then(data => {
+    btn.disabled = false;
+    btn.textContent = "📥 GAS 서버 정석 PDF 다운로드 (exportPdf)";
+    if (data.ok && data.pdfUrl) {
+      window.open(data.pdfUrl, "_blank");
+      alert(`🎉 성공: [${escapeHTML(site)}] 표준 A4 서식이 지정된 구글 드라이브 PDF 파일 생성이 완료되었습니다!\n새 창에서 다운로드/인쇄해 주세요.`);
+    } else {
       window.print();
-    }, 250);
-  };
-
-  btnHeader?.addEventListener("click", handler);
-  btnBody?.addEventListener("click", handler);
+    }
+  })
+  .catch(err => {
+    btn.disabled = false;
+    btn.textContent = "📥 GAS 서버 정석 PDF 다운로드 (exportPdf)";
+    window.print();
+  });
 }
 
 function bindLoginEvents() {
@@ -110,7 +146,6 @@ function bindLoginEvents() {
   });
 }
 
-// 🔥 3.5초 AbortController 타임아웃 및 무한 대기 락 완벽 방지
 function handleAdminLogin() {
   const pass = document.getElementById("adminPass").value.trim();
   if (!pass) {
@@ -140,7 +175,6 @@ function handleAdminLogin() {
       document.getElementById("loginGateModal").classList.remove("active");
       document.getElementById("adminMainContent").style.display = "block";
       fetchAuditLogs();
-      updateReportView();
     } else {
       alert(`⚠️ 관리자 인증 실패: ${data.error || '비밀번호가 올바르지 않습니다.'}`);
     }
@@ -556,10 +590,6 @@ function renderDynamicGroupedEulJiTable() {
   });
 }
 
-function printReport() {
-  window.print();
-}
-
 function bindAuditLogEvents() {
   document.getElementById("btnRefreshLogs")?.addEventListener("click", fetchAuditLogs);
   document.getElementById("btnExportLogsExcel")?.addEventListener("click", exportAuditLogsToExcel);
@@ -636,5 +666,20 @@ function exportAuditLogsToExcel() {
   XLSX.writeFile(wb, "관리감독자평가_감사로그.xlsx");
 }
 
-function openModal(id) { document.getElementById(id)?.classList.add("active"); }
-function closeModal(id) { document.getElementById(id)?.classList.remove("active"); }
+function openModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.classList.add("active");
+    if (id === "reportPrintModal") {
+      modal.classList.add("print-active");
+    }
+  }
+}
+
+function closeModal(id) {
+  const modal = document.getElementById(id);
+  if (modal) {
+    modal.classList.remove("active");
+    modal.classList.remove("print-active");
+  }
+}
