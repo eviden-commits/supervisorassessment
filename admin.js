@@ -1,9 +1,7 @@
 /* =========================================================================
    admin.js
    관리자 최고 권한 시스템
-   - 병지(관리감독자 평가 절차서 SOP) 단독 1클릭 인쇄/다운로드 독립 버튼 바인딩
-   - 미제출자 독려 메일 일괄 발송 (상/하반기 탭 및 미제출 현장 체크 선택)
-   - 현장 필수 선택 및 아코디언 접힘(Collapsed) 기본 적용
+   - 3.5초 AbortController 타임아웃 및 무한 로그인 락 원천 차단
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -78,7 +76,6 @@ document.addEventListener("DOMContentLoaded", () => {
   updateReportView();
 });
 
-// 🔥 [병지] 평가 절차서 1클릭 독립 출력 버튼 바인딩
 function bindDirectByeongJiEvents() {
   const btnHeader = document.getElementById("btnDirectPrintByeongJiHeader");
   const btnBody = document.getElementById("btnDirectPrintByeongJiBody");
@@ -113,6 +110,7 @@ function bindLoginEvents() {
   });
 }
 
+// 🔥 3.5초 AbortController 타임아웃 및 무한 대기 락 완벽 방지
 function handleAdminLogin() {
   const pass = document.getElementById("adminPass").value.trim();
   if (!pass) {
@@ -124,13 +122,18 @@ function handleAdminLogin() {
   btn.disabled = true;
   btn.textContent = "⏳ 인증 중...";
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
+
   fetch(GAS_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "checkAdminPassword", password: pass })
+    body: JSON.stringify({ action: "checkAdminPassword", password: pass }),
+    signal: controller.signal
   })
   .then(res => res.json())
   .then(data => {
+    clearTimeout(timeoutId);
     btn.disabled = false;
     btn.textContent = "확인 로그인";
     if (data.ok) {
@@ -143,9 +146,14 @@ function handleAdminLogin() {
     }
   })
   .catch(err => {
+    clearTimeout(timeoutId);
     btn.disabled = false;
     btn.textContent = "확인 로그인";
-    alert("⚠️ 네트워크 응답 장애가 발생했습니다. 앱스크립트 서버 연결 상태를 확인하고 다시 시도해 주세요.");
+    if (err.name === 'AbortError') {
+      alert("⚠️ 구글 서버 응답이 3.5초 이상 지연되었습니다. 다시 한 번 [확인 로그인]을 눌러주세요.");
+    } else {
+      alert("⚠️ 네트워크 응답 장애가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+    }
   });
 }
 

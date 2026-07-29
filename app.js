@@ -1,11 +1,10 @@
 /* =========================================================================
    app.js
-   전체 보안 점검 및 XSS 취약점 원천 봉쇄 (escapeHTML 헬퍼 적용)
+   3.5초 AbortController 타임아웃 적용 및 무한 로그인 락 원천 방지
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
 
-// 🔥 XSS(Cross-Site Scripting) 방지를 위한 정밀 HTML 이스케이프 함수
 function escapeHTML(str) {
   if (!str) return "";
   return String(str)
@@ -118,6 +117,7 @@ function bindIndexAuthEvents() {
   });
 }
 
+// 🔥 3.5초 AbortController 타임아웃 및 무한 대기 락 완벽 방지
 function handleIndexLogin() {
   const pass = document.getElementById("indexPassInput").value.trim();
   if (!pass) {
@@ -129,13 +129,18 @@ function handleIndexLogin() {
   btn.disabled = true;
   btn.textContent = "⏳ 비밀번호 검증 중...";
 
+  const controller = new AbortController();
+  const timeoutId = setTimeout(() => controller.abort(), 3500);
+
   fetch(GAS_API_URL, {
     method: "POST",
     headers: { "Content-Type": "text/plain;charset=utf-8" },
-    body: JSON.stringify({ action: "checkIndexPassword", password: pass })
+    body: JSON.stringify({ action: "checkIndexPassword", password: pass }),
+    signal: controller.signal
   })
   .then(res => res.json())
   .then(data => {
+    clearTimeout(timeoutId);
     btn.disabled = false;
     btn.textContent = "입장하기";
     if (data.ok) {
@@ -145,9 +150,14 @@ function handleIndexLogin() {
     }
   })
   .catch(err => {
+    clearTimeout(timeoutId);
     btn.disabled = false;
     btn.textContent = "입장하기";
-    alert("⚠️ 네트워크 응답 장애가 발생했습니다. 앱스크립트 서버 연결 상태를 확인하고 다시 시도해 주세요.");
+    if (err.name === 'AbortError') {
+      alert("⚠️ 구글 서버 응답이 3.5초 이상 지연되었습니다. 다시 한 번 [입장하기]를 눌러주세요.");
+    } else {
+      alert("⚠️ 네트워크 응답 장애가 발생했습니다. 잠시 후 다시 시도해 주세요.");
+    }
   });
 }
 
@@ -418,7 +428,6 @@ function handleSendOtp() {
   });
 }
 
-// 🔥 OTP 100% 백엔드 서버 전담 검증 (크랙방지 보안강화)
 function handleVerifyOtp() {
   const inputCode = document.getElementById("otpCodeInput").value.trim();
   if (!inputCode) {
