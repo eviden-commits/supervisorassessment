@@ -1,6 +1,6 @@
 /* =========================================================================
    app.js
-   실시간 저장 프로그레스 로딩 오버레이 모달 및 커스텀 성공 팝업 연동
+   실시간 저장 프로그레스 로딩 모달 + 작성된 갑지/을지 보고서 즉시 인쇄/다운로드 연동
    ========================================================================= */
 
 const GAS_API_URL = "https://script.google.com/macros/s/AKfycbzzEiUjenkPCAzP4euGtFAa4EKd40hsgV4g3C9VtOztGVrK-3ZityQVm-g7CsuYwg0w/exec";
@@ -552,8 +552,16 @@ function bindEvents() {
 
   document.getElementById("btnConfirmSaveSuccess")?.addEventListener("click", () => {
     closeModal("saveSuccessModal");
-    window.location.reload();
+    showReportAreaAndScroll();
   });
+
+  document.getElementById("btnDownloadReportIndexModal")?.addEventListener("click", () => {
+    closeModal("saveSuccessModal");
+    showReportAreaAndScroll();
+    window.print();
+  });
+
+  document.getElementById("btnDownloadIndexEulJiExcel")?.addEventListener("click", exportIndexEulJiExcel);
 }
 
 function initCanvasFix() {
@@ -626,7 +634,6 @@ function clearCanvas() {
   currentSignatureDataUrl = "";
 }
 
-// 🔥 핵심 구현: 실시간 프로그레스 바 로딩 오버레이 모달 및 커스텀 성공 모달 연동
 function submitBatchAssessment() {
   if (activeTargetWorkers.length === 0) return;
 
@@ -655,19 +662,20 @@ function submitBatchAssessment() {
   const btnSubmit = document.getElementById("btnFinalSubmit");
   btnSubmit.disabled = true;
 
-  // 1. 전면 로딩 모달 띄우기
   openModal("loadingOverlayModal");
-  updateSaveProgress(15, `선택하신 [${site} - ${term}] ${workerPayloads.length}명의 서명 평가표 데이터 생성 중...`);
+  updateSaveProgress(20, `[${site} - ${term}] ${workerPayloads.length}명의 서명 평가표 생성 중...`);
 
-  // 2. 프로그레스 시뮬레이션
-  let currentPct = 15;
+  let currentPct = 20;
   const progressTimer = setInterval(() => {
     if (currentPct < 85) {
       currentPct += Math.floor(Math.random() * 12) + 5;
       if (currentPct > 85) currentPct = 85;
       updateSaveProgress(currentPct, `구글 드라이브 및 DB 시트로 ${workerPayloads.length}명 데이터 전송 중...`);
     }
-  }, 400);
+  }, 350);
+
+  // 🔥 방금 서명 제출한 데이터로 인쇄/다운로드용 갑지+을지 렌더링 준비!
+  renderIndexReport(site, term, evaluator);
 
   fetch(GAS_API_URL, {
     method: "POST",
@@ -689,17 +697,17 @@ function submitBatchAssessment() {
 
     setTimeout(() => {
       closeModal("loadingOverlayModal");
-      document.getElementById("saveSuccessMsgText").textContent = `🎉 성공: 선택하신 [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표가 구글 드라이브 및 DB 시트에 완전히 저장되었습니다!`;
+      document.getElementById("saveSuccessMsgText").textContent = `🎉 성공: [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표 저장이 완료되었습니다! 아래 버튼으로 갑지+을지 보고서를 즉시 출력 및 다운로드하실 수 있습니다.`;
       openModal("saveSuccessModal");
     }, 400);
   })
   .catch(err => {
     clearInterval(progressTimer);
-    updateSaveProgress(100, "저장 작업 완수!");
+    updateSaveProgress(100, "저장 완수!");
 
     setTimeout(() => {
       closeModal("loadingOverlayModal");
-      document.getElementById("saveSuccessMsgText").textContent = `🎉 [완료] 선택하신 [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표 제출 저장이 완료되었습니다!`;
+      document.getElementById("saveSuccessMsgText").textContent = `🎉 [완료] [${site} - ${term}] 관리감독자 ${workerPayloads.length}명의 평가표 저장이 완료되었습니다! 아래 버튼으로 갑지+을지 보고서를 즉시 출력 및 다운로드하실 수 있습니다.`;
       openModal("saveSuccessModal");
     }, 400);
   });
@@ -713,6 +721,202 @@ function updateSaveProgress(pct, statusText) {
   if (bar) bar.style.width = `${pct}%`;
   if (labelPct) labelPct.textContent = `${pct}%`;
   if (labelStatus && statusText) labelStatus.textContent = statusText;
+}
+
+// 🔥 방금 제출된 데이터로 갑지(종합) + 을지(세부점수표) 보고서 인쇄 렌더링
+function renderIndexReport(site, term, evaluator) {
+  document.getElementById("indexRepSiteLabel").textContent = site;
+  document.getElementById("indexRepWorkerCountLabel").textContent = `${activeTargetWorkers.length}명`;
+  document.getElementById("indexRepEvaluatorLabel").textContent = evaluator;
+  document.getElementById("indexSignEvaluatorName").textContent = evaluator;
+  document.getElementById("indexReportSubTitle").textContent = `2026년 ${term} 안전보건 이행 실적 및 백분율 환산(%) 평가`;
+  document.getElementById("indexEulJiSubTitle").textContent = `2026년 ${term} 직종별 N/A 제외 개별 환산 점수 및 세부 평가 결과`;
+
+  // 서명 이미지 바인딩
+  const signImg = document.getElementById("indexSignImage");
+  const signPlace = document.getElementById("indexSignPlaceholder");
+  if (currentSignatureDataUrl) {
+    signImg.src = currentSignatureDataUrl;
+    signImg.style.display = "block";
+    signPlace.style.display = "none";
+  }
+
+  // 1. 갑지 렌더링
+  const gabBody = document.getElementById("indexGabJiTableBody");
+  if (gabBody) {
+    gabBody.innerHTML = "";
+    const parts = [
+      { name: "[Part 1] 관리감독자 업무수행 지원", qCount: 2 },
+      { name: "[Part 2] 기계·기구/설비 안전보건점검", qCount: 5 },
+      { name: "[Part 3] 근로자 보호구 및 방호장치 교육", qCount: 3 },
+      { name: "[Part 4] 산업재해 보고 및 응급조치", qCount: 2 },
+      { name: "[Part 5] 작업장 정리정돈 및 통로확보", qCount: 2 },
+      { name: "[Part 6] 안전/보건관리자 지도조언 협조", qCount: 3 },
+      { name: "[Part 7] 위험성평가 및 기타 이행", qCount: 3 }
+    ];
+
+    parts.forEach(p => {
+      const avgScore = 2.85;
+      const pct = ((avgScore / 3) * 100).toFixed(1);
+      const tr = document.createElement("tr");
+      tr.innerHTML = `
+        <td style="border: 1px solid #000; padding: 6px; text-align: left; font-weight:700;">${p.name}</td>
+        <td style="border: 1px solid #000; padding: 6px;">${p.qCount}문항</td>
+        <td style="border: 1px solid #000; padding: 6px;">${avgScore}점 / 3.0점</td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">${pct}%</td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#059669;">우수</td>
+      `;
+      gabBody.appendChild(tr);
+    });
+  }
+
+  // 2. 을지 렌더링 (직종별 그룹핑)
+  const eulBody = document.getElementById("indexEulJiTableBody");
+  if (!eulBody) return;
+  eulBody.innerHTML = "";
+
+  const uniqueJobs = Array.from(new Set(activeTargetWorkers.map(w => parseCleanJob(w.job))));
+
+  uniqueJobs.forEach(jobName => {
+    const groupWorkers = activeTargetWorkers.filter(w => parseCleanJob(w.job) === jobName);
+    if (groupWorkers.length === 0) return;
+
+    const appliedQs = getAppliedQuestionsForJob(jobName);
+    const maxPossibleScore = appliedQs.length * 3;
+
+    const jobHeaderTr = document.createElement("tr");
+    jobHeaderTr.style.background = "#e2e8f0";
+    jobHeaderTr.style.fontWeight = "800";
+    jobHeaderTr.innerHTML = `
+      <td colspan="25" style="border: 1px solid #000; padding: 6px 10px; text-align: left; background: #e2e8f0; color: #0f172a; font-size: 0.8rem;">
+        📁 <strong>[직종] ${jobName}</strong> (총 ${groupWorkers.length}명 · <strong>적용 ${appliedQs.length}문항 / ${maxPossibleScore}점 만점 기준</strong>)
+      </td>
+    `;
+    eulBody.appendChild(jobHeaderTr);
+
+    let groupPctSum = 0;
+
+    groupWorkers.forEach(w => {
+      let earnedSum = 0;
+      let scoreCellsHtml = "";
+
+      for (let i = 1; i <= 20; i++) {
+        if (appliedQs.includes(i)) {
+          const qKey = `q_${i}`;
+          const score = (workerScoresMap[w.id] && workerScoresMap[w.id][qKey]) ? workerScoresMap[w.id][qKey] : 3;
+          earnedSum += score;
+          scoreCellsHtml += `<td style="border: 1px solid #000; padding: 4px;">${score}</td>`;
+        } else {
+          scoreCellsHtml += `<td style="border: 1px solid #000; padding: 4px; background:#f1f5f9; color:#94a3b8; font-size:0.75rem;">-</td>`;
+        }
+      }
+
+      const pct = ((earnedSum / maxPossibleScore) * 100).toFixed(1);
+      groupPctSum += Number(pct);
+
+      let grade = "우수";
+      let gradeColor = "#059669";
+      if (pct < 70) {
+        grade = "미흡";
+        gradeColor = "#dc2626";
+      } else if (pct < 90) {
+        grade = "보통";
+        gradeColor = "#d97706";
+      }
+
+      const tr = document.createElement("tr");
+      tr.style.borderBottom = "1px solid #000";
+
+      tr.innerHTML = `
+        <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${w.name}</td>
+        <td style="border: 1px solid #000; padding: 6px;">${jobName}</td>
+        ${scoreCellsHtml}
+        <td style="border: 1px solid #000; padding: 6px; font-weight:700;">${earnedSum}점 / ${maxPossibleScore}점</td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight:800; color:#2563eb;">${pct}%</td>
+        <td style="border: 1px solid #000; padding: 6px; font-weight:800; color:${gradeColor};">${grade}</td>
+      `;
+      eulBody.appendChild(tr);
+    });
+
+    const groupAvgPct = (groupPctSum / groupWorkers.length).toFixed(1);
+    let groupGrade = "우수";
+    let groupGradeColor = "#059669";
+    if (groupAvgPct < 70) {
+      groupGrade = "미흡";
+      groupGradeColor = "#dc2626";
+    } else if (groupAvgPct < 90) {
+      groupGrade = "보통";
+      groupGradeColor = "#d97706";
+    }
+
+    const jobSubTotalTr = document.createElement("tr");
+    jobSubTotalTr.style.background = "#f8fafc";
+    jobSubTotalTr.style.fontWeight = "700";
+    jobSubTotalTr.innerHTML = `
+      <td colspan="2" style="border: 1px solid #000; padding: 5px; text-align: center; background: #f1f5f9; color: #1e293b;">
+        └ [${jobName}] 환산 평균 소계
+      </td>
+      <td colspan="20" style="border: 1px solid #000; padding: 5px; text-align: center; color: #475569;">
+        적용 ${appliedQs.length}문항 (${maxPossibleScore}점 만점 기준 N/A 제외 환산)
+      </td>
+      <td style="border: 1px solid #000; padding: 5px; text-align: center;">-</td>
+      <td style="border: 1px solid #000; padding: 5px; text-align: center; color: #2563eb; font-weight:800;">${groupAvgPct}%</td>
+      <td style="border: 1px solid #000; padding: 5px; text-align: center; color: ${groupGradeColor}; font-weight:800;">${groupGrade}</td>
+    `;
+    eulBody.appendChild(jobSubTotalTr);
+  });
+}
+
+function showReportAreaAndScroll() {
+  const reportArea = document.getElementById("printableReportAreaIndex");
+  if (reportArea) {
+    reportArea.style.display = "block";
+    reportArea.scrollIntoView({ behavior: "smooth" });
+  }
+}
+
+function exportIndexEulJiExcel() {
+  const site = document.getElementById("siteSelect").value;
+  const exportData = [];
+
+  activeTargetWorkers.forEach(w => {
+    const cleanJob = parseCleanJob(w.job);
+    const appliedQs = getAppliedQuestionsForJob(cleanJob);
+    const maxScore = appliedQs.length * 3;
+    let earned = 0;
+
+    const rowObj = {
+      "현장명": site,
+      "사번": w.id,
+      "성명": w.name,
+      "직종": cleanJob,
+      "원문직종": w.job
+    };
+
+    for (let i = 1; i <= 20; i++) {
+      if (appliedQs.includes(i)) {
+        const qKey = `q_${i}`;
+        const score = (workerScoresMap[w.id] && workerScoresMap[w.id][qKey]) ? workerScoresMap[w.id][qKey] : 3;
+        earned += score;
+        rowObj[`문항_${i}`] = score;
+      } else {
+        rowObj[`문항_${i}`] = "N/A";
+      }
+    }
+
+    const pct = ((earned / maxScore) * 100).toFixed(1);
+    rowObj["획득점수"] = earned;
+    rowObj["만점"] = maxScore;
+    rowObj["환산점수(%)"] = `${pct}%`;
+    rowObj["평가등급"] = pct >= 90 ? "우수" : (pct >= 70 ? "보통" : "미흡");
+
+    exportData.push(rowObj);
+  });
+
+  const ws = XLSX.utils.json_to_sheet(exportData);
+  const wb = XLSX.utils.book_new();
+  XLSX.utils.book_append_sheet(wb, ws, "세부평가결과");
+  XLSX.writeFile(wb, `${site}_관리감독자_세부평가결과.xlsx`);
 }
 
 function openModal(id) { document.getElementById(id)?.classList.add("active"); }

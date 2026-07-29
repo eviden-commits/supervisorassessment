@@ -238,24 +238,129 @@
       </div>
     </section>
 
+    <!-- 🔥 서명 완료 후 나타나는 작성 보고서 (갑지+을지) 인쇄 / 다운로드 영역 -->
+    <section id="printableReportAreaIndex" style="display: none; margin-top: 2rem;">
+      <div style="display: flex; justify-content: space-between; align-items: center; background: #ffffff; padding: 1rem; border-radius: var(--radius-md); border: 1px solid var(--border-color); margin-bottom: 1rem;" class="no-print">
+        <h4 style="font-size: 1rem; font-weight: 800; color: var(--primary-color);">
+          📄 방금 작성하신 보고서 (갑지 + 을지)
+        </h4>
+        <div style="display: flex; gap: 0.5rem;">
+          <button class="btn btn-primary" onclick="window.print()">
+            🖨️ A4 보고서 출력 / PDF 저장 (갑지+을지)
+          </button>
+          <button class="btn btn-outline" id="btnDownloadIndexEulJiExcel">
+            📥 세부 점수 엑셀 다운로드
+          </button>
+        </div>
+      </div>
+
+      <!-- 1. 갑지 (종합보고서) -->
+      <div id="indexGabJiSection" class="card" style="background: #ffffff; padding: 2rem; margin-bottom: 2rem;">
+        <div style="display: flex; justify-content: space-between; align-items: flex-start; margin-bottom: 1.5rem;">
+          <div style="text-align: left;">
+            <h2 style="font-size: 1.4rem; font-weight: 800; color: #0f172a; margin-bottom: 0.3rem;">
+              관리감독자 평가 종합 보고서 (갑지)
+            </h2>
+            <p style="font-size: 0.88rem; color: #475569;" id="indexReportSubTitle">
+              2026년 상반기 안전보건 이행 실적 및 백분율 환산(%) 평가
+            </p>
+          </div>
+          <!-- 결재란 (우측 상단 310px 고정) -->
+          <table class="approval-table" style="width: 310px; border-collapse: collapse; text-align: center; font-size: 0.8rem;">
+            <tr>
+              <th rowspan="2" style="width: 25px; border: 1px solid #000; background: #f1f5f9; vertical-align: middle;">결<br>재</th>
+              <th style="border: 1px solid #000; background: #f8fafc; padding: 4px;">작 성 (담당)</th>
+              <th style="border: 1px solid #000; background: #f8fafc; padding: 4px;">검 토 (팀장)</th>
+              <th style="border: 1px solid #000; background: #f8fafc; padding: 4px;">승 인 (소장)</th>
+            </tr>
+            <tr style="height: 55px;">
+              <td style="border: 1px solid #000; vertical-align: middle; position: relative;">
+                <span id="indexSignEvaluatorName" style="font-size: 0.75rem; color: #64748b;">(서명)</span>
+              </td>
+              <td style="border: 1px solid #000; vertical-align: middle;">
+                <span style="font-size: 0.75rem; color: #64748b;">(인)</span>
+              </td>
+              <td style="border: 1px solid #000; vertical-align: middle; text-align: center;">
+                <img id="indexSignImage" src="" alt="서명" style="max-height: 48px; max-width: 80px; display: none; margin: 0 auto;" />
+                <span id="indexSignPlaceholder" style="font-size: 0.75rem; color: #64748b;">(인)</span>
+              </td>
+            </tr>
+          </table>
+        </div>
+
+        <div style="border: 1px solid #000; padding: 10px; margin-bottom: 1.5rem; text-align: left; font-size: 0.9rem; background: #f8fafc;">
+          <strong>현장명:</strong> <span id="indexRepSiteLabel">테스트현장</span> &nbsp;|&nbsp; 
+          <strong>평가대상:</strong> <span id="indexRepWorkerCountLabel">20명</span> &nbsp;|&nbsp; 
+          <strong>평가자:</strong> <span id="indexRepEvaluatorLabel">최난새</span>
+        </div>
+
+        <!-- 8개 영역 세부 결과 표 -->
+        <table class="main-report-table" style="width: 100%; border-collapse: collapse; font-size: 0.83rem; text-align: center;">
+          <thead>
+            <tr style="background: #f1f5f9; border-bottom: 2px solid #000;">
+              <th style="border: 1px solid #000; padding: 6px;">평가 분야 (8가지 항목)</th>
+              <th style="border: 1px solid #000; padding: 6px;">문항수</th>
+              <th style="border: 1px solid #000; padding: 6px;">획득 평균점수</th>
+              <th style="border: 1px solid #000; padding: 6px;">백분율 환산 (%)</th>
+              <th style="border: 1px solid #000; padding: 6px;">평가 등급</th>
+            </tr>
+          </thead>
+          <tbody id="indexGabJiTableBody"></tbody>
+        </table>
+      </div>
+
+      <!-- 2. 을지 (세부점수표) -->
+      <div id="indexEulJiSection" class="card report-page-break" style="background: #ffffff; padding: 2rem;">
+        <h3 style="font-size: 1.25rem; font-weight: 800; color: #0f172a; margin-bottom: 0.3rem; text-align: left;">
+          관리감독자 직종별 세부 평가 내역서 (을지)
+        </h3>
+        <p style="font-size: 0.85rem; color: #475569; margin-bottom: 1.25rem; text-align: left;" id="indexEulJiSubTitle">
+          직종별 N/A 제외 개별 환산 점수 및 세부 평가 결과
+        </p>
+
+        <div style="overflow-x: auto;">
+          <table class="main-report-table" style="width: 100%; border-collapse: collapse; font-size: 0.72rem; text-align: center;">
+            <thead>
+              <tr style="background: #f1f5f9;">
+                <th style="border: 1px solid #000; padding: 4px;" rowspan="2">성명</th>
+                <th style="border: 1px solid #000; padding: 4px;" rowspan="2">직종</th>
+                <th style="border: 1px solid #000; padding: 4px;" colspan="20">문항별 점수 (1~20)</th>
+                <th style="border: 1px solid #000; padding: 4px;" rowspan="2">획득/만점</th>
+                <th style="border: 1px solid #000; padding: 4px;" rowspan="2">환산%</th>
+                <th style="border: 1px solid #000; padding: 4px;" rowspan="2">등급</th>
+              </tr>
+              <tr style="background: #f8fafc;">
+                <th style="border: 1px solid #000; padding: 2px;">1</th>
+                <th style="border: 1px solid #000; padding: 2px;">2</th>
+                <th style="border: 1px solid #000; padding: 2px;">3</th>
+                <th style="border: 1px solid #000; padding: 2px;">4</th>
+                <th style="border: 1px solid #000; padding: 2px;">5</th>
+                <th style="border: 1px solid #000; padding: 2px;">6</th>
+                <th style="border: 1px solid #000; padding: 2px;">7</th>
+                <th style="border: 1px solid #000; padding: 2px;">8</th>
+                <th style="border: 1px solid #000; padding: 2px;">9</th>
+                <th style="border: 1px solid #000; padding: 2px;">10</th>
+                <th style="border: 1px solid #000; padding: 2px;">11</th>
+                <th style="border: 1px solid #000; padding: 2px;">12</th>
+                <th style="border: 1px solid #000; padding: 2px;">13</th>
+                <th style="border: 1px solid #000; padding: 2px;">14</th>
+                <th style="border: 1px solid #000; padding: 2px;">15</th>
+                <th style="border: 1px solid #000; padding: 2px;">16</th>
+                <th style="border: 1px solid #000; padding: 2px;">17</th>
+                <th style="border: 1px solid #000; padding: 2px;">18</th>
+                <th style="border: 1px solid #000; padding: 2px;">19</th>
+                <th style="border: 1px solid #000; padding: 2px;">20</th>
+              </tr>
+            </thead>
+            <tbody id="indexEulJiTableBody"></tbody>
+          </table>
+        </div>
+      </div>
+    </section>
+
   </main>
 
-  <!-- 하단 고정 액션 바 -->
-  <div class="sticky-bottom-action-bar" id="stickyBottomNavBar" style="display: none;">
-    <div class="sticky-action-inner">
-      <div class="sticky-progress-text" id="stickyProgressText">
-        7개 규격 직종 자동 파싱 & N/A 제외 반영
-      </div>
-      <div style="display: flex; gap: 0.5rem;">
-        <button class="btn btn-secondary" id="btnPrevQuestion" style="visibility: hidden; font-size: 0.85rem;">◀ 이전 문항</button>
-        <button class="btn btn-primary" id="btnNextQuestion" style="font-size: 0.9rem; padding: 0.65rem 1.5rem;">
-          다음 문항 이동 ▶
-        </button>
-      </div>
-    </div>
-  </div>
-
-  <!-- 🔥 1. 모던 로딩 스피너 및 실시간 저장 프로그레스 바 전면 오버레이 모달 -->
+  <!-- 1. 모던 로딩 스피너 및 실시간 저장 프로그레스 바 전면 오버레이 모달 -->
   <div class="modal-backdrop" id="loadingOverlayModal" style="z-index: 3000 !important;">
     <div class="modal-content" style="max-width: 420px; text-align: center; padding: 2.25rem 1.5rem;">
       <div class="loading-spinner"></div>
@@ -276,19 +381,25 @@
     </div>
   </div>
 
-  <!-- 🔥 2. 저장 완수 안내 커스텀 성공 모달 (찌그러진 alert 대체) -->
+  <!-- 🔥 2. 저장 완수 안내 커스텀 성공 모달 (갑지+을지 다운로드 버튼 포함) -->
   <div class="modal-backdrop" id="saveSuccessModal" style="z-index: 3100 !important;">
-    <div class="modal-content" style="max-width: 440px; text-align: center; padding: 2rem 1.5rem;">
+    <div class="modal-content" style="max-width: 460px; text-align: center; padding: 2rem 1.5rem;">
       <div style="font-size: 3rem; margin-bottom: 0.5rem;">🎉</div>
       <h3 style="font-size: 1.25rem; font-weight: 800; color: #059669; margin-bottom: 0.75rem;">
         평가표 제출 및 저장 완수!
       </h3>
-      <p style="font-size: 0.9rem; color: #334155; line-height: 1.6; margin-bottom: 1.5rem;" id="saveSuccessMsgText">
+      <p style="font-size: 0.95rem; color: #334155; line-height: 1.6; margin-bottom: 1.5rem;" id="saveSuccessMsgText">
         선택하신 현장의 관리감독자 평가표가 구글 드라이브 및 DB 시트에 안전하게 제출/저장되었습니다.
       </p>
-      <button class="btn btn-success" id="btnConfirmSaveSuccess" style="width: 100%; font-size: 1rem; padding: 0.75rem;">
-        확인 및 완료 ➔
-      </button>
+
+      <div style="display: flex; flex-direction: column; gap: 0.6rem;">
+        <button class="btn btn-primary" id="btnDownloadReportIndexModal" style="width: 100%; font-size: 0.95rem; padding: 0.75rem;">
+          🖨️ 작성한 보고서 (갑지+을지) 출력 및 PDF 저장
+        </button>
+        <button class="btn btn-success" id="btnConfirmSaveSuccess" style="width: 100%; font-size: 0.9rem; padding: 0.65rem;">
+          ✅ 완료 확인 (처음으로 돌아가기)
+        </button>
+      </div>
     </div>
   </div>
 
