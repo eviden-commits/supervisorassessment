@@ -202,13 +202,12 @@ body {
 .btn-score-1 { background: #fef2f2; color: var(--danger-color); border-color: #fca5a5; }
 .btn-score-1:hover { background: #fee2e2; }
 
-/* Micro Matrix Table for Registered Workers in Single Question */
+/* Micro Matrix Table without Inner Scrollbar */
 .micro-worker-table-container {
-  max-height: 240px;
-  overflow-y: auto;
   border: 1px solid var(--border-color);
   border-radius: var(--radius-sm);
   margin-bottom: 1.25rem;
+  overflow: hidden;
 }
 
 .micro-worker-table {
@@ -218,19 +217,21 @@ body {
 }
 
 .micro-worker-table th {
-  position: sticky;
-  top: 0;
   background: var(--primary-color);
   color: #ffffff;
-  padding: 8px;
+  padding: 10px 8px;
   text-align: center;
   font-weight: 700;
 }
 
 .micro-worker-table td {
   border-bottom: 1px solid var(--border-color);
-  padding: 6px 10px;
+  padding: 8px 10px;
   text-align: center;
+}
+
+.micro-worker-table tr:last-child td {
+  border-bottom: none;
 }
 
 .micro-score-select {
