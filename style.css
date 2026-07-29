@@ -205,54 +205,78 @@ body {
 .modal-body { padding: 1.25rem; overflow-y: auto; flex: 1; }
 .modal-footer { padding: 1rem 1.25rem; border-top: 1px solid var(--border-color); display: flex; justify-content: flex-end; gap: 0.5rem; background: #f8fafc; }
 
-/* 🔥 A4 정밀 인쇄 전용 CSS (요구사항 1번 해결) */
+/* 🔥 백지 출력 문제 완벽 해결: A4 인쇄 전용 CSS 규칙 수정 */
 @media print {
-  /* 1. 인쇄 대상 외 모든 HTML 요소 완벽 숨김 */
-  html, body {
+  /* 1. 배경 및 페이지 기본 마진 설정 */
+  body {
     background: #ffffff !important;
     color: #000000 !important;
     margin: 0 !important;
     padding: 0 !important;
-    width: 100% !important;
   }
 
-  .app-header, 
+  /* 2. 화면 전용 요소 완벽 숨김 */
+  header, 
+  footer, 
   .no-print, 
-  .btn, 
+  .app-header, 
   .modal-backdrop, 
   .wizard-bar,
-  .main-container > section:not(#printableReportArea) {
+  .main-container > section:not(#reportControlCard) {
     display: none !important;
   }
 
-  .main-container {
-    max-width: 100% !important;
-    width: 100% !important;
-    margin: 0 !important;
-    padding: 0 !important;
-  }
-
-  /* 2. 오직 보고서 영역만 A4 규격으로 정밀 출력 */
-  #printableReportArea {
-    display: block !important;
+  /* 3. 보고서 감싸는 섹션 카드 스타일 초기화 */
+  #reportControlCard {
     border: none !important;
     box-shadow: none !important;
     padding: 0 !important;
     margin: 0 !important;
-    width: 100% !important;
-    background: #ffffff !important;
+    background: transparent !important;
   }
 
-  /* 갑지 및 을지 페이지 분할 설정 */
+  #reportControlCard > .card-title {
+    display: none !important;
+  }
+
+  /* 4. 오직 인쇄 대상 영역만 선명히 노출 */
+  #printableReportArea {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+    margin: 0 !important;
+    padding: 0 !important;
+  }
+
+  #gabJiSection, 
+  #eulJiSection {
+    display: block !important;
+    visibility: visible !important;
+    opacity: 1 !important;
+    width: 100% !important;
+  }
+
+  /* 드롭다운에서 선택적으로 숨겨진 섹션은 지정 유지 */
+  #gabJiSection[style*="display: none"],
+  #gabJiSection[style*="display:none"] {
+    display: none !important;
+  }
+
+  #eulJiSection[style*="display: none"],
+  #eulJiSection[style*="display:none"] {
+    display: none !important;
+  }
+
   .report-page-break {
-    page-break-before: always;
-    break-before: page;
+    page-break-before: always !important;
+    break-before: page !important;
   }
 
-  /* 인쇄용 표 테두리 선명화 */
+  /* 표 테두리 선명화 */
   table {
-    border-collapse: collapse !important;
     width: 100% !important;
+    border-collapse: collapse !important;
   }
 
   table th, table td {
