@@ -1,40 +1,59 @@
 /* =========================================================================
    Auth.gs
-   비밀번호 검증, 변경 및 이메일 OTP 인증 모듈
+   비밀번호 검증, 최초 자동 등록, 비밀번호 변경 및 OTP 인증 모듈
    ========================================================================= */
 
+/**
+ * ScriptProperties의 'Addpassword' (관리자 비밀번호) 검증
+ * 만약 속성에 비밀번호가 없으면 최초 입력한 비밀번호로 자동 설정되어 사용자 편의 보장
+ */
 function checkAdminPassword_(password) {
   var props = PropertiesService.getScriptProperties();
   var realPwd = props.getProperty('Addpassword');
+  var inputPwd = String(password || '').trim();
 
+  // 최초 상태 (비밀번호 미설정 시 입력된 비밀번호로 자동 설정)
   if (!realPwd) {
-    return { ok: true, isDefault: true, message: 'Addpassword 속성이 미설정되어 개발 모드로 통과합니다.' };
+    if (inputPwd) {
+      props.setProperty('Addpassword', inputPwd);
+      return { ok: true, message: '최초 관리자 비밀번호가 저장되었습니다.' };
+    }
+    return { ok: true, isDefault: true };
   }
 
-  if (String(password || '').trim() === String(realPwd).trim()) {
+  if (inputPwd === String(realPwd).trim()) {
     return { ok: true };
   } else {
-    return { ok: false, error: '관리자 비밀번호가 올바르지 않습니다.' };
-  }
-}
-
-function checkIndexPassword_(password) {
-  var props = PropertiesService.getScriptProperties();
-  var realPwd = props.getProperty('loginindex');
-
-  if (!realPwd) {
-    return { ok: true, isDefault: true, message: 'loginindex 속성이 미설정되어 접속을 허용합니다.' };
-  }
-
-  if (String(password || '').trim() === String(realPwd).trim()) {
-    return { ok: true };
-  } else {
-    return { ok: false, error: '접속 비밀번호가 올바르지 않습니다.' };
+    return { ok: false, error: '관리자 비밀번호가 일치하지 않습니다.' };
   }
 }
 
 /**
- * 어드민 화면에서 비밀번호 변경 (Addpassword / loginindex)
+ * ScriptProperties의 'loginindex' (메인 작성 접속 비밀번호) 검증
+ */
+function checkIndexPassword_(password) {
+  var props = PropertiesService.getScriptProperties();
+  var realPwd = props.getProperty('loginindex');
+  var inputPwd = String(password || '').trim();
+
+  // 최초 상태 (비밀번호 미설정 시 입력된 비밀번호로 자동 설정)
+  if (!realPwd) {
+    if (inputPwd) {
+      props.setProperty('loginindex', inputPwd);
+      return { ok: true, message: '최초 작성 접속 비밀번호가 저장되었습니다.' };
+    }
+    return { ok: true, isDefault: true };
+  }
+
+  if (inputPwd === String(realPwd).trim()) {
+    return { ok: true };
+  } else {
+    return { ok: false, error: '접속 비밀번호가 일치하지 않습니다.' };
+  }
+}
+
+/**
+ * 비밀번호 변경 함수
  */
 function changePassword_(currentAdminPassword, targetKey, newPassword) {
   var auth = checkAdminPassword_(currentAdminPassword);
@@ -53,7 +72,6 @@ function changePassword_(currentAdminPassword, targetKey, newPassword) {
     return { ok: false, error: '새 비밀번호를 입력해 주세요.' };
   }
 
-  // PropertiesService 스크립트 속성 즉시 변경
   PropertiesService.getScriptProperties().setProperty(key, newPwd);
 
   var targetName = key === 'Addpassword' ? '관리자 비밀번호(Addpassword)' : '작성 페이지 접속 비밀번호(loginindex)';
